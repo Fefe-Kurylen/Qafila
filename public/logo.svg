@@ -6,7 +6,7 @@
     </linearGradient>
   </defs>
   <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g)"/>
-  <!-- masque furtif -->
+  <!-- masque qafila -->
   <path d="M14 30c0-4 3-7 7-7h22c4 0 7 3 7 7v3c0 7-6 12-12 12-3 0-5-1-6-3-1 2-3 3-6 3-6 0-12-5-12-12v-3z" fill="#fff" opacity=".95"/>
   <circle cx="24" cy="32" r="3.2" fill="#2a2550"/>
   <circle cx="40" cy="32" r="3.2" fill="#2a2550"/>

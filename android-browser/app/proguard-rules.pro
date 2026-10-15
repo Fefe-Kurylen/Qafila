@@ -1,4 +1,4 @@
--keepclassmembers class fr.furtif.browser.web.** { @android.webkit.JavascriptInterface <methods>; }
--keep,includedescriptorclasses class fr.furtif.browser.**$$serializer { *; }
--keepclassmembers class fr.furtif.browser.** { *** Companion; }
--keepclasseswithmembers class fr.furtif.browser.** { kotlinx.serialization.KSerializer serializer(...); }
+-keepclassmembers class fr.qafila.browser.web.** { @android.webkit.JavascriptInterface <methods>; }
+-keep,includedescriptorclasses class fr.qafila.browser.**$$serializer { *; }
+-keepclassmembers class fr.qafila.browser.** { *** Companion; }
+-keepclasseswithmembers class fr.qafila.browser.** { kotlinx.serialization.KSerializer serializer(...); }

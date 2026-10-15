@@ -1,12 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// Appli mobile Furtif : la coque Capacitor affiche l'interface de recherche (dossier public/)
+// Appli mobile Qafila : la coque Capacitor affiche l'interface de recherche (dossier public/)
 // et ouvre les sites dans un navigateur intégré (plugin @capgo/inappbrowser).
-// Avant `npx cap sync`, définir FURTIF_SERVER_URL vers votre instance déployée si l'interface
+// Avant `npx cap sync`, définir QAFILA_SERVER_URL vers votre instance déployée si l'interface
 // doit charger les résultats depuis un serveur distant (sinon modifier API_BASE dans public/app.js).
 const config: CapacitorConfig = {
-  appId: 'fr.furtif.app',
-  appName: 'Furtif',
+  appId: 'fr.qafila.app',
+  appName: 'Qafila',
   webDir: 'public',
   server: {
     androidScheme: 'https',

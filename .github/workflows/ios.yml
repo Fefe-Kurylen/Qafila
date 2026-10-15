@@ -1,12 +1,12 @@
-# Furtif Browser iOS : compilation de vérification à chaque push, TestFlight / App Store à la demande.
-name: Furtif iOS
+# Qafila Browser iOS : compilation de vérification à chaque push, TestFlight / App Store à la demande.
+name: Qafila iOS
 
 on:
   push:
     branches: [main, claude/furtif-navigateur]
-    paths: ["furtif/ios-browser/**", ".github/workflows/furtif-ios.yml"]
+    paths: ["qafila/ios-browser/**", ".github/workflows/qafila-ios.yml"]
   pull_request:
-    paths: ["furtif/ios-browser/**"]
+    paths: ["qafila/ios-browser/**"]
   workflow_dispatch:
     inputs:
       lane:
@@ -16,7 +16,7 @@ on:
         default: build
 
 concurrency:
-  group: furtif-ios-${{ github.ref }}
+  group: qafila-ios-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: furtif/ios-browser
+        working-directory: qafila/ios-browser
     steps:
       - uses: actions/checkout@v4
 
@@ -41,13 +41,13 @@ jobs:
       - name: Générer le projet
         run: xcodegen generate
         env:
-          FURTIF_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          QAFILA_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Compilation de vérification (appareil iOS, sans signature)
         if: ${{ (github.event.inputs.lane || 'build') == 'build' }}
         run: |
           set -o pipefail
-          xcodebuild -project FurtifBrowser.xcodeproj -scheme FurtifBrowser \
+          xcodebuild -project QafilaBrowser.xcodeproj -scheme QafilaBrowser \
             -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee xcodebuild.log | grep -E --line-buffered "error:|warning:|BUILD|Compiling|Linking|CompileAssetCatalog" || true
           grep -q "BUILD SUCCEEDED" xcodebuild.log
@@ -74,7 +74,7 @@ jobs:
         with:
           name: ios-logs
           path: |
-            furtif/ios-browser/xcodebuild.log
+            qafila/ios-browser/xcodebuild.log
             ~/Library/Logs/gym/*.log
             ~/Library/Logs/fastlane/**
           if-no-files-found: ignore

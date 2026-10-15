@@ -1,4 +1,6 @@
-Furtif is a fast, private and fully customizable browser for iPhone.
+Qafila (قافلة) means "caravan" in Arabic.
+
+Qafila is a fast, private and fully customizable browser for iPhone.
 
 PUT EVERY BUTTON WHERE YOU WANT IT
 • Choose the buttons in the toolbar and in the menu, their order and size
@@ -27,7 +29,7 @@ READ COMFORTABLY
 
 MAKE IT YOURS
 • Interface color that adapts to the website, 8 accent colors
-• Search engine of your choice: DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing or your own Furtif instance
+• Search engine of your choice: DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing or your own Qafila instance
 • Configurable new tab page
 
-Furtif uses WebKit, the engine behind Safari: websites render exactly as you expect. Every feature is free.
+Qafila uses WebKit, the engine behind Safari: websites render exactly as you expect. Every feature is free.

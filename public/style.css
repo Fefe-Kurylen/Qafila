@@ -1,4 +1,4 @@
-/* Furtif — interface inspirée de Qwant : palette, pilules, cartes de résultats, pied de page sombre. */
+/* Qafila — interface inspirée de Qwant : palette, pilules, cartes de résultats, pied de page sombre. */
 :root {
   --blue-100: #ebf3ff; --blue-200: #d6e7ff; --blue-500: #70a9ff; --blue-700: #0561ff; --blue-800: #004fd6;
   --grey-050: #f9fafb; --grey-100: #f2f4f7; --grey-200: #e6eaef; --grey-300: #dadfe7; --grey-400: #c1cad7; --grey-600: #8395af; --grey-700: #647896; --grey-800: #4d596a; --grey-900: #3c4553; --grey-1100: #212327; --grey-1200: #17191c;
@@ -37,6 +37,7 @@ button { font: inherit; color: inherit; }
 .wordmark { font-family: var(--serif); font-weight: 700; letter-spacing: -.03em; color: var(--text); line-height: 1; white-space: nowrap; }
 .wordmark .spark { font-size: .42em; vertical-align: top; position: relative; top: -.15em; margin-left: .06em; font-family: var(--font); }
 .wordmark.big { font-size: 72px; }
+.arabic { font-family: "Noto Naskh Arabic", "Geeza Pro", "Damascus", "Segoe UI", "Arial", serif; font-size: 30px; font-weight: 600; color: var(--muted); margin-top: 6px; line-height: 1.4; }
 
 /* ---- Barre du haut ---- */
 .topbar { display: grid; grid-template-columns: 130px 690px 1fr; align-items: center; gap: 0; padding: 12px 24px 12px 64px; padding-top: calc(12px + env(safe-area-inset-top)); background: var(--bg); position: sticky; top: 0; z-index: 20; }

@@ -1,4 +1,6 @@
-Furtif est un navigateur rapide, privé et entièrement personnalisable, conçu pour iPhone.
+Qafila (قافلة) signifie « caravane » en arabe.
+
+Qafila est un navigateur rapide, privé et entièrement personnalisable, conçu pour iPhone.
 
 PLACEZ CHAQUE BOUTON LÀ OÙ IL VOUS CONVIENT
 • Choisissez les boutons de la barre d'outils et du menu, leur ordre et leur taille
@@ -27,7 +29,7 @@ LISEZ CONFORTABLEMENT
 
 FAITES-LE VÔTRE
 • Couleur de l'interface adaptée au site visité, 8 couleurs d'accent
-• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing ou votre propre instance Furtif
+• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing ou votre propre instance Qafila
 • Page de nouvel onglet configurable
 
-Furtif utilise WebKit, le moteur de Safari : les sites s'affichent exactement comme vous en avez l'habitude. Toutes les fonctions sont gratuites.
+Qafila utilise WebKit, le moteur de Safari : les sites s'affichent exactement comme vous en avez l'habitude. Toutes les fonctions sont gratuites.

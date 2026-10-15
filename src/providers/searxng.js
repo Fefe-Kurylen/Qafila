@@ -10,7 +10,7 @@ const CAT = { web: 'general', images: 'images', news: 'news', videos: 'videos' }
 
 export async function search({ q, category, page = 1, lang }) {
   const params = new URLSearchParams({ q, format: 'json', language: lang, categories: CAT[category], pageno: String(page), safesearch: '1' });
-  const data = await fetchJSON(`${config.searxngUrl}/search?${params}`, { headers: { 'User-Agent': 'Furtif/0.1' } });
+  const data = await fetchJSON(`${config.searxngUrl}/search?${params}`, { headers: { 'User-Agent': 'Qafila/0.1' } });
   const results = (data.results || []).map(r => {
     const base = { title: r.title, url: r.url, host: hostOf(r.url), snippet: r.content || '', date: r.publishedDate || '' };
     if (category === 'images') base.image = { full: r.img_src, thumb: r.thumbnail_src || r.img_src };

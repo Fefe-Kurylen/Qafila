@@ -1,5 +1,5 @@
 // Fournisseur sans clé : version « lite » de DuckDuckGo (résultats web). Les liens de redirection sont décodés,
-// les liens sponsorisés sont retirés : la page de résultats Furtif ne contient aucune publicité.
+// les liens sponsorisés sont retirés : la page de résultats Qafila ne contient aucune publicité.
 import * as cheerio from 'cheerio';
 import { fetchText, hostOf } from '../http.js';
 import { TTLCache } from '../cache.js';

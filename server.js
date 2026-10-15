@@ -61,13 +61,13 @@ api.get('/fav', imageLimit, faviconProxy);
 api.get('/status', (req, res) => res.json({ ok: true, providers: status(), lang: config.defaultLang }));
 app.use('/api', api);
 
-// OpenSearch : permet d'ajouter Furtif comme moteur dans Chrome/Firefox/Safari.
+// OpenSearch : permet d'ajouter Qafila comme moteur dans Chrome/Firefox/Safari.
 app.get('/opensearch.xml', (req, res) => {
   const base = `${req.protocol}://${req.get('host')}`;
   res.type('application/opensearchdescription+xml').send(`<?xml version="1.0" encoding="UTF-8"?>
 <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:moz="http://www.mozilla.org/2006/browser/search/">
-  <ShortName>Furtif</ShortName>
-  <Description>Recherche privée Furtif</Description>
+  <ShortName>Qafila</ShortName>
+  <Description>Recherche privée Qafila</Description>
   <InputEncoding>UTF-8</InputEncoding>
   <Image width="64" height="64" type="image/svg+xml">${base}/logo.svg</Image>
   <Url type="text/html" method="get" template="${base}/?q={searchTerms}"/>
@@ -82,5 +82,5 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 
 app.listen(config.port, () => {
   const active = status().filter(p => p.available && p.enabled).map(p => p.name).join(', ');
-  console.log(`Furtif démarré sur http://localhost:${config.port} — fournisseurs actifs : ${active}`);
+  console.log(`Qafila démarré sur http://localhost:${config.port} — fournisseurs actifs : ${active}`);
 });

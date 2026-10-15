@@ -1,12 +1,14 @@
 # Fiche Google Play — français
 
-**Titre (30 car. max)** : Furtif : Navigateur Internet
+**Titre (30 car. max)** : Qafila : Navigateur Internet
 
 **Description courte (80 car. max)** : Navigateur rapide, privé et personnalisable. Bloqueur intégré, zéro collecte.
 
 **Description complète (4000 car. max)** :
 
-Furtif est un navigateur rapide, privé et entièrement personnalisable.
+Qafila (قافلة) signifie « caravane » en arabe.
+
+Qafila est un navigateur rapide, privé et entièrement personnalisable.
 
 PLACEZ CHAQUE BOUTON LÀ OÙ IL VOUS CONVIENT
 • Choisissez les boutons de la barre d'outils et du menu, leur ordre et leur taille
@@ -35,10 +37,10 @@ LISEZ CONFORTABLEMENT
 
 FAITES-LE VÔTRE
 • Couleur de l'interface adaptée au site visité, 8 couleurs d'accent
-• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing ou votre propre instance Furtif
+• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing ou votre propre instance Qafila
 • Navigateur par défaut Android pris en charge
 
 Toutes les fonctions sont gratuites, sans publicité ni abonnement.
 
 **Catégorie** : Communication  **Classification du contenu** : Tout public (navigateur : contenu web non contrôlé, à déclarer dans le questionnaire)
-**E-mail de contact** : felix.bois@wanadoo.fr  **Politique de confidentialité** : https://furtif.example.com/confidentialite
+**E-mail de contact** : felix.bois@wanadoo.fr  **Politique de confidentialité** : https://qafila.example.com/confidentialite

@@ -1,10 +1,10 @@
-/* Furtif — interface de recherche (style Qwant). Vanilla JS, aucun pisteur, aucun appel tiers depuis le navigateur :
-   vignettes et favicons passent par le serveur Furtif. Fonctionne en site web, en PWA et dans la coque mobile Capacitor. */
+/* Qafila — interface de recherche (style Qwant). Vanilla JS, aucun pisteur, aucun appel tiers depuis le navigateur :
+   vignettes et favicons passent par le serveur Qafila. Fonctionne en site web, en PWA et dans la coque mobile Capacitor. */
 (() => {
   'use strict';
 
   // Base de l'API : vide = même origine. Dans l'appli mobile, pointer vers l'instance déployée.
-  const API_BASE = window.FURTIF_API || (window.Capacitor?.isNativePlatform?.() ? 'https://furtif.example.com' : '');
+  const API_BASE = window.QAFILA_API || (window.Capacitor?.isNativePlatform?.() ? 'https://qafila.example.com' : '');
   const TYPES = ['web', 'images', 'videos', 'news'];
 
   const $ = s => document.querySelector(s);
@@ -14,8 +14,8 @@
     tabs: document.querySelectorAll('.tab'), shortcuts: $('#shortcuts'), settings: $('#settings'), filters: $('#filtersPanel'),
   };
 
-  const SETTINGS_KEY = 'furtif.settings';
-  const HISTORY_KEY = 'furtif.history';
+  const SETTINGS_KEY = 'qafila.settings';
+  const HISTORY_KEY = 'qafila.history';
   const settings = Object.assign({ lang: 'fr-FR', newTab: false, suggest: true, history: false, theme: '' }, load(SETTINGS_KEY));
   const state = { q: '', type: 'web', page: 1, controller: null, hasMore: false };
 
@@ -52,7 +52,7 @@
   /* ---------- Ouverture des liens (web / appli mobile) ---------- */
   function openUrl(url) {
     const iab = window.Capacitor?.Plugins?.InAppBrowser;
-    if (iab) { iab.openWebView({ url, title: 'Furtif', toolbarType: 'navigation', showReloadButton: true }).catch(() => window.open(url, '_blank')); return; }
+    if (iab) { iab.openWebView({ url, title: 'Qafila', toolbarType: 'navigation', showReloadButton: true }).catch(() => window.open(url, '_blank')); return; }
     if (settings.newTab) window.open(url, '_blank', 'noopener'); else location.href = url;
   }
   document.addEventListener('click', e => {
@@ -150,7 +150,7 @@
 
   function showHome() {
     state.q = ''; el.body.dataset.view = 'home'; el.home.hidden = false; el.view.hidden = true;
-    el.q.value = ''; el.clear.hidden = true; document.title = 'Furtif — Le moteur de recherche qui ne vous regarde pas';
+    el.q.value = ''; el.clear.hidden = true; document.title = 'Qafila — Le moteur de recherche qui ne vous regarde pas';
     el.home.querySelector('.hero').after(el.form);
     el.q.focus();
   }
@@ -165,7 +165,7 @@
     placeSearchboxTop();
     el.tabs.forEach(t => t.classList.toggle('active', t.dataset.type === state.type));
     el.view.dataset.type = state.type;
-    document.title = `${state.q} – Recherche Furtif`;
+    document.title = `${state.q} – Recherche Qafila`;
     if (!append) {
       el.results.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
       el.side.innerHTML = ''; el.pager.innerHTML = '';
@@ -328,7 +328,7 @@
     save(SETTINGS_KEY, settings);
     if (state.q) render();
   });
-  const ABOUT = 'Furtif ne conserve ni vos recherches, ni votre adresse IP, ni aucun profil. Les résultats proviennent de moteurs tiers interrogés par le serveur Furtif, qui ne leur transmet jamais votre identité. Vignettes et favicons passent par Furtif pour masquer votre IP. L\'historique local, s\'il est activé, reste sur cet appareil.';
+  const ABOUT = 'Qafila ne conserve ni vos recherches, ni votre adresse IP, ni aucun profil. Les résultats proviennent de moteurs tiers interrogés par le serveur Qafila, qui ne leur transmet jamais votre identité. Vignettes et favicons passent par Qafila pour masquer votre IP. L\'historique local, s\'il est activé, reste sur cet appareil.';
   for (const sel of ['#aboutlink', '#aboutlink2', '.about']) document.querySelector(sel)?.addEventListener('click', e => { e.preventDefault(); alert(ABOUT); });
   $('#addEngine').addEventListener('click', e => {
     if (window.external?.AddSearchProvider) { e.preventDefault(); window.external.AddSearchProvider(location.origin + '/opensearch.xml'); }

@@ -15,11 +15,11 @@ val keystoreProps = Properties().apply {
 fun signing(key: String): String? = keystoreProps.getProperty(key) ?: System.getenv(key)
 
 android {
-    namespace = "fr.furtif.browser"
+    namespace = "fr.qafila.browser"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "fr.furtif.browser"
+        applicationId = "fr.qafila.browser"
         minSdk = 26
         targetSdk = 35
         versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()

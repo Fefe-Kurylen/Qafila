@@ -1,7 +1,7 @@
 {
-  "name": "furtif",
+  "name": "qafila",
   "version": "0.1.0",
-  "description": "Furtif - moteur de recherche privé et navigateur mobile (type Qwant)",
+  "description": "Qafila - moteur de recherche privé et navigateur mobile (type Qwant)",
   "main": "server.js",
   "type": "module",
   "engines": { "node": ">=20" },

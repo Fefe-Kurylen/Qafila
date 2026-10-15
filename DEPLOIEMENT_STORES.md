@@ -1,4 +1,4 @@
-# 🚀 Publier Furtif Browser sur l'App Store et Google Play
+# 🚀 Publier Qafila Browser sur l'App Store et Google Play
 
 Tout ce qui pouvait être préparé sans vos comptes l'a été : code iOS et Android, icônes, textes de fiche,
 politique de confidentialité, chaînes de compilation et de publication automatiques. Il reste les étapes qui
@@ -6,10 +6,10 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 
 ## 0. Prérequis communs
 
-- [ ] Déployer le site Furtif (dossier `furtif/`) pour que la politique de confidentialité soit en ligne :
-      `https://<votre-domaine>/confidentialite` (page déjà incluse). Remplacer `furtif.example.com` par votre domaine dans
+- [ ] Déployer le site Qafila (dossier `qafila/`) pour que la politique de confidentialité soit en ligne :
+      `https://<votre-domaine>/confidentialite` (page déjà incluse). Remplacer `qafila.example.com` par votre domaine dans
       `ios-browser/fastlane/metadata/*/privacy_url.txt`, `marketing_url.txt` et `android-browser/play/listing/fr-FR.md`.
-- [x] Captures d'écran : **déjà prêtes**, générées par le workflow *Furtif captures stores* (vraie appli dans un simulateur iPhone 16 Pro Max
+- [x] Captures d'écran : **déjà prêtes**, générées par le workflow *Qafila captures stores* (vraie appli dans un simulateur iPhone 16 Pro Max
       et un émulateur Android) et rangées dans le dépôt :
       `ios-browser/fastlane/screenshots/fr-FR/` (6 × 1320×2868, format 6,9" — envoyées automatiquement par la lane `release`)
       et `android-browser/play/screenshots/phone/` (6 × 1080×1920, format 9:16 — à glisser dans la Play Console).
@@ -21,8 +21,8 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 - [ ] Adhérer à l'**Apple Developer Program** (99 €/an) : https://developer.apple.com/programs/enroll/
 - [ ] Dans App Store Connect → *Utilisateurs et accès* → *Clés d'intégration* : créer une **clé API App Store Connect** (rôle App Manager).
       Noter l'**Issuer ID**, le **Key ID** et télécharger le fichier `.p8`.
-- [ ] Dans *Certificats, identifiants et profils* : créer l'**App ID** `fr.furtif.FurtifBrowser` (aucune capacité spéciale requise).
-- [ ] Dans App Store Connect → *Mes apps* → **+** : créer l'app « Furtif : Navigateur Internet », bundle `fr.furtif.FurtifBrowser`, SKU `furtif-browser`.
+- [ ] Dans *Certificats, identifiants et profils* : créer l'**App ID** `fr.qafila.QafilaBrowser` (aucune capacité spéciale requise).
+- [ ] Dans App Store Connect → *Mes apps* → **+** : créer l'app « Qafila : Navigateur Internet », bundle `fr.qafila.QafilaBrowser`, SKU `qafila-browser`.
 
 ### Secrets GitHub (Settings → Secrets and variables → Actions)
 | Secret | Valeur |
@@ -35,7 +35,7 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 | `IOS_CERT_PASSWORD` | Mot de passe choisi à l'export du `.p12` |
 
 ### Lancer
-- [ ] **Vérifier la compilation** : onglet *Actions* → *Furtif iOS* → *Run workflow* → lane `build`. Ce job tourne sur un Mac GitHub
+- [ ] **Vérifier la compilation** : onglet *Actions* → *Qafila iOS* → *Run workflow* → lane `build`. Ce job tourne sur un Mac GitHub
       et compile réellement le projet contre le SDK iOS. S'il remonte des erreurs, collez-les moi, je corrige.
 - [ ] **TestFlight** : *Run workflow* → lane `beta`. Le build apparaît dans App Store Connect → TestFlight en 10 à 30 min ; installez-le sur votre iPhone via l'app TestFlight.
 - [ ] **App Store** : *Run workflow* → lane `release`. Les métadonnées FR/EN (`ios-browser/fastlane/metadata`) sont envoyées et l'app est soumise à la validation.
@@ -43,13 +43,13 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 - [ ] Questionnaire *Confidentialité de l'app* dans App Store Connect : répondre « **Aucune donnée collectée** » (conforme au `PrivacyInfo.xcprivacy`).
 - [ ] Classification : 17+ n'est pas nécessaire ; cocher « Accès web sans restriction » (navigateur), ce qui donne **17+** automatiquement comme pour Quiche (16+ en France).
 
-Sans Mac, tout passe par GitHub Actions. Avec un Mac : `cd ios-browser && brew install xcodegen && xcodegen generate && open FurtifBrowser.xcodeproj`, puis Product → Archive → Distribute.
+Sans Mac, tout passe par GitHub Actions. Avec un Mac : `cd ios-browser && brew install xcodegen && xcodegen generate && open QafilaBrowser.xcodeproj`, puis Product → Archive → Distribute.
 
 ## 2. Google Play (Android)
 
 ### Comptes et identifiants
 - [ ] Créer un compte **Google Play Console** (25 $ une fois) : https://play.google.com/console/signup
-- [ ] Créer l'application « Furtif : Navigateur Internet », type *Application*, gratuite, langue par défaut français.
+- [ ] Créer l'application « Qafila : Navigateur Internet », type *Application*, gratuite, langue par défaut français.
 - [ ] Générer le **keystore de signature** (une seule fois, à sauvegarder dans un gestionnaire de mots de passe, il est irremplaçable) :
       `cd android-browser && ./scripts-keystore.sh`
 - [ ] Dans Play Console → *Configuration* → *Accès à l'API* : lier un projet Google Cloud, créer un **compte de service** avec le rôle
@@ -58,15 +58,15 @@ Sans Mac, tout passe par GitHub Actions. Avec un Mac : `cd ios-browser && brew i
 ### Secrets GitHub
 | Secret | Valeur |
 |---|---|
-| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 furtif-release.jks` |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 qafila-release.jks` |
 | `ANDROID_KEYSTORE_PASSWORD` | Mot de passe du keystore |
-| `ANDROID_KEY_ALIAS` | `furtif` |
+| `ANDROID_KEY_ALIAS` | `qafila` |
 | `ANDROID_KEY_PASSWORD` | Mot de passe de la clé (identique) |
 | `PLAY_SERVICE_ACCOUNT_JSON` | Contenu complet du fichier JSON du compte de service |
 
 ### Lancer
-- [ ] **Premier envoi manuel obligatoire** : Google exige que le tout premier bundle soit déposé à la main. Lancer *Furtif Android* → *Run workflow*
-      → piste `internal`, récupérer l'artefact `furtif-release-aab` et le glisser dans Play Console → *Tests internes* → *Créer une version*.
+- [ ] **Premier envoi manuel obligatoire** : Google exige que le tout premier bundle soit déposé à la main. Lancer *Qafila Android* → *Run workflow*
+      → piste `internal`, récupérer l'artefact `qafila-release-aab` et le glisser dans Play Console → *Tests internes* → *Créer une version*.
       (Si l'envoi automatique échoue avec « applicationNotFound », c'est ce cas.) Les envois suivants sont automatiques.
 - [ ] Remplir la fiche depuis `android-browser/play/listing/fr-FR.md` : titre, descriptions, icône 512 (`play/icon-512.png`),
       visuel de présentation (`play/feature-graphic-1024x500.png`), captures d'écran (`play/screenshots/phone/`).

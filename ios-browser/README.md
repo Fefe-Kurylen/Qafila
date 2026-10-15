@@ -1,4 +1,4 @@
-# 📱 Furtif Browser — navigateur iPhone personnalisable (dans l'esprit de Quiche)
+# 📱 Qafila Browser — navigateur iPhone personnalisable (dans l'esprit de Quiche)
 
 Navigateur natif iOS (SwiftUI + WKWebView, le moteur de Safari) qui reprend ce qui fait Quiche Browser :
 **chaque bouton se place où l'on veut**, des onglets beaux et bien rangés, un bloqueur intégré, un mode sombre
@@ -16,7 +16,7 @@ pour tous les sites, et des réglages fins — sans abonnement, sans collecte de
 | **Confidentialité** | Bloqueur pubs + traqueurs (règles WebKit compilées), masquage des bandeaux de cookies, JavaScript global ou **par site** (bouton JS), passage automatique en HTTPS, user agent personnalisé, onglets privés non persistés, effacement des données. |
 | **Lecture** | Assombrir tous les sites (ou par site), Lecteur (extraction de l'article), masquage des barres au défilement (plein écran), haut/bas de page, recherche dans la page, version bureau, traduction. |
 | **Apparence** | Thème système/clair/sombre, 8 couleurs d'accent (monochrome par défaut), couleur de l'interface adaptée au site (`theme-color`), barre Classique ou Verre, position en bas ou en haut, vibrations. |
-| **Recherche** | Furtif (votre serveur), DuckDuckGo, Qwant, Kagi, SearXNG perso, Brave, Google, Bing ; page de nouvel onglet au choix. |
+| **Recherche** | Qafila (votre serveur), DuckDuckGo, Qwant, Kagi, SearXNG perso, Brave, Google, Bing ; page de nouvel onglet au choix. |
 
 ## Compiler
 
@@ -24,22 +24,22 @@ Nécessite un Mac avec **Xcode 15+** (iOS 17). Le projet est décrit dans `proje
 
 ```bash
 brew install xcodegen
-cd furtif/ios-browser
-xcodegen generate          # crée FurtifBrowser.xcodeproj
-open FurtifBrowser.xcodeproj
+cd qafila/ios-browser
+xcodegen generate          # crée QafilaBrowser.xcodeproj
+open QafilaBrowser.xcodeproj
 ```
 
 Dans Xcode : choisir votre équipe de signature (Signing & Capabilities), brancher l'iPhone, ▶︎ Run.
 Pour un test rapide sans Mac : TestFlight nécessite de toute façon une compilation Xcode.
 
-Sans XcodeGen : créer un projet « App » SwiftUI vide nommé `FurtifBrowser`, supprimer `ContentView.swift`, glisser le dossier
-`FurtifBrowser/` (Models, Store, Web, Views, Services, Resources) dans le projet, et régler la cible minimale sur iOS 17.
+Sans XcodeGen : créer un projet « App » SwiftUI vide nommé `QafilaBrowser`, supprimer `ContentView.swift`, glisser le dossier
+`QafilaBrowser/` (Models, Store, Web, Views, Services, Resources) dans le projet, et régler la cible minimale sur iOS 17.
 
 ## Structure
 
 ```
-FurtifBrowser/
-  FurtifBrowserApp.swift      Point d'entrée
+QafilaBrowser/
+  QafilaBrowserApp.swift      Point d'entrée
   Models/                     BrowserTab, Bookmark, HistoryEntry, ToolbarAction (+ presets de la galerie)
   Store/                      Settings (tous les réglages), BrowserStore (état global, persistance JSON)
   Web/                        TabManager (une WKWebView par onglet, bloqueur, mode sombre, UA), WebContainer, StartPage

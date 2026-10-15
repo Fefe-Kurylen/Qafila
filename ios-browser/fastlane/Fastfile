@@ -1,4 +1,4 @@
-# Furtif Browser — publication App Store.
+# Qafila Browser — publication App Store.
 #   fastlane ios build   : compile sans signature (vérification)
 #   fastlane ios beta    : archive signée + envoi TestFlight
 #   fastlane ios release : envoi sur App Store Connect + soumission à la validation
@@ -11,7 +11,7 @@ platform :ios do
 
   desc "Compilation de vérification (appareil iOS, sans signature)"
   lane :build do
-    xcodebuild(scheme: "FurtifBrowser", project: "FurtifBrowser.xcodeproj", destination: "generic/platform=iOS", xcargs: "CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build")
+    xcodebuild(scheme: "QafilaBrowser", project: "QafilaBrowser.xcodeproj", destination: "generic/platform=iOS", xcargs: "CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build")
   end
 
   desc "Clé API App Store Connect (secrets CI)"
@@ -34,10 +34,10 @@ platform :ios do
       File.write("/tmp/cert.p12", Base64.decode64(ENV["IOS_CERT_P12_BASE64"]))
       import_certificate(certificate_path: "/tmp/cert.p12", certificate_password: ENV["IOS_CERT_PASSWORD"], keychain_name: ENV["MATCH_KEYCHAIN_NAME"] || "login.keychain-db", keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"] || "")
     end
-    get_provisioning_profile(app_identifier: "fr.furtif.FurtifBrowser", api_key: lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]) if ENV["IOS_CERT_P12_BASE64"]
-    increment_build_number(build_number: ENV["BUILD_NUMBER"] || Time.now.strftime("%Y%m%d%H%M"), xcodeproj: "FurtifBrowser.xcodeproj")
-    build_app(scheme: "FurtifBrowser", project: "FurtifBrowser.xcodeproj", export_method: "app-store", xcargs: "-allowProvisioningUpdates")
-    upload_to_testflight(api_key: lane_context[SharedValues::APP_STORE_CONNECT_API_KEY], skip_waiting_for_build_processing: true, changelog: "Furtif Browser — build automatique")
+    get_provisioning_profile(app_identifier: "fr.qafila.QafilaBrowser", api_key: lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]) if ENV["IOS_CERT_P12_BASE64"]
+    increment_build_number(build_number: ENV["BUILD_NUMBER"] || Time.now.strftime("%Y%m%d%H%M"), xcodeproj: "QafilaBrowser.xcodeproj")
+    build_app(scheme: "QafilaBrowser", project: "QafilaBrowser.xcodeproj", export_method: "app-store", xcargs: "-allowProvisioningUpdates")
+    upload_to_testflight(api_key: lane_context[SharedValues::APP_STORE_CONNECT_API_KEY], skip_waiting_for_build_processing: true, changelog: "Qafila Browser — build automatique")
   end
 
   desc "Envoi App Store Connect avec métadonnées et soumission"

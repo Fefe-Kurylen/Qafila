@@ -1,16 +1,16 @@
-# Furtif Browser : captures d'écran pour l'App Store (iPhone 6,9") et Google Play (téléphone 9:16).
+# Qafila Browser : captures d'écran pour l'App Store (iPhone 6,9") et Google Play (téléphone 9:16).
 # Lance chaque appli en « mode démo » (onglets pré-remplis, menu / onglets / éditeur / réglages ouverts)
 # et dépose les images en artefacts : store-screenshots-ios et store-screenshots-android.
-name: Furtif captures stores
+name: Qafila captures stores
 
 on:
   workflow_dispatch:
   push:
     branches: [claude/furtif-navigateur]
-    paths: [".github/workflows/furtif-screenshots.yml", "furtif/ios-browser/FurtifBrowser/**", "furtif/android-browser/app/src/**", "furtif/android-browser/play/capture-screenshots.sh"]
+    paths: [".github/workflows/qafila-screenshots.yml", "qafila/ios-browser/QafilaBrowser/**", "qafila/android-browser/app/src/**", "qafila/android-browser/play/capture-screenshots.sh"]
 
 concurrency:
-  group: furtif-screenshots-${{ github.ref }}
+  group: qafila-screenshots-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: furtif/ios-browser
+        working-directory: qafila/ios-browser
     steps:
       - uses: actions/checkout@v4
 
@@ -42,20 +42,20 @@ jobs:
       - name: Compiler pour le simulateur
         run: |
           set -o pipefail
-          xcodebuild -project FurtifBrowser.xcodeproj -scheme FurtifBrowser \
+          xcodebuild -project QafilaBrowser.xcodeproj -scheme QafilaBrowser \
             -destination "id=${{ steps.sim.outputs.udid }}" -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO build 2>&1 | tail -3
 
       - name: Prendre les captures
         run: |
           UDID=${{ steps.sim.outputs.udid }}
-          BUNDLE=fr.furtif.FurtifBrowser
+          BUNDLE=fr.qafila.QafilaBrowser
           OUT=store-screenshots/ios
           mkdir -p "$OUT"
-          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/FurtifBrowser.app
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/QafilaBrowser.app
           shoot() {
             xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
-            xcrun simctl launch "$UDID" "$BUNDLE" -FurtifDemo "$1"
+            xcrun simctl launch "$UDID" "$BUNDLE" -QafilaDemo "$1"
             sleep 16
             xcrun simctl io "$UDID" screenshot "$OUT/$2.png"
           }
@@ -71,14 +71,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: store-screenshots-ios
-          path: furtif/ios-browser/store-screenshots/ios/*.png
+          path: qafila/ios-browser/store-screenshots/ios/*.png
 
   android:
     name: Captures Android
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: furtif/android-browser
+        working-directory: qafila/android-browser
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -108,10 +108,10 @@ jobs:
           profile: Nexus 5X
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          working-directory: furtif/android-browser
+          working-directory: qafila/android-browser
           script: ./play/capture-screenshots.sh
 
       - uses: actions/upload-artifact@v4
         with:
           name: store-screenshots-android
-          path: furtif/android-browser/store-screenshots/android/*.png
+          path: qafila/android-browser/store-screenshots/android/*.png

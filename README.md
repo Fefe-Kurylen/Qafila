@@ -1,6 +1,6 @@
-# 🦊 Furtif — recherche privée et navigateur mobile
+# 🦊 Qafila — recherche privée et navigateur mobile
 
-Furtif est un moteur de recherche privé **type Qwant** : une page de recherche sans pisteur, des résultats
+Qafila est un moteur de recherche privé **type Qwant** : une page de recherche sans pisteur, des résultats
 agrégés depuis plusieurs sources, et une coque mobile (Capacitor) qui ouvre les sites dans un navigateur intégré.
 
 L'interface reprend les codes de Qwant : logo serif avec étincelle, barre de recherche en pilule à halo lavande,
@@ -28,14 +28,14 @@ titre bleu, bouton « Plus de résultats », grille d'images justifiée, pied de
 ## Démarrage rapide
 
 ```bash
-cd furtif
+cd qafila
 npm install
 cp .env.example .env     # facultatif : clé Brave, URL SearXNG…
 npm start                # http://localhost:4000
 npm test                 # tests de fumée (SMOKE_NETWORK=1 npm test pour tester une vraie recherche)
 ```
 
-### Avec Docker (Furtif + SearXNG auto-hébergé)
+### Avec Docker (Qafila + SearXNG auto-hébergé)
 
 ```bash
 docker compose up -d     # http://localhost:4000
@@ -49,12 +49,12 @@ Le `Dockerfile` suffit. Variables utiles : `PORT`, `PROVIDERS`, `BRAVE_API_KEY`,
 
 ## Navigateurs natifs iPhone et Android (dans l'esprit de Quiche)
 
-Le dossier [`ios-browser/`](ios-browser/) contient **Furtif Browser**, un navigateur SwiftUI + WKWebView avec barre d'outils et menu
+Le dossier [`ios-browser/`](ios-browser/) contient **Qafila Browser**, un navigateur SwiftUI + WKWebView avec barre d'outils et menu
 entièrement personnalisables, galerie de barres, onglets groupés par site, bloqueur, mode sombre pour tous les sites, JavaScript par site,
 lecteur et temps de lecture. Compilation : `xcodegen generate` puis Xcode (voir son README). La version Android est dans [`android-browser/`](android-browser/) (Kotlin + Compose).
 
 **Publication App Store / Google Play** : tout est décrit pas à pas dans [`DEPLOIEMENT_STORES.md`](DEPLOIEMENT_STORES.md)
-(workflows GitHub Actions `Furtif iOS` et `Furtif Android`, fastlane, métadonnées, politique de confidentialité sur `/confidentialite`).
+(workflows GitHub Actions `Qafila iOS` et `Qafila Android`, fastlane, métadonnées, politique de confidentialité sur `/confidentialite`).
 
 ## Coque mobile Capacitor (iOS / Android)
 
@@ -62,7 +62,7 @@ La coque Capacitor affiche l'interface (`public/`) et ouvre les sites dans un na
 
 ```bash
 npm install --include=optional          # Capacitor + @capgo/inappbrowser
-# Dans public/app.js, remplacer https://furtif.example.com par l'URL de votre instance déployée
+# Dans public/app.js, remplacer https://qafila.example.com par l'URL de votre instance déployée
 npm run android                         # ou : npm run ios (macOS + Xcode requis)
 ```
 
