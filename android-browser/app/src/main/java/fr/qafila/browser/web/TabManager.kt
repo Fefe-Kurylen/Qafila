@@ -97,6 +97,14 @@ class TabManager(private val context: Context, private val store: BrowserStore, 
     fun clearFind(id: String) = views[id]?.clearMatches()
     fun clearCaches() { views.values.firstOrNull()?.clearCache(true) ?: WebView(context).apply { clearCache(true); destroy() } }
 
+    /**
+     * User agent de Chrome mobile, sans la marque « ; wv » des WebView : sans ça, Google refuse la connexion
+     * (« Ce navigateur ou cette application ne sont peut-être pas sécurisés »).
+     */
+    private val mobileUserAgent: String by lazy {
+        android.webkit.WebSettings.getDefaultUserAgent(context).replace("; wv)", ")").replace(Regex("Version/\\d+(\\.\\d+)* "), "")
+    }
+
     fun applySettings(id: String) {
         val web = views[id] ?: return
         val tab = store.tabs.firstOrNull { it.id == id } ?: return
@@ -105,7 +113,7 @@ class TabManager(private val context: Context, private val store: BrowserStore, 
         web.settings.userAgentString = when {
             s.customUserAgent.isNotBlank() -> s.customUserAgent
             store.isDesktop(tab) -> DESKTOP_UA
-            else -> null
+            else -> mobileUserAgent
         }
         web.settings.textZoom = s.textZoom.coerceIn(50, 200)
     }

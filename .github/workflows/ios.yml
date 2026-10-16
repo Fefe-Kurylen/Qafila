@@ -48,9 +48,24 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild -project QafilaBrowser.xcodeproj -scheme QafilaBrowser \
-            -destination 'generic/platform=iOS' \
+            -destination 'generic/platform=iOS' -configuration Release -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee xcodebuild.log | grep -E --line-buffered "error:|warning:|BUILD|Compiling|Linking|CompileAssetCatalog" || true
           grep -q "BUILD SUCCEEDED" xcodebuild.log
+
+      # .ipa non signée, pour tester gratuitement sur iPhone avec Sideloadly / AltStore (identifiant Apple gratuit).
+      - name: Fabriquer l'IPA de test
+        if: ${{ (github.event.inputs.lane || 'build') == 'build' }}
+        run: |
+          mkdir -p ipa/Payload
+          cp -R build/Build/Products/Release-iphoneos/QafilaBrowser.app ipa/Payload/
+          (cd ipa && zip -qry ../Qafila-test.ipa Payload)
+          ls -lh Qafila-test.ipa
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ (github.event.inputs.lane || 'build') == 'build' }}
+        with:
+          name: qafila-iphone-ipa
+          path: ios-browser/Qafila-test.ipa
 
       - name: TestFlight / App Store
         if: ${{ github.event.inputs.lane == 'beta' || github.event.inputs.lane == 'release' }}

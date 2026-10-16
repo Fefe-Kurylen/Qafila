@@ -36,6 +36,8 @@ final class TabManager: NSObject, ObservableObject {
         config.websiteDataStore = tab.isPrivate ? privateDataStore : .default()
         config.allowsInlineMediaPlayback = true
         config.defaultWebpagePreferences.preferredContentMode = .mobile
+        // Même signature que Safari : les sites (dont la connexion Google) traitent Qafila comme un vrai navigateur.
+        config.applicationNameForUserAgent = "Version/18.0 Mobile/15E148 Safari/604.1"
         let controller = WKUserContentController()
         controller.add(LeakAvoider(self), name: "qafila")
         controller.addUserScript(WKUserScript(source: Scripts.pageInfo, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
