@@ -369,7 +369,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
             Triple("https://fr.wikipedia.org/wiki/Paris", "Paris — Wikipédia", 41),
             Triple("https://www.marmiton.org/recettes/recette_pate-a-crepes_12372.aspx", "La meilleure recette de pâte à crêpes - Marmiton", 4),
             Triple("https://www.marmiton.org/recettes/recette_gateau-au-chocolat-fondant-rapide_166352.aspx", "Gâteau au chocolat fondant rapide - Marmiton", 3),
-            Triple("https://github.com/Fefe-Kurylen/jeu-final", "Fefe-Kurylen/jeu-final - GitHub", 2),
+            Triple("https://github.com/Fefe-Kurylen/qafila", "Fefe-Kurylen/qafila - GitHub", 2),
             Triple("https://www.openstreetmap.org", "OpenStreetMap", 1),
         )
         val list = demo.mapIndexed { i, (u, t, m) -> BrowserTab(url = u, title = t, readingMinutes = m, lastVisited = now - i * 60_000L) }

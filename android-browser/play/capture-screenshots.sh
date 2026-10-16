@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Captures d'écran Google Play (émulateur 1080x1920, format 9:16 accepté par la Play Console).
-# Lancé par le workflow « Qafila captures stores », depuis qafila/android-browser.
+# Lancé par le workflow « Qafila captures stores », depuis android-browser.
 set -euo pipefail
 APK=app/build/outputs/apk/debug/app-debug.apk
 PKG=fr.qafila.browser.debug

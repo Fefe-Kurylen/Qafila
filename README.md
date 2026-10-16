@@ -28,6 +28,7 @@ titre bleu, bouton « Plus de résultats », grille d'images justifiée, pied de
 ## Démarrage rapide
 
 ```bash
+git clone https://github.com/Fefe-Kurylen/qafila
 cd qafila
 npm install
 cp .env.example .env     # facultatif : clé Brave, URL SearXNG…

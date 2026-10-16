@@ -24,7 +24,7 @@ Nécessite un Mac avec **Xcode 15+** (iOS 17). Le projet est décrit dans `proje
 
 ```bash
 brew install xcodegen
-cd qafila/ios-browser
+cd ios-browser
 xcodegen generate          # crée QafilaBrowser.xcodeproj
 open QafilaBrowser.xcodeproj
 ```

@@ -271,7 +271,7 @@ final class BrowserStore: ObservableObject {
             ("https://www.lemonde.fr/sciences/", "Sciences — Le Monde", 6),
             ("https://www.marmiton.org/recettes/recette_pate-a-crepes_12372.aspx", "La meilleure recette de pâte à crêpes", 4),
             ("https://www.marmiton.org/recettes/recette_gateau-au-chocolat-fondant-rapide_166352.aspx", "Gâteau au chocolat fondant rapide", 3),
-            ("https://github.com/Fefe-Kurylen/jeu-final", "Fefe-Kurylen/jeu-final · GitHub", 2),
+            ("https://github.com/Fefe-Kurylen/qafila", "Fefe-Kurylen/qafila · GitHub", 2),
             ("https://www.openstreetmap.org", "OpenStreetMap", 1),
         ]
         tabs = demo.enumerated().map { i, d in

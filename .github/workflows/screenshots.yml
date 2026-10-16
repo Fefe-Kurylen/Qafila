@@ -6,8 +6,8 @@ name: Qafila captures stores
 on:
   workflow_dispatch:
   push:
-    branches: [claude/furtif-navigateur]
-    paths: [".github/workflows/qafila-screenshots.yml", "qafila/ios-browser/QafilaBrowser/**", "qafila/android-browser/app/src/**", "qafila/android-browser/play/capture-screenshots.sh"]
+    branches: [main]
+    paths: [".github/workflows/screenshots.yml", "ios-browser/QafilaBrowser/**", "android-browser/app/src/**", "android-browser/play/capture-screenshots.sh"]
 
 concurrency:
   group: qafila-screenshots-${{ github.ref }}
@@ -19,7 +19,7 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: qafila/ios-browser
+        working-directory: ios-browser
     steps:
       - uses: actions/checkout@v4
 
@@ -75,14 +75,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: store-screenshots-ios
-          path: qafila/ios-browser/store-screenshots/ios/*.png
+          path: ios-browser/store-screenshots/ios/*.png
 
   android:
     name: Captures Android
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: qafila/android-browser
+        working-directory: android-browser
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -112,10 +112,10 @@ jobs:
           profile: Nexus 5X
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          working-directory: qafila/android-browser
+          working-directory: android-browser
           script: ./play/capture-screenshots.sh
 
       - uses: actions/upload-artifact@v4
         with:
           name: store-screenshots-android
-          path: qafila/android-browser/store-screenshots/android/*.png
+          path: android-browser/store-screenshots/android/*.png

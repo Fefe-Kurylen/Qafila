@@ -7,7 +7,7 @@ les sites, JavaScript par site, lecteur, temps de lecture, navigateur par défau
 ## Compiler
 
 ```bash
-cd qafila/android-browser
+cd android-browser
 gradle assembleDebug            # ou ./gradlew si vous ajoutez le wrapper ; Android Studio fonctionne aussi (File > Open)
 # APK : app/build/outputs/apk/debug/app-debug.apk
 ```

@@ -507,7 +507,7 @@ private fun AboutPage(store: BrowserStore) {
         }
         Spacer(Modifier.height(20.dp))
         GroupCard {
-            ActionRow("Code source", icon = QIcon.CHEVRON_RIGHT) { store.showSettings.value = false; store.newTab(url = "https://github.com/Fefe-Kurylen/jeu-final") }
+            ActionRow("Code source", icon = QIcon.CHEVRON_RIGHT) { store.showSettings.value = false; store.newTab(url = "https://github.com/Fefe-Kurylen/qafila") }
         }
     }
 }
