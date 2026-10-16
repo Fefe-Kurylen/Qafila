@@ -15,6 +15,9 @@ on:
         options: [internal, alpha, beta, production]
         default: internal
 
+permissions:
+  contents: write
+
 concurrency:
   group: qafila-android-${{ github.ref }}
   cancel-in-progress: true
@@ -43,6 +46,26 @@ jobs:
         with:
           name: qafila-debug-apk
           path: android-browser/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Nommer l'APK de test
+        if: ${{ github.event_name == 'push' }}
+        run: cp app/build/outputs/apk/debug/app-debug.apk Qafila-Android-test.apk
+
+      # Release « test » toujours à jour : téléchargeable directement depuis le téléphone (onglet Releases du dépôt).
+      - name: Publier dans la release de test
+        if: ${{ github.event_name == 'push' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test
+          name: Version de test
+          prerelease: true
+          make_latest: false
+          body: |
+            Version de test de Qafila, refaite automatiquement à chaque modification.
+            
+            **Android** : ouvrir Qafila-Android-test.apk sur le téléphone et installer.
+            **iPhone** : installer Qafila-iPhone-test.ipa avec Sideloadly (identifiant Apple gratuit). Voir TESTER.md.
+          files: android-browser/Qafila-Android-test.apk
 
   release:
     name: Publier sur Google Play (${{ github.event.inputs.track }})

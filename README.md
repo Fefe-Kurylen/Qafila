@@ -1,5 +1,7 @@
 # 🦊 Qafila — recherche privée et navigateur mobile
 
+> 🧪 **Tester l'appli sur son téléphone, gratuitement** : voir [TESTER.md](TESTER.md) (Android en 2 minutes, iPhone via Sideloadly).
+
 Qafila est un moteur de recherche privé **type Qwant** : une page de recherche sans pisteur, des résultats
 agrégés depuis plusieurs sources, et une coque mobile (Capacitor) qui ouvre les sites dans un navigateur intégré.
 

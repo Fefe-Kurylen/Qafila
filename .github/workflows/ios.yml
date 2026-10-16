@@ -15,6 +15,9 @@ on:
         options: [build, beta, release]
         default: build
 
+permissions:
+  contents: write
+
 concurrency:
   group: qafila-ios-${{ github.ref }}
   cancel-in-progress: true
@@ -66,6 +69,26 @@ jobs:
         with:
           name: qafila-iphone-ipa
           path: ios-browser/Qafila-test.ipa
+
+      - name: Nommer l'IPA de test
+        if: ${{ github.event_name == 'push' }}
+        run: cp Qafila-test.ipa Qafila-iPhone-test.ipa
+
+      # Release « test » toujours à jour : téléchargeable directement depuis le téléphone (onglet Releases du dépôt).
+      - name: Publier dans la release de test
+        if: ${{ github.event_name == 'push' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test
+          name: Version de test
+          prerelease: true
+          make_latest: false
+          body: |
+            Version de test de Qafila, refaite automatiquement à chaque modification.
+            
+            **Android** : ouvrir Qafila-Android-test.apk sur le téléphone et installer.
+            **iPhone** : installer Qafila-iPhone-test.ipa avec Sideloadly (identifiant Apple gratuit). Voir TESTER.md.
+          files: ios-browser/Qafila-iPhone-test.ipa
 
       - name: TestFlight / App Store
         if: ${{ github.event.inputs.lane == 'beta' || github.event.inputs.lane == 'release' }}
