@@ -1,0 +1,43 @@
+{
+  "identifier": "5A1F0C3E",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_locale": "fr_FR",
+    "_storefront": "FRA"
+  },
+  "subscriptionGroups": [
+    {
+      "id": "21500000",
+      "localizations": [],
+      "name": "Soutien Qafila",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "0.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6500000001",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Soutenez Qafila et débloquez l'icône Or",
+              "displayName": "Soutenir Qafila",
+              "locale": "fr_FR"
+            }
+          ],
+          "productID": "qafila_soutien_mensuel",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Soutien mensuel",
+          "subscriptionGroupID": "21500000",
+          "type": "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

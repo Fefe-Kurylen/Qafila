@@ -15,13 +15,16 @@ settings:
     TARGETED_DEVICE_FAMILY: "1"
     SUPPORTS_MACCATALYST: NO
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-    ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Dark AppIcon-Ink AppIcon-Desert"
+    ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Dark AppIcon-Ink AppIcon-Desert AppIcon-Gold"
     ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 targets:
   QafilaBrowser:
     type: application
     platform: iOS
+    # Abonnement « Soutenir Qafila » simulé quand l'appli est lancée depuis Xcode (sans compte App Store Connect).
+    scheme:
+      storeKitConfiguration: Qafila.storekit
     sources:
       - path: QafilaBrowser
     info:

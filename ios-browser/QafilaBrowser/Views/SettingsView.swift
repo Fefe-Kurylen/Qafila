@@ -2,10 +2,11 @@ import SwiftUI
 import WebKit
 
 enum SettingsRoute: String, Hashable, CaseIterable, Identifiable {
-    case appearance, toolbar, address, tabs, search, privacy, reading, energy, about
+    case support, appearance, toolbar, address, tabs, search, privacy, reading, energy, about
     var id: String { rawValue }
     var title: String {
         switch self {
+        case .support: return "Soutenir Qafila"
         case .appearance: return "Apparence"
         case .toolbar: return "Barre d'outils"
         case .address: return "Barre d'adresse"
@@ -19,6 +20,7 @@ enum SettingsRoute: String, Hashable, CaseIterable, Identifiable {
     }
     var symbol: String {
         switch self {
+        case .support: return "heart.fill"
         case .appearance: return "paintpalette"
         case .toolbar: return "menubar.dock.rectangle"
         case .address: return "link"
@@ -32,6 +34,7 @@ enum SettingsRoute: String, Hashable, CaseIterable, Identifiable {
     }
     var tint: Color {
         switch self {
+        case .support: return Color(red: 0.93, green: 0.30, blue: 0.45)
         case .appearance: return Color(red: 0.55, green: 0.42, blue: 0.86)
         case .toolbar: return Color(red: 0.30, green: 0.33, blue: 0.40)
         case .address: return Color(red: 0.22, green: 0.48, blue: 0.86)
@@ -55,6 +58,7 @@ struct SettingsView: View {
         NavigationStack(path: $path) {
             List {
                 Section { ChromePreview().listRowInsets(EdgeInsets()).listRowBackground(Color.clear) }
+                Section { link(.support) }
                 Section { ForEach([SettingsRoute.appearance, .toolbar, .address, .tabs]) { link($0) } }
                 Section { ForEach([SettingsRoute.search, .privacy, .reading, .energy]) { link($0) } }
                 Section { link(.about) }
@@ -82,6 +86,7 @@ struct SettingsView: View {
     private func detail(_ r: SettingsRoute) -> String {
         let s = store.settings
         switch r {
+        case .support: return store.support.isSupporter ? "Merci ♥" : "\(store.support.price)/mois"
         case .appearance: return s.appearance.label
         case .toolbar: return s.toolbar.position.label
         case .address: return s.addressStyle.label
@@ -95,6 +100,7 @@ struct SettingsView: View {
 
     @ViewBuilder private func page(_ r: SettingsRoute) -> some View {
         switch r {
+        case .support: SupportSettings()
         case .appearance: AppearanceSettings()
         case .toolbar: ToolbarSettings()
         case .address: AddressSettings()
@@ -260,6 +266,7 @@ struct HostListView: View {
 
 struct AppearanceSettings: View {
     @EnvironmentObject var store: BrowserStore
+    @State private var showSupport = false
 
     var body: some View {
         List {
@@ -283,16 +290,25 @@ struct AppearanceSettings: View {
             } header: { Text("Style de la barre") } footer: {
                 Text("Classique : couleur pleine. Verre : translucide. Flottante : barre arrondie détachée des bords, la page passe autour.")
             }
-            Section("Icône de l'app") {
+            Section {
                 HStack(spacing: 0) {
                     ForEach(AppIconChoice.allCases) { icon in
-                        Button { store.settings.appIcon = icon } label: {
+                        let locked = icon.supportersOnly && !store.support.isSupporter
+                        Button {
+                            if locked { showSupport = true } else { store.settings.appIcon = icon }
+                        } label: {
                             VStack(spacing: 6) {
-                                Image(icon.preview).resizable().frame(width: 58, height: 58)
-                                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+                                Image(icon.preview).resizable().frame(width: 52, height: 52)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+                                    .overlay(alignment: .bottomTrailing) {
+                                        if locked {
+                                            Image(systemName: "lock.fill").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                                                .frame(width: 18, height: 18).background(Circle().fill(Color.black.opacity(0.75))).offset(x: 4, y: 4)
+                                        }
+                                    }
                                     .padding(3)
-                                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).strokeBorder(store.settings.appIcon == icon ? Color.accentColor : .clear, lineWidth: 2))
+                                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(store.settings.appIcon == icon ? Color.accentColor : .clear, lineWidth: 2))
                                 Text(icon.label).font(.system(size: 11)).foregroundStyle(store.settings.appIcon == icon ? .primary : .secondary)
                             }
                             .frame(maxWidth: .infinity)
@@ -301,11 +317,20 @@ struct AppearanceSettings: View {
                     }
                 }
                 .padding(.vertical, 6)
+            } header: { Text("Icône de l'app") } footer: {
+                Text(store.support.isSupporter ? "Merci de soutenir Qafila ♥ L'icône Or est à vous." : "L'icône Or est offerte aux personnes qui soutiennent Qafila (\(store.support.price)/mois).")
             }
             Section { Toggle("Vibrations", isOn: $store.settings.haptics) } footer: { Text("Retour haptique discret à l'ouverture, à la fermeture et sur les boutons.") }
         }
         .navigationTitle("Apparence")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showSupport) {
+            NavigationStack {
+                SupportSettings()
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("OK") { showSupport = false }.fontWeight(.semibold) } }
+            }
+            .environmentObject(store)
+        }
     }
 }
 
@@ -553,14 +578,18 @@ struct EnergySettings: View {
 // MARK: - À propos
 
 struct AboutSettings: View {
+    @EnvironmentObject var store: BrowserStore
     var body: some View {
         List {
             Section {
                 VStack(spacing: 4) {
-                    Image("PreviewIcon-Classic").resizable().frame(width: 72, height: 72).clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    Image(store.settings.appIcon.preview).resizable().frame(width: 72, height: 72).clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     Text("Qafila").font(.system(size: 28, weight: .medium, design: .serif)).padding(.top, 8)
                     Text("قافلة").font(.system(size: 17)).foregroundStyle(.secondary)
                     Text("« caravane » en arabe").font(.system(size: 13)).foregroundStyle(.tertiary)
+                    if store.support.isSupporter {
+                        Text("Merci pour votre soutien ♥").font(.system(size: 13, weight: .medium)).foregroundStyle(Color(red: 0.93, green: 0.30, blue: 0.45)).padding(.top, 6)
+                    }
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
                 .listRowBackground(Color.clear)
@@ -574,5 +603,85 @@ struct AboutSettings: View {
         }
         .navigationTitle("À propos")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Soutenir Qafila
+
+/// Abonnement de soutien (0,99 €/mois) : tout Qafila reste gratuit, le soutien offre l'icône exclusive « Or ».
+struct SupportSettings: View {
+    @EnvironmentObject var store: BrowserStore
+    @State private var manage = false
+    private var support: SupportStore { store.support }
+    private let pink = Color(red: 0.93, green: 0.30, blue: 0.45)
+
+    var body: some View {
+        List {
+            Section {
+                VStack(spacing: 10) {
+                    Image("PreviewIcon-Gold").resizable().frame(width: 92, height: 92)
+                        .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+                        .shadow(color: Color(red: 0.72, green: 0.53, blue: 0.18).opacity(0.35), radius: 16, y: 6)
+                    Text("Soutenir Qafila").font(.system(size: 24, weight: .semibold, design: .serif)).padding(.top, 6)
+                    Text("Qafila est gratuit, sans publicité ni pistage. Pour \(support.price) par mois, vous aidez à le garder ainsi — et débloquez l'icône exclusive « Or ».")
+                        .font(.system(size: 15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 8)
+                .listRowBackground(Color.clear)
+            }
+
+            Section {
+                if support.isSupporter {
+                    Label { Text("Vous soutenez Qafila. Merci ♥") } icon: { Image(systemName: "heart.fill").foregroundStyle(pink) }
+                    Button { store.settings.appIcon = .gold; store.haptic(.medium) } label: {
+                        Label(store.settings.appIcon == .gold ? "Icône Or utilisée" : "Utiliser l'icône Or", systemImage: "app.badge.checkmark")
+                    }
+                    .disabled(store.settings.appIcon == .gold)
+                    Button { manage = true } label: { Label("Gérer l'abonnement", systemImage: "creditcard") }
+                } else {
+                    Button { Task { await support.purchase(); if support.isSupporter { store.settings.appIcon = .gold } } } label: {
+                        HStack {
+                            Spacer()
+                            if support.busy { ProgressView().tint(.white) } else {
+                                Text("S'abonner — \(support.price)/mois").font(.system(size: 17, weight: .semibold))
+                            }
+                            Spacer()
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.vertical, 14)
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(pink))
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .disabled(support.busy)
+                }
+            }
+
+            Section {
+                Label("Icône exclusive « Or »", systemImage: "sparkles")
+                Label("Aucune publicité, aucun pistage, pour tout le monde", systemImage: "hand.raised")
+                Label("Résiliable à tout moment", systemImage: "arrow.uturn.backward")
+            } header: { Text("Ce que vous soutenez") }
+
+            Section {
+                Button("Restaurer mes achats") { Task { await support.restore() } }.disabled(support.busy)
+            } footer: {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Abonnement mensuel de \(support.price), renouvelé automatiquement sauf résiliation au moins 24 h avant la fin de la période. Le paiement est débité sur votre compte Apple. Gérez ou résiliez l'abonnement dans les réglages de votre compte Apple.")
+                    HStack(spacing: 14) {
+                        Link("Conditions d'utilisation", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                        Link("Confidentialité", destination: URL(string: "https://fefe-kurylen.github.io/Qafila/confidentialite.html")!)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Soutenir")
+        .navigationBarTitleDisplayMode(.inline)
+        .manageSubscriptionsSheet(isPresented: $manage)
+        .alert(support.message ?? "", isPresented: Binding(get: { support.message != nil }, set: { if !$0 { support.message = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
+        .task { await support.load() }
     }
 }

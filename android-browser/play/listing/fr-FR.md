@@ -43,4 +43,4 @@ FAITES-LE VÔTRE
 Toutes les fonctions sont gratuites, sans publicité ni abonnement.
 
 **Catégorie** : Communication  **Classification du contenu** : Tout public (navigateur : contenu web non contrôlé, à déclarer dans le questionnaire)
-**E-mail de contact** : felix.bois@wanadoo.fr  **Politique de confidentialité** : https://qafila.example.com/confidentialite
+**E-mail de contact** : felix.bois@wanadoo.fr  **Politique de confidentialité** : https://fefe-kurylen.github.io/Qafila/confidentialite.html

@@ -142,12 +142,14 @@ enum ScrollBehavior: String, Codable, CaseIterable, Identifiable {
 }
 
 enum AppIconChoice: String, Codable, CaseIterable, Identifiable {
-    case classic, dark, ink, desert
+    case classic, dark, ink, desert, gold
     var id: String { rawValue }
-    var label: String { switch self { case .classic: return "Classique"; case .dark: return "Nuit"; case .ink: return "Encre"; case .desert: return "Désert" } }
+    var label: String { switch self { case .classic: return "Classique"; case .dark: return "Nuit"; case .ink: return "Encre"; case .desert: return "Désert"; case .gold: return "Or" } }
     /// Nom de l'icône alternative (nil = icône principale).
-    var iconName: String? { switch self { case .classic: return nil; case .dark: return "AppIcon-Dark"; case .ink: return "AppIcon-Ink"; case .desert: return "AppIcon-Desert" } }
-    var preview: String { switch self { case .classic: return "PreviewIcon-Classic"; case .dark: return "PreviewIcon-Dark"; case .ink: return "PreviewIcon-Ink"; case .desert: return "PreviewIcon-Desert" } }
+    var iconName: String? { switch self { case .classic: return nil; case .dark: return "AppIcon-Dark"; case .ink: return "AppIcon-Ink"; case .desert: return "AppIcon-Desert"; case .gold: return "AppIcon-Gold" } }
+    var preview: String { switch self { case .classic: return "PreviewIcon-Classic"; case .dark: return "PreviewIcon-Dark"; case .ink: return "PreviewIcon-Ink"; case .desert: return "PreviewIcon-Desert"; case .gold: return "PreviewIcon-Gold" } }
+    /// Réservée aux personnes qui soutiennent Qafila.
+    var supportersOnly: Bool { self == .gold }
 }
 
 // MARK: - Barre d'adresse

@@ -67,8 +67,8 @@ jobs:
           shoot gallery 6-galerie
           shoot settings 7-reglages
           shoot start 8-accueil
+          shoot support 9-soutenir
           xcrun simctl ui "$UDID" appearance dark
-          shoot page-dark 9-page-sombre
           shoot floating-dark 10-flottante-sombre
           sips -g pixelWidth -g pixelHeight "$OUT"/*.png
 

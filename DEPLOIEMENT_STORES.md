@@ -6,9 +6,10 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 
 ## 0. Prérequis communs
 
-- [ ] Déployer le site Qafila (dossier `qafila/`) pour que la politique de confidentialité soit en ligne :
-      `https://<votre-domaine>/confidentialite` (page déjà incluse). Remplacer `qafila.example.com` par votre domaine dans
-      `ios-browser/fastlane/metadata/*/privacy_url.txt`, `marketing_url.txt` et `android-browser/play/listing/fr-FR.md`.
+- [ ] **Pages publiques** (assistance + confidentialité, exigées par les deux stores) : dépôt GitHub → *Settings* → *Pages* →
+      *Source* : **GitHub Actions**. Le workflow *Qafila pages publiques* publie alors le dossier `site/` sur
+      `https://fefe-kurylen.github.io/Qafila/` (assistance) et `…/confidentialite.html`. Ces adresses sont déjà dans les fiches.
+      ⚠️ Gratuit seulement si le dépôt est **public** (Pages sur dépôt privé = offre GitHub payante).
 - [x] Captures d'écran : **déjà prêtes**, générées par le workflow *Qafila captures stores* (vraie appli dans un simulateur iPhone 16 Pro Max
       et un émulateur Android) et rangées dans le dépôt :
       `ios-browser/fastlane/screenshots/fr-FR/` (6 × 1320×2868, format 6,9" — envoyées automatiquement par la lane `release`)
@@ -23,6 +24,14 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
       Noter l'**Issuer ID**, le **Key ID** et télécharger le fichier `.p8`.
 - [ ] Dans *Certificats, identifiants et profils* : créer l'**App ID** `fr.qafila.QafilaBrowser` (aucune capacité spéciale requise).
 - [ ] Dans App Store Connect → *Mes apps* → **+** : créer l'app « Qafila : Navigateur Internet », bundle `fr.qafila.QafilaBrowser`, SKU `qafila-browser`.
+
+### Abonnement « Soutenir Qafila » (0,99 €/mois, débloque l'icône Or)
+- [ ] App Store Connect → *Accords, taxes et services bancaires* : signer l'accord **Applications payantes**, ajouter compte bancaire et fiscalité.
+- [ ] App → *Abonnements* → créer le groupe **Soutien Qafila**, puis l'abonnement :
+      ID produit **`qafila_soutien_mensuel`**, durée **1 mois**, prix **0,99 €**, nom affiché « Soutenir Qafila »,
+      description « Soutenez Qafila et débloquez l'icône Or ». Ajouter la capture `9-soutenir.png` comme capture de vérification.
+- [ ] Le premier abonnement est soumis **avec** une version de l'app (cocher l'abonnement sur la page de la version avant l'envoi en validation).
+- Test sans payer : lancé depuis Xcode, l'appli utilise `ios-browser/Qafila.storekit` (achat simulé) ; dans TestFlight, les achats sont gratuits (bac à sable).
 
 ### Secrets GitHub (Settings → Secrets and variables → Actions)
 | Secret | Valeur |
@@ -54,6 +63,12 @@ Sans Mac, tout passe par GitHub Actions. Avec un Mac : `cd ios-browser && brew i
       `cd android-browser && ./scripts-keystore.sh`
 - [ ] Dans Play Console → *Configuration* → *Accès à l'API* : lier un projet Google Cloud, créer un **compte de service** avec le rôle
       *Administrateur de versions*, télécharger sa clé JSON, puis l'inviter dans *Utilisateurs et autorisations* de l'app.
+
+### Abonnement « Soutenir Qafila »
+- [ ] Play Console → *Paramètres* → *Profil de paiement* : créer le profil marchand (compte bancaire).
+- [ ] App → *Monétiser* → *Produits* → *Abonnements* : ID **`qafila_soutien_mensuel`**, une offre de base **mensuelle** à renouvellement
+      automatique, prix **0,99 €**. (Nécessite d'avoir envoyé au moins une version contenant la bibliothèque de facturation.)
+- [ ] *Paramètres* → *Test des licences* : ajouter votre adresse Gmail pour acheter en test sans être débité.
 
 ### Secrets GitHub
 | Secret | Valeur |

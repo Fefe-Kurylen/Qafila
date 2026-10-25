@@ -30,6 +30,7 @@ final class BrowserStore: ObservableObject {
     @Published var toast: String?
 
     let tabManager: TabManager
+    let support = SupportStore()
     private var saveTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
 
@@ -42,6 +43,13 @@ final class BrowserStore: ObservableObject {
         tabManager.store = self
         // Les vues observent le store : on relaie les changements du gestionnaire d'onglets (progression, état de navigation…).
         tabManager.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)
+        support.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)
+        // Fin du soutien : retour à l'icône classique.
+        support.onSupportEnded = { [weak self] in
+            guard let self, self.settings.appIcon.supportersOnly else { return }
+            self.settings.appIcon = .classic
+        }
+        if settings.appIcon.supportersOnly && !support.isSupporter { settings.appIcon = .classic }
         $tabs.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
         $bookmarks.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
         $history.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
@@ -297,6 +305,7 @@ final class BrowserStore: ObservableObject {
             case "settings": self.showSettings = true
             case "appearance": self.settingsRoute = .appearance; self.showSettings = true
             case "address": self.settingsRoute = .address; self.showSettings = true
+            case "support": self.settingsRoute = .support; self.showSettings = true
             case "gallery": self.showToolbarGallery = true
             default: break
             }
