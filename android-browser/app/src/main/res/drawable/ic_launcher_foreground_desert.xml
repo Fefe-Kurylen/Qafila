@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Pyramide Qafila, variante « desert » : face éclairée à gauche, face d'ombre à droite. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#C0703E" android:pathData="M50.3,36.1 L28.2,71.9 L58.6,71.9 Z" />
-    <path android:fillColor="#7A4E25" android:pathData="M50.3,36.1 L58.6,71.9 L79.8,71.9 Z" />
+    <path android:fillColor="#C0703E" android:pathData="M49.8,31.9 L24.6,72.9 L59.2,72.9 Z" />
+    <path android:fillColor="#7A4E25" android:pathData="M49.8,31.9 L59.2,72.9 L83.4,72.9 Z" />
 </vector>

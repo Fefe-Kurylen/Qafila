@@ -270,7 +270,7 @@ fun AppIconTile(icon: AppIcon, selected: Boolean, size: Dp = 58.dp, locked: Bool
             .clip(RoundedCornerShape(size * 0.21f)).background(bg)) {
             Canvas(Modifier.fillMaxSize()) {
                 val k = this.size.width / 108f
-                val z = 1.32f
+                val z = 1.6f
                 fun p(x: Float, y: Float) = Offset((54f + (x - 54f) * z) * k, (54f + (y - 52.5f) * z) * k)
                 val a = p(50f, 33f); val l = p(26f, 72f); val f = p(59f, 72f); val r = p(82f, 72f)
                 drawPath(Path().apply { moveTo(a.x, a.y); lineTo(l.x, l.y); lineTo(f.x, f.y); close() }, lit)
