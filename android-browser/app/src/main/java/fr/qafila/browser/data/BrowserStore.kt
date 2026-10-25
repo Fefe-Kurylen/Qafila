@@ -37,6 +37,7 @@ import java.net.URI
 enum class SettingsPage(val title: String) {
     ROOT("Réglages"), APPEARANCE("Apparence"), TOOLBAR("Barre d'outils"), ADDRESS("Barre d'adresse"), TABS("Onglets"), SEARCH("Recherche"),
     PRIVACY("Confidentialité"), READING("Lecture"), ENERGY("Énergie"), ABOUT("À propos"), EDITOR("Personnaliser"), GALLERY("Galerie de barres"),
+    SUPPORT("Soutenir Qafila"),
 }
 
 /** État global de l'application (onglets, favoris, historique, réglages) + persistance JSON. */
@@ -65,6 +66,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
     val powerSave = MutableStateFlow(false)
 
     val tabManager = TabManager(app, this, viewModelScope)
+    val support = SupportManager(app, viewModelScope)
     private val closedTabs = ArrayDeque<BrowserTab>()
     private var saveJob: Job? = null
     private val powerManager = app.getSystemService(PowerManager::class.java)
@@ -73,6 +75,9 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        // Fin du soutien (ou soutien jamais confirmé) : retour à l'icône classique.
+        support.onSupportEnded = { if (settings.appIcon.supportersOnly) updateSettings { it.copy(appIcon = AppIcon.CLASSIC) } }
+        if (settings.appIcon.supportersOnly && !support.isSupporter.value) updateSettings { it.copy(appIcon = AppIcon.CLASSIC) }
         autoCloseOldTabs()
         if (_state.value.tabs.isEmpty()) BrowserTab(url = newTabUrl()).let { t -> _state.update { it.copy(tabs = listOf(t), selectedTabId = t.id) } }
         if (_state.value.selectedTabId == null || _state.value.tabs.none { it.id == _state.value.selectedTabId }) _state.update { it.copy(selectedTabId = it.tabs.lastOrNull()?.id) }
@@ -358,7 +363,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // ----- Mode démo (captures d'écran des stores) : extra « demo » = page|floating|menu|tabs|editor|settings|gallery -----
+    // ----- Mode démo (captures d'écran des stores) : extra « demo » = page|floating|menu|tabs|editor|settings|gallery|support -----
     fun applyDemo(screen: String) {
         isEditingAddress.value = false
         tabs.forEach { tabManager.discard(it.id) }
@@ -393,6 +398,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
                 "editor" -> openSettings(SettingsPage.EDITOR, standalone = true)
                 "settings" -> openSettings(SettingsPage.ROOT)
                 "gallery" -> openSettings(SettingsPage.GALLERY, standalone = true)
+                "support" -> openSettings(SettingsPage.SUPPORT)
             }
         }
     }

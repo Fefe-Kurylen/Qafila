@@ -31,4 +31,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); store.handleIntent(intent) }
+
+    override fun onResume() { super.onResume(); store.support.refresh() }
 }

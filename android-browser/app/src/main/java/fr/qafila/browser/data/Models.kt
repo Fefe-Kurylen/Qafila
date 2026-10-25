@@ -208,9 +208,11 @@ enum class SearchEngine(val label: String, val needsBaseUrl: Boolean = false) {
     PT("Portugais", "pt"), NL("Néerlandais", "nl"), TR("Turc", "tr"), ZH("Chinois", "zh-CN"), JA("Japonais", "ja")
 }
 /** Icônes alternatives de l'application (activity-alias). */
-@Serializable enum class AppIcon(val label: String, val alias: String) {
+@Serializable enum class AppIcon(val label: String, val alias: String, val supportersOnly: Boolean = false) {
     CLASSIC("Classique", "fr.qafila.browser.IconClassic"), DARK("Sombre", "fr.qafila.browser.IconDark"),
-    INK("Encre", "fr.qafila.browser.IconInk"), DESERT("Désert", "fr.qafila.browser.IconDesert")
+    INK("Encre", "fr.qafila.browser.IconInk"), DESERT("Désert", "fr.qafila.browser.IconDesert"),
+    /** Réservée aux personnes qui soutiennent Qafila (abonnement 0,99 €/mois). */
+    GOLD("Or", "fr.qafila.browser.IconGold", supportersOnly = true),
 }
 
 @Serializable

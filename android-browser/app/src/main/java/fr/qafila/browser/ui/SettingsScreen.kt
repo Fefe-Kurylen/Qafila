@@ -33,6 +33,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.content.ContextWrapper
+import android.content.Context
+import android.app.Activity
+import fr.qafila.browser.data.SupportManager
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -100,6 +111,12 @@ private fun RootPage(store: BrowserStore, onDismiss: () -> Unit, open: (Settings
     QPage("Réglages", onBack = null, trailing = { TextAction("OK", onClick = onDismiss) }) {
         item {
             Spacer(Modifier.height(12.dp))
+            val supporter by store.support.isSupporter.collectAsState()
+            val price by store.support.price.collectAsState()
+            GroupCard {
+                NavRow("Soutenir Qafila", value = if (supporter) "Merci ♥" else "${price ?: SupportManager.FALLBACK_PRICE}/mois", icon = QIcon.HEART) { open(SettingsPage.SUPPORT) }
+            }
+            Spacer(Modifier.height(24.dp))
             GroupCard {
                 NavRow("Apparence", icon = QIcon.CONTRAST) { open(SettingsPage.APPEARANCE) }; RowDivider(50.dp)
                 NavRow("Barre d'outils", icon = QIcon.BAR) { open(SettingsPage.TOOLBAR) }; RowDivider(50.dp)
@@ -131,7 +148,8 @@ private fun RootPage(store: BrowserStore, onDismiss: () -> Unit, open: (Settings
 
 private fun LazyListScope.pageContent(store: BrowserStore, page: SettingsPage, open: (SettingsPage) -> Unit) {
     when (page) {
-        SettingsPage.APPEARANCE -> item { AppearancePage(store) }
+        SettingsPage.APPEARANCE -> item { AppearancePage(store, open) }
+        SettingsPage.SUPPORT -> item { SupportPage(store) }
         SettingsPage.TOOLBAR -> item { ToolbarPage(store, open) }
         SettingsPage.ADDRESS -> item { AddressPage(store) }
         SettingsPage.TABS -> item { TabsPage(store) }
@@ -159,8 +177,9 @@ private fun SegmentedSection(title: String, options: List<String>, selected: Int
 
 // ---------------------------------------------------------------- Apparence
 @Composable
-private fun AppearancePage(store: BrowserStore) {
+private fun AppearancePage(store: BrowserStore, open: (SettingsPage) -> Unit) {
     val s = settingsOf(store)
+    val supporter by store.support.isSupporter.collectAsState()
     val q = LocalQ.current
     fun up(c: (Settings) -> Settings) = store.updateSettings(c)
     Column {
@@ -188,15 +207,17 @@ private fun AppearancePage(store: BrowserStore) {
         GroupCard {
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 AppIcon.entries.forEach { ic ->
-                    Column(Modifier.pressFade { up { it.copy(appIcon = ic) } }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        AppIconTile(ic, selected = s.appIcon == ic)
+                    val locked = ic.supportersOnly && !supporter
+                    Column(Modifier.pressFade { if (locked) open(SettingsPage.SUPPORT) else up { it.copy(appIcon = ic) } }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        AppIconTile(ic, selected = s.appIcon == ic, size = 52.dp, locked = locked)
                         Spacer(Modifier.height(6.dp))
                         Text(ic.label, color = if (s.appIcon == ic) q.text else q.secondary, fontSize = 12.sp, fontWeight = if (s.appIcon == ic) FontWeight.SemiBold else FontWeight.Normal)
                     }
                 }
             }
         }
-        SectionFooter("L'icône change sur l'écran d'accueil après quelques secondes.")
+        SectionFooter(if (supporter) "Merci de soutenir Qafila ♥ L'icône Or est à vous. L'icône change sur l'écran d'accueil après quelques secondes."
+            else "L'icône Or est offerte aux personnes qui soutiennent Qafila. L'icône change sur l'écran d'accueil après quelques secondes.")
 
         SectionHeader("Retour haptique")
         GroupCard { ToggleRow("Vibrations", s.haptics) { v -> up { it.copy(haptics = v) } } }
@@ -231,18 +252,93 @@ private fun BarColorSection(title: String, selected: BarColor, dark: Boolean, on
     }
 }
 
-/** Aperçu des icônes alternatives (mêmes couleurs que les ressources du lanceur). */
+/** Aperçu des icônes de l'application : la pyramide, mêmes couleurs que les ressources du lanceur. */
 @Composable
-fun AppIconTile(icon: AppIcon, selected: Boolean) {
+fun AppIconTile(icon: AppIcon, selected: Boolean, size: Dp = 58.dp, locked: Boolean = false) {
     val q = LocalQ.current
-    val (bg, fg) = when (icon) {
-        AppIcon.CLASSIC -> Color.White to Color(0xFF17191C)
-        AppIcon.DARK -> Color(0xFF17191C) to Color.White
-        AppIcon.INK -> Color(0xFF14233C) to Color(0xFFF3EEE3)
-        AppIcon.DESERT -> Color(0xFFE9D7B7) to Color(0xFF7A4E25)
+    fun solid(c: Long) = SolidColor(Color(c))
+    fun grad(a: Long, b: Long) = Brush.verticalGradient(listOf(Color(a), Color(b)))
+    val (bg, lit, shade) = when (icon) {
+        AppIcon.CLASSIC -> Triple(Color.White, solid(0xFF4A4E57), solid(0xFF17191C))
+        AppIcon.DARK -> Triple(Color(0xFF17191C), solid(0xFFF2F4F7), solid(0xFF9FA6B0))
+        AppIcon.INK -> Triple(Color(0xFF14233C), solid(0xFFF3EEE3), solid(0xFFBFB49C))
+        AppIcon.DESERT -> Triple(Color(0xFFE9D7B7), solid(0xFFC0703E), solid(0xFF7A4E25))
+        AppIcon.GOLD -> Triple(Color(0xFF0E0E10), grad(0xFFF8DC8C, 0xFFD6A548), grad(0xFFB8862E, 0xFF7E5A1C))
     }
-    Box(Modifier.size(58.dp).border(if (selected) 2.dp else 0.5.dp, if (selected) q.text else q.separator, RoundedCornerShape(15.dp)).padding(3.dp).clip(RoundedCornerShape(12.dp)).background(bg), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(26.dp).border(7.dp, fg, CircleShape))
+    Box(Modifier.size(size)) {
+        Box(Modifier.fillMaxSize().border(if (selected) 2.dp else 0.5.dp, if (selected) q.text else q.separator, RoundedCornerShape(size * 0.26f)).padding(3.dp)
+            .clip(RoundedCornerShape(size * 0.21f)).background(bg)) {
+            Canvas(Modifier.fillMaxSize()) {
+                val k = this.size.width / 108f
+                val z = 1.32f
+                fun p(x: Float, y: Float) = Offset((54f + (x - 54f) * z) * k, (54f + (y - 52.5f) * z) * k)
+                val a = p(50f, 33f); val l = p(26f, 72f); val f = p(59f, 72f); val r = p(82f, 72f)
+                drawPath(Path().apply { moveTo(a.x, a.y); lineTo(l.x, l.y); lineTo(f.x, f.y); close() }, lit)
+                drawPath(Path().apply { moveTo(a.x, a.y); lineTo(f.x, f.y); lineTo(r.x, r.y); close() }, shade)
+            }
+        }
+        if (locked) Box(Modifier.align(Alignment.BottomEnd).size(20.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.75f)), contentAlignment = Alignment.Center) {
+            QIconView(QIcon.LOCK, "Réservée au soutien", Color.White, 12.dp)
+        }
+    }
+}
+
+// ---------------------------------------------------------------- Soutenir Qafila
+@Composable
+private fun SupportPage(store: BrowserStore) {
+    val q = LocalQ.current
+    val sup = store.support
+    val supporter by sup.isSupporter.collectAsState()
+    val price by sup.price.collectAsState()
+    val busy by sup.busy.collectAsState()
+    val message by sup.message.collectAsState()
+    val s = settingsOf(store)
+    val context = LocalContext.current
+    val p = price ?: SupportManager.FALLBACK_PRICE
+    val pink = Color(0xFFED4D73)
+    Column {
+        Column(Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            AppIconTile(AppIcon.GOLD, selected = false, size = 96.dp)
+            Spacer(Modifier.height(14.dp))
+            Text("Soutenir Qafila", color = q.text, fontSize = 24.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
+            Spacer(Modifier.height(8.dp))
+            Text("Qafila est gratuit, sans publicité ni pistage. Pour $p par mois, vous aidez à le garder ainsi — et débloquez l'icône exclusive « Or ».",
+                color = q.secondary, fontSize = 15.sp, lineHeight = 21.sp, textAlign = TextAlign.Center)
+        }
+        Spacer(Modifier.height(16.dp))
+        if (supporter) {
+            GroupCard {
+                ActionRow("Vous soutenez Qafila. Merci ♥", color = pink, icon = QIcon.HEART_FILLED) {}
+                RowDivider()
+                ActionRow(if (s.appIcon == AppIcon.GOLD) "Icône Or utilisée" else "Utiliser l'icône Or", icon = if (s.appIcon == AppIcon.GOLD) QIcon.CHECK else null) {
+                    store.updateSettings { it.copy(appIcon = AppIcon.GOLD) }
+                }
+                RowDivider()
+                ActionRow("Gérer l'abonnement", icon = QIcon.CHEVRON_RIGHT) { sup.manage(context) }
+            }
+        } else {
+            Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).background(pink.copy(alpha = if (busy) 0.6f else 1f))
+                .pressFade(enabled = !busy) { context.findActivity()?.let { sup.purchase(it) } }, contentAlignment = Alignment.Center) {
+                Text("S'abonner — $p/mois", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        SectionHeader("Ce que vous soutenez")
+        GroupCard {
+            ValueRow("Icône exclusive « Or »", "✦"); RowDivider()
+            ValueRow("Aucune publicité, aucun pistage", "pour tous"); RowDivider()
+            ValueRow("Résiliable à tout moment", "")
+        }
+        Spacer(Modifier.height(24.dp))
+        GroupCard { ActionRow("Restaurer mes achats") { sup.restore() } }
+        if (message != null) {
+            Spacer(Modifier.height(12.dp))
+            Text(message!!, Modifier.fillMaxWidth().padding(horizontal = 32.dp).pressFade { sup.message.value = null }, color = q.text, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
+        SectionFooter("Abonnement mensuel de $p, renouvelé automatiquement, résiliable à tout moment depuis Google Play. Le paiement est débité sur votre compte Google.")
+        Spacer(Modifier.height(10.dp))
+        Text("Politique de confidentialité", Modifier.padding(horizontal = 32.dp).pressFade {
+            store.showSettings.value = false; store.newTab(url = "https://fefe-kurylen.github.io/Qafila/confidentialite.html")
+        }, color = q.accent, fontSize = 13.sp)
     }
 }
 
@@ -495,6 +591,10 @@ private fun AboutPage(store: BrowserStore) {
             Spacer(Modifier.height(10.dp))
             Text("Qafila", color = q.text, fontSize = 26.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
             Text("قافلة", color = q.secondary, fontSize = 16.sp)
+            if (store.support.isSupporter.collectAsState().value) {
+                Spacer(Modifier.height(8.dp))
+                Text("Merci pour votre soutien ♥", color = Color(0xFFED4D73), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            }
         }
         GroupCard {
             ValueRow("Version", fr.qafila.browser.BuildConfig.VERSION_NAME); RowDivider()
@@ -507,7 +607,9 @@ private fun AboutPage(store: BrowserStore) {
         }
         Spacer(Modifier.height(20.dp))
         GroupCard {
-            ActionRow("Code source", icon = QIcon.CHEVRON_RIGHT) { store.showSettings.value = false; store.newTab(url = "https://github.com/Fefe-Kurylen/qafila") }
+            ActionRow("Code source", icon = QIcon.CHEVRON_RIGHT) { store.showSettings.value = false; store.newTab(url = "https://github.com/Fefe-Kurylen/Qafila") }
         }
     }
 }
+
+private tailrec fun Context.findActivity(): Activity? = when (this) { is Activity -> this; is ContextWrapper -> baseContext.findActivity(); else -> null }

@@ -27,6 +27,7 @@ enum class QIcon {
     BACK, FORWARD, SHARE, PLUS, CLOSE, RELOAD, SEARCH, DOTS, DOTS_CIRCLE, LINES_CIRCLE, TABS, PRIVATE, TRASH, STAR, STAR_FILLED, BOOK, CLOCK, COPY,
     FIND, SHIELD, SHIELD_SLASH, MOON, SUN, READER, JS, JS_SLASH, DESKTOP, TRANSLATE, TOP, BOTTOM, HOME, GEAR, SLIDERS, UNDO, ADDRESS, SEPARATOR,
     CHEVRON_RIGHT, CHEVRON_UP, CHEVRON_DOWN, CHEVRON_UPDOWN, CHECK, CONTRAST, BAR, GLOBE, LOCK, INFO, BATTERY, GRID, LIST, TEXT, MINUS, PHONE,
+    HEART, HEART_FILLED,
 }
 
 private val cache = HashMap<Pair<QIcon, IconWeight>, ImageVector>()
@@ -159,6 +160,14 @@ private fun build(icon: QIcon, w: Float): ImageVector {
         QIcon.LIST -> stroke { poly(8.5f, 6.5f, 20f, 6.5f); poly(8.5f, 12f, 20f, 12f); poly(8.5f, 17.5f, 20f, 17.5f); poly(4.5f, 6.5f, 4.6f, 6.5f); poly(4.5f, 12f, 4.6f, 12f); poly(4.5f, 17.5f, 4.6f, 17.5f) }
         QIcon.TEXT -> stroke { poly(3f, 18.5f, 8f, 5.5f, 13f, 18.5f); poly(4.9f, 13.6f, 11.1f, 13.6f); poly(15f, 18.5f, 18f, 10.5f, 21f, 18.5f); poly(16.1f, 15.6f, 19.9f, 15.6f) }
         QIcon.PHONE -> stroke { rrect(6.5f, 2.5f, 17.5f, 21.5f, 2.8f); poly(10.5f, 18.5f, 13.5f, 18.5f) }
+        QIcon.HEART, QIcon.HEART_FILLED -> {
+            val heart: PathBuilder.() -> Unit = {
+                moveTo(12f, 20f); curveTo(5.6f, 15.8f, 3f, 12.4f, 3f, 8.9f); curveTo(3f, 6.3f, 5f, 4.3f, 7.5f, 4.3f); curveTo(9.4f, 4.3f, 11f, 5.4f, 12f, 7f)
+                curveTo(13f, 5.4f, 14.6f, 4.3f, 16.5f, 4.3f); curveTo(19f, 4.3f, 21f, 6.3f, 21f, 8.9f); curveTo(21f, 12.4f, 18.4f, 15.8f, 12f, 20f); close()
+            }
+            if (icon == QIcon.HEART_FILLED) fill(heart)
+            stroke(heart)
+        }
     }
     return b.build()
 }
