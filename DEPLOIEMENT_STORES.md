@@ -20,7 +20,8 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 
 ### Comptes et identifiants
 - [ ] Adhérer à l'**Apple Developer Program** (99 €/an) : https://developer.apple.com/programs/enroll/
-- [ ] Dans App Store Connect → *Utilisateurs et accès* → *Clés d'intégration* : créer une **clé API App Store Connect** (rôle App Manager).
+- [ ] Dans App Store Connect → *Utilisateurs et accès* → *Intégrations* → *App Store Connect API* : créer une **clé API** avec le rôle **Admin**
+      (indispensable : c'est ce qui permet à Apple de gérer le certificat de signature dans le cloud, **sans Mac**).
       Noter l'**Issuer ID**, le **Key ID** et télécharger le fichier `.p8`.
 - [ ] Dans *Certificats, identifiants et profils* : créer l'**App ID** `fr.qafila.QafilaBrowser` (aucune capacité spéciale requise).
 - [ ] Dans App Store Connect → *Mes apps* → **+** : créer l'app « Qafila : Navigateur Internet », bundle `fr.qafila.QafilaBrowser`, SKU `qafila-browser`.
@@ -39,9 +40,8 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 | `APPLE_TEAM_ID` | Identifiant d'équipe (10 caractères, visible sur developer.apple.com/account) |
 | `APP_STORE_CONNECT_KEY_ID` | Key ID de la clé API |
 | `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID |
-| `APP_STORE_CONNECT_KEY_CONTENT` | Contenu du `.p8` encodé : `base64 -i AuthKey_XXXX.p8 \| pbcopy` |
-| `IOS_CERT_P12_BASE64` | Certificat de distribution exporté en `.p12` depuis Trousseau d'accès, encodé en base64 (`base64 -i cert.p12 \| pbcopy`) |
-| `IOS_CERT_PASSWORD` | Mot de passe choisi à l'export du `.p12` |
+| `APP_STORE_CONNECT_KEY_CONTENT` | Contenu du fichier `.p8`, **collé tel quel** (de `-----BEGIN PRIVATE KEY-----` à `-----END PRIVATE KEY-----`) |
+| `IOS_CERT_P12_BASE64` / `IOS_CERT_PASSWORD` | *Facultatifs* : inutiles avec la signature gérée par Apple (clé Admin). |
 
 ### Lancer
 - [ ] **Vérifier la compilation** : onglet *Actions* → *Qafila iOS* → *Run workflow* → lane `build`. Ce job tourne sur un Mac GitHub
