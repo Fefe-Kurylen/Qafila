@@ -55,7 +55,7 @@ jobs:
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/QafilaBrowser.app
           shoot() {
             xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
-            xcrun simctl launch "$UDID" "$BUNDLE" -QafilaDemo "$1"
+            xcrun simctl launch "$UDID" "$BUNDLE" -QafilaDemo "$1" -AppleLanguages "(fr)" -AppleLocale fr_FR
             sleep 16
             xcrun simctl io "$UDID" screenshot "$OUT/$2.png"
           }

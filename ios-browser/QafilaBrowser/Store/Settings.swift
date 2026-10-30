@@ -267,7 +267,8 @@ struct Settings: Codable, Equatable {
     var darkenOnlyInDarkMode: Bool = true
     var darkenHosts: Set<String> = []
     var textZoom: Double = 1.0
-    var translateLanguage: TranslateLanguage = .fr
+    /// Par défaut : la langue du téléphone si elle est proposée, sinon le français.
+    var translateLanguage: TranslateLanguage = TranslateLanguage(rawValue: Locale.current.language.languageCode?.identifier ?? "fr") ?? .fr
     var desktopByDefault: Bool = false
     var desktopHosts: Set<String> = []
     var customUserAgent: String = ""
