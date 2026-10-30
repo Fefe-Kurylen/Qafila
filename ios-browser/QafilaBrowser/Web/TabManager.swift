@@ -234,7 +234,7 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
 
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
         let a = UIAlertController(title: webView.url?.host, message: message, preferredStyle: .alert)
-        a.addAction(UIAlertAction(title: "Annuler", style: .cancel) { _ in completionHandler(false) })
+        a.addAction(UIAlertAction(title: L("Annuler"), style: .cancel) { _ in completionHandler(false) })
         a.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
         UIApplication.shared.topViewController?.present(a, animated: true)
     }

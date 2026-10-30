@@ -15,12 +15,12 @@ struct BrowserTab: Identifiable, Codable, Equatable {
     var themeColorHex: String?
 
     var host: String {
-        guard let h = url?.host else { return "Nouvel onglet" }
+        guard let h = url?.host else { return L("Nouvel onglet") }
         return h.hasPrefix("www.") ? String(h.dropFirst(4)) : h
     }
-    var displayTitle: String { title.isEmpty ? (url?.absoluteString ?? "Nouvel onglet") : title }
+    var displayTitle: String { title.isEmpty ? (url?.absoluteString ?? L("Nouvel onglet")) : title }
     var favicon: UIImage? { faviconData.flatMap(UIImage.init(data:)) }
-    var readingLabel: String? { readingMinutes > 0 ? "\(readingMinutes) min" : nil }
+    var readingLabel: String? { readingMinutes > 0 ? L("%ld min", readingMinutes) : nil }
 }
 
 struct Bookmark: Identifiable, Codable, Equatable {

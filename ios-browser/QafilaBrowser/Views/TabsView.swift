@@ -28,13 +28,13 @@ struct TabsView: View {
         guard s.groupTabsByDomain, query.isEmpty else { return [TabGroup(id: "all", title: "", tabs: all)] }
         var order: [String] = []; var dict: [String: [BrowserTab]] = [:]
         for t in all {
-            let key = t.url == nil ? "NOUVEAUX ONGLETS" : t.host.uppercased()
+            let key = t.url == nil ? L("NOUVEAUX ONGLETS") : t.host.uppercased()
             if dict[key] == nil { order.append(key) }
             dict[key, default: []].append(t)
         }
         var out = order.filter { (dict[$0]?.count ?? 0) > 1 }.map { TabGroup(id: $0, title: $0, tabs: dict[$0] ?? []) }
         let singles = order.filter { (dict[$0]?.count ?? 0) == 1 }.flatMap { dict[$0] ?? [] }
-        if !singles.isEmpty { out.append(TabGroup(id: "others", title: out.isEmpty ? "" : "AUTRES SITES", tabs: singles)) }
+        if !singles.isEmpty { out.append(TabGroup(id: "others", title: out.isEmpty ? "" : L("AUTRES SITES"), tabs: singles)) }
         return out
     }
 
@@ -55,7 +55,7 @@ struct TabsView: View {
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
-            TextField(showPrivate ? "Rechercher dans les onglets privés" : "Rechercher dans les onglets", text: $query)
+            TextField(showPrivate ? L("Rechercher dans les onglets privés") : L("Rechercher dans les onglets"), text: $query)
                 .font(.system(size: 15)).textInputAutocapitalization(.never).autocorrectionDisabled()
         }
         .padding(.horizontal, 12).frame(height: 38)
@@ -67,7 +67,7 @@ struct TabsView: View {
         VStack(spacing: 10) {
             Spacer()
             Image(systemName: showPrivate ? "hand.raised" : "square.on.square").font(.system(size: 34, weight: .light)).foregroundStyle(.tertiary)
-            Text(showPrivate ? "Aucun onglet privé" : "Aucun onglet").font(.system(size: 17, weight: .semibold))
+            Text(showPrivate ? L("Aucun onglet privé") : L("Aucun onglet")).font(.system(size: 17, weight: .semibold))
             if showPrivate { Text("Les onglets privés ne gardent ni historique ni cookies.").font(.system(size: 14)).foregroundStyle(.secondary) }
             Spacer(); Spacer()
         }
@@ -94,12 +94,12 @@ struct TabsView: View {
                 }
                 Section {
                     Button { withAnimation { showPrivate.toggle() } } label: {
-                        Label(showPrivate ? "Onglets normaux" : "Onglets privés", systemImage: showPrivate ? "square.on.square" : "hand.raised")
+                        Label(showPrivate ? L("Onglets normaux") : L("Onglets privés"), systemImage: showPrivate ? "square.on.square" : "hand.raised")
                     }
                 }
                 Section {
                     Button(role: .destructive) { store.closeAllTabs(privateOnly: showPrivate); if !showPrivate { dismiss() } } label: {
-                        Label("Fermer les \(visibleTabs.count) onglets", systemImage: "xmark")
+                        Label(L("Fermer les %ld onglets", visibleTabs.count), systemImage: "xmark")
                     }
                 }
             } label: {
@@ -124,8 +124,8 @@ struct TabsView: View {
 
     private var countLabel: String {
         let n = visibleTabs.count
-        let plural = n > 1 ? "s" : ""
-        return showPrivate ? "\(n) onglet\(plural) privé\(plural)" : "\(n) onglet\(plural)"
+        if showPrivate { return n > 1 ? L("%ld onglets privés", n) : L("%ld onglet privé", n) }
+        return n > 1 ? L("%ld onglets", n) : L("%ld onglet", n)
     }
 
     // MARK: Liste
@@ -160,7 +160,7 @@ struct TabsView: View {
                 Favicon(tab: tab, size: 26)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(tab.displayTitle).font(.system(size: 14, weight: .medium)).lineLimit(2).foregroundStyle(.primary).multilineTextAlignment(.leading)
-                    Text(tab.url == nil ? "PAGE DE DÉMARRAGE" : tab.host.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(.secondary).lineLimit(1)
+                    Text(tab.url == nil ? L("PAGE DE DÉMARRAGE") : tab.host.uppercased()).font(.system(size: 10, weight: .semibold)).tracking(0.5).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 6)
                 if s.addressShowsReadingTime, let r = tab.readingLabel { ReadingPill(text: r) }
@@ -176,7 +176,7 @@ struct TabsView: View {
 
     @ViewBuilder private func tabMenu(_ tab: BrowserTab) -> some View {
         Button { UIPasteboard.general.url = tab.url } label: { Label("Copier l'adresse", systemImage: "doc.on.doc") }
-        Button { store.toggleBookmark(tab) } label: { Label(store.isBookmarked(tab) ? "Retirer des favoris" : "Ajouter aux favoris", systemImage: "bookmark") }
+        Button { store.toggleBookmark(tab) } label: { Label(store.isBookmarked(tab) ? L("Retirer des favoris") : L("Ajouter aux favoris"), systemImage: "bookmark") }
         if let u = tab.url { Button { store.newTab(url: u, isPrivate: tab.isPrivate, select: false) } label: { Label("Dupliquer", systemImage: "plus.square.on.square") } }
         Divider()
         Button(role: .destructive) { store.close(tabID: tab.id) } label: { Label("Fermer", systemImage: "xmark") }

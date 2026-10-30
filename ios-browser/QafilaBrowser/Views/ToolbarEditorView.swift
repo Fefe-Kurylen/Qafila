@@ -89,7 +89,7 @@ struct ToolbarEditorView: View {
             }
             .frame(width: 26)
             .foregroundStyle(a.isDestructive ? Color.red : a == .separator ? Color.secondary : Color.primary)
-            Text(a == .separator ? "— Séparateur —" : a.label).foregroundStyle(a == .separator ? .secondary : .primary)
+            Text(a == .separator ? L("— Séparateur —") : a.label).foregroundStyle(a == .separator ? .secondary : .primary)
             Spacer()
             if a != .separator && a != .address {
                 Menu {
@@ -99,7 +99,7 @@ struct ToolbarEditorView: View {
                         Picker("Taille", selection: slot.size) { ForEach(ButtonSize.allCases) { Text($0.label).tag($0) } }
                     }
                 } label: {
-                    Text(inMenu ? (slot.wrappedValue.showsLabel ? "Ligne" : "Tuile") : slot.wrappedValue.size.label)
+                    Text(inMenu ? (slot.wrappedValue.showsLabel ? L("Ligne") : L("Tuile")) : slot.wrappedValue.size.label)
                         .font(.system(size: 13)).foregroundStyle(.secondary)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Capsule().fill(Color.primary.opacity(0.06)))

@@ -14,34 +14,34 @@ enum ToolbarAction: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .back: return "Précédent"
-        case .forward: return "Suivant"
-        case .reload: return "Recharger"
-        case .stop: return "Arrêter"
-        case .tabs: return "Onglets"
-        case .newTab: return "Nouvel onglet"
-        case .newPrivateTab: return "Onglet privé"
-        case .closeTab: return "Fermer l'onglet"
-        case .closeAllTabs: return "Fermer tous les onglets"
-        case .bookmarks: return "Favoris"
-        case .addBookmark: return "Ajouter aux favoris"
-        case .history: return "Historique"
-        case .share: return "Partager"
-        case .find: return "Rechercher dans la page"
-        case .blocker: return "Bloqueur"
-        case .darken: return "Assombrir"
-        case .reader: return "Lecteur"
-        case .javascript: return "JavaScript"
-        case .desktopSite: return "Version bureau"
-        case .translate: return "Traduire"
-        case .scrollTop: return "Haut de page"
-        case .scrollBottom: return "Bas de page"
-        case .home: return "Accueil"
-        case .settings: return "Réglages"
-        case .customize: return "Personnaliser"
-        case .menu: return "Menu"
-        case .address: return "Adresse"
-        case .separator: return "Séparateur"
+        case .back: return L("Précédent")
+        case .forward: return L("Suivant")
+        case .reload: return L("Recharger")
+        case .stop: return L("Arrêter")
+        case .tabs: return L("Onglets")
+        case .newTab: return L("Nouvel onglet")
+        case .newPrivateTab: return L("Onglet privé")
+        case .closeTab: return L("Fermer l'onglet")
+        case .closeAllTabs: return L("Fermer tous les onglets")
+        case .bookmarks: return L("Favoris")
+        case .addBookmark: return L("Ajouter aux favoris")
+        case .history: return L("Historique")
+        case .share: return L("Partager")
+        case .find: return L("Rechercher dans la page")
+        case .blocker: return L("Bloqueur")
+        case .darken: return L("Assombrir")
+        case .reader: return L("Lecteur")
+        case .javascript: return L("JavaScript")
+        case .desktopSite: return L("Version bureau")
+        case .translate: return L("Traduire")
+        case .scrollTop: return L("Haut de page")
+        case .scrollBottom: return L("Bas de page")
+        case .home: return L("Accueil")
+        case .settings: return L("Réglages")
+        case .customize: return L("Personnaliser")
+        case .menu: return L("Menu")
+        case .address: return L("Adresse")
+        case .separator: return L("Séparateur")
         }
     }
 
@@ -78,6 +78,17 @@ enum ToolbarAction: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Libellé court sous une tuile du menu.
+    var tileLabel: String {
+        switch self {
+        case .find: return L("Rechercher")
+        case .addBookmark: return L("Favori")
+        case .closeAllTabs: return L("Tout fermer")
+        case .desktopSite: return L("Bureau")
+        default: return label
+        }
+    }
+
     /// Les actions destructives sont affichées en rouge dans le menu, comme dans Quiche.
     var isDestructive: Bool { self == .closeTab || self == .closeAllTabs }
 }
@@ -85,7 +96,7 @@ enum ToolbarAction: String, Codable, CaseIterable, Identifiable {
 enum ButtonSize: String, Codable, CaseIterable, Identifiable {
     case small, medium, large
     var id: String { rawValue }
-    var label: String { switch self { case .small: return "Petit"; case .medium: return "Moyen"; case .large: return "Grand" } }
+    var label: String { switch self { case .small: return L("Petit"); case .medium: return L("Moyen"); case .large: return L("Grand") } }
     var pointSize: CGFloat { switch self { case .small: return 17; case .medium: return 20; case .large: return 23 } }
 }
 
@@ -110,10 +121,13 @@ struct ToolbarConfig: Codable, Equatable {
     /// Menu standard (celui de Quiche) : tuiles nouvel onglet / privé, rangée d'icônes, lignes d'actions, fermetures en rouge, navigation.
     static let standardMenu: [ToolbarSlot] = {
         func s(_ a: ToolbarAction, label: Bool = true) -> ToolbarSlot { ToolbarSlot(action: a, showsLabel: label) }
+        // Comme Quiche : tuiles « Nouvel onglet / Onglet privé », lignes d'actions, fermetures en rouge,
+        // tuiles « Rechercher / Onglets / Partager », puis la navigation.
         return [s(.newTab, label: false), s(.newPrivateTab, label: false), s(.separator),
-                s(.history, label: false), s(.bookmarks, label: false), s(.addBookmark, label: false), s(.share, label: false), s(.separator),
-                s(.blocker), s(.darken), s(.reader), s(.javascript), s(.desktopSite), s(.translate), s(.find), s(.separator),
+                s(.history), s(.bookmarks), s(.addBookmark), s(.separator),
+                s(.blocker), s(.darken), s(.reader), s(.desktopSite), s(.translate), s(.separator),
                 s(.closeTab), s(.closeAllTabs), s(.separator),
+                s(.find, label: false), s(.tabs, label: false), s(.share, label: false), s(.separator),
                 s(.back, label: false), s(.forward, label: false), s(.reload, label: false), s(.settings, label: false)]
     }()
 
@@ -135,16 +149,16 @@ struct ToolbarConfig: Codable, Equatable {
         case complete, navigation, tools, reader, minimal, zen
         var id: String { rawValue }
         var label: String {
-            switch self { case .complete: return "Complète"; case .navigation: return "Navigation"; case .tools: return "Outils"; case .reader: return "Lecteur"; case .minimal: return "Minimal"; case .zen: return "Zen" }
+            switch self { case .complete: return L("Complète"); case .navigation: return L("Navigation"); case .tools: return L("Outils"); case .reader: return L("Lecteur"); case .minimal: return L("Minimal"); case .zen: return L("Zen") }
         }
         var description: String {
             switch self {
-            case .complete: return "Les boutons essentiels, à portée de pouce."
-            case .navigation: return "Précédent, suivant, onglets — et fermer d'un geste."
-            case .tools: return "Recharger, version bureau et lecteur en accès direct."
-            case .reader: return "Traduire, lecteur, JavaScript : pensée pour lire."
-            case .minimal: return "L'adresse dans la barre, onglets et menu. Rien d'autre."
-            case .zen: return "Une seule ligne : nouvel onglet, adresse, onglets, fermer."
+            case .complete: return L("Les boutons essentiels, à portée de pouce.")
+            case .navigation: return L("Précédent, suivant, onglets — et fermer d'un geste.")
+            case .tools: return L("Recharger, version bureau et lecteur en accès direct.")
+            case .reader: return L("Traduire, lecteur, JavaScript : pensée pour lire.")
+            case .minimal: return L("L'adresse dans la barre, onglets et menu. Rien d'autre.")
+            case .zen: return L("Une seule ligne : nouvel onglet, adresse, onglets, fermer.")
             }
         }
     }

@@ -13,7 +13,7 @@ struct BookmarksView: View {
         NavigationStack {
             List {
                 if let t = store.selectedTab, t.url != nil, !store.isBookmarked(t) {
-                    Button { store.toggleBookmark(t) } label: { Label("Ajouter « \(t.displayTitle) »", systemImage: "star.fill") }
+                    Button { store.toggleBookmark(t) } label: { Label(L("Ajouter « %@ »", t.displayTitle), systemImage: "star.fill") }
                 }
                 ForEach(items) { b in
                     Button { open(b.url) } label: {

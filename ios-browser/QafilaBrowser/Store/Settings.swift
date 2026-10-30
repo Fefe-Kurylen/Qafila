@@ -7,17 +7,17 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .duckduckgo: return "DuckDuckGo"
-        case .kagi: return "Kagi"
-        case .qwant: return "Qwant"
-        case .brave: return "Brave Search"
-        case .startpage: return "Startpage"
-        case .ecosia: return "Ecosia"
-        case .google: return "Google"
-        case .bing: return "Bing"
-        case .searxng: return "SearXNG (instance)"
-        case .qafila: return "Qafila (mon serveur)"
-        case .custom: return "Personnalisé"
+        case .duckduckgo: return L("DuckDuckGo")
+        case .kagi: return L("Kagi")
+        case .qwant: return L("Qwant")
+        case .brave: return L("Brave Search")
+        case .startpage: return L("Startpage")
+        case .ecosia: return L("Ecosia")
+        case .google: return L("Google")
+        case .bing: return L("Bing")
+        case .searxng: return L("SearXNG (instance)")
+        case .qafila: return L("Qafila (mon serveur)")
+        case .custom: return L("Personnalisé")
         }
     }
     var needsBaseURL: Bool { self == .qafila || self == .searxng }
@@ -55,7 +55,7 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
 enum SuggestionsMode: String, Codable, CaseIterable, Identifiable {
     case everywhere, notPrivate, never
     var id: String { rawValue }
-    var label: String { switch self { case .everywhere: return "Partout"; case .notPrivate: return "Sauf en navigation privée"; case .never: return "Jamais" } }
+    var label: String { switch self { case .everywhere: return L("Partout"); case .notPrivate: return L("Sauf en navigation privée"); case .never: return L("Jamais") } }
 }
 
 // MARK: - Apparence
@@ -63,7 +63,7 @@ enum SuggestionsMode: String, Codable, CaseIterable, Identifiable {
 enum Appearance: String, Codable, CaseIterable, Identifiable {
     case system, light, dark
     var id: String { rawValue }
-    var label: String { switch self { case .system: return "Système"; case .light: return "Clair"; case .dark: return "Sombre" } }
+    var label: String { switch self { case .system: return L("Système"); case .light: return L("Clair"); case .dark: return L("Sombre") } }
     var colorScheme: ColorScheme? { switch self { case .system: return nil; case .light: return .light; case .dark: return .dark } }
 }
 
@@ -71,7 +71,7 @@ enum AccentColor: String, Codable, CaseIterable, Identifiable {
     case mono, indigo, blue, teal, green, orange, pink, red
     var id: String { rawValue }
     var label: String {
-        switch self { case .mono: return "Monochrome"; case .indigo: return "Indigo"; case .blue: return "Bleu"; case .teal: return "Turquoise"; case .green: return "Vert"; case .orange: return "Orange"; case .pink: return "Rose"; case .red: return "Rouge" }
+        switch self { case .mono: return L("Monochrome"); case .indigo: return L("Indigo"); case .blue: return L("Bleu"); case .teal: return L("Turquoise"); case .green: return L("Vert"); case .orange: return L("Orange"); case .pink: return L("Rose"); case .red: return L("Rouge") }
     }
     var color: Color {
         switch self {
@@ -92,7 +92,7 @@ enum BarColor: String, Codable, CaseIterable, Identifiable {
     case auto, white, mist, lilac, blush, slate, graphite, black
     var id: String { rawValue }
     var label: String {
-        switch self { case .auto: return "Auto (couleur du site)"; case .white: return "Blanc"; case .mist: return "Gris clair"; case .lilac: return "Lilas"; case .blush: return "Rose"; case .slate: return "Ardoise"; case .graphite: return "Graphite"; case .black: return "Noir" }
+        switch self { case .auto: return L("Auto (couleur du site)"); case .white: return L("Blanc"); case .mist: return L("Gris clair"); case .lilac: return L("Lilas"); case .blush: return L("Rose"); case .slate: return L("Ardoise"); case .graphite: return L("Graphite"); case .black: return L("Noir") }
     }
     var color: Color? {
         switch self {
@@ -111,19 +111,19 @@ enum BarColor: String, Codable, CaseIterable, Identifiable {
 enum ToolbarStyle: String, Codable, CaseIterable, Identifiable {
     case classic, glass, floating
     var id: String { rawValue }
-    var label: String { switch self { case .classic: return "Classique"; case .glass: return "Verre"; case .floating: return "Flottante" } }
+    var label: String { switch self { case .classic: return L("Classique"); case .glass: return L("Verre"); case .floating: return L("Flottante") } }
 }
 
 enum ToolbarPosition: String, Codable, CaseIterable, Identifiable {
     case bottom, top
     var id: String { rawValue }
-    var label: String { self == .bottom ? "En bas" : "En haut" }
+    var label: String { self == .bottom ? L("En bas") : L("En haut") }
 }
 
 enum ButtonWeight: String, Codable, CaseIterable, Identifiable {
     case thin, regular, bold
     var id: String { rawValue }
-    var label: String { switch self { case .thin: return "Fine"; case .regular: return "Normale"; case .bold: return "Grasse" } }
+    var label: String { switch self { case .thin: return L("Fine"); case .regular: return L("Normale"); case .bold: return L("Grasse") } }
     var fontWeight: Font.Weight { switch self { case .thin: return .light; case .regular: return .regular; case .bold: return .semibold } }
     var stroke: CGFloat { switch self { case .thin: return 1.1; case .regular: return 1.5; case .bold: return 2 } }
 }
@@ -131,20 +131,20 @@ enum ButtonWeight: String, Codable, CaseIterable, Identifiable {
 enum MenuIconStyle: String, Codable, CaseIterable, Identifiable {
     case dots, dotsCircle, linesCircle
     var id: String { rawValue }
-    var label: String { switch self { case .dots: return "Points"; case .dotsCircle: return "Points cerclés"; case .linesCircle: return "Lignes cerclées" } }
+    var label: String { switch self { case .dots: return L("Points"); case .dotsCircle: return L("Points cerclés"); case .linesCircle: return L("Lignes cerclées") } }
     var symbol: String { switch self { case .dots: return "ellipsis"; case .dotsCircle: return "ellipsis.circle"; case .linesCircle: return "line.3.horizontal.circle" } }
 }
 
 enum ScrollBehavior: String, Codable, CaseIterable, Identifiable {
     case fixed, shrink, hide
     var id: String { rawValue }
-    var label: String { switch self { case .fixed: return "Fixe"; case .shrink: return "Réduire"; case .hide: return "Masquer" } }
+    var label: String { switch self { case .fixed: return L("Fixe"); case .shrink: return L("Réduire"); case .hide: return L("Masquer") } }
 }
 
 enum AppIconChoice: String, Codable, CaseIterable, Identifiable {
     case classic, dark, ink, desert, gold
     var id: String { rawValue }
-    var label: String { switch self { case .classic: return "Classique"; case .dark: return "Nuit"; case .ink: return "Encre"; case .desert: return "Désert"; case .gold: return "Or" } }
+    var label: String { switch self { case .classic: return L("Classique"); case .dark: return L("Nuit"); case .ink: return L("Encre"); case .desert: return L("Désert"); case .gold: return L("Or") } }
     /// Nom de l'icône alternative (nil = icône principale).
     var iconName: String? { switch self { case .classic: return nil; case .dark: return "AppIcon-Dark"; case .ink: return "AppIcon-Ink"; case .desert: return "AppIcon-Desert"; case .gold: return "AppIcon-Gold" } }
     var preview: String { switch self { case .classic: return "PreviewIcon-Classic"; case .dark: return "PreviewIcon-Dark"; case .ink: return "PreviewIcon-Ink"; case .desert: return "PreviewIcon-Desert"; case .gold: return "PreviewIcon-Gold" } }
@@ -158,20 +158,20 @@ enum AddressStyle: String, Codable, CaseIterable, Identifiable {
     case card, fullURL, domainPill, titleReading, centered, hidden
     var id: String { rawValue }
     var label: String {
-        switch self { case .card: return "Carte"; case .fullURL: return "Adresse complète"; case .domainPill: return "Domaine centré"; case .titleReading: return "Titre et lecture"; case .centered: return "Centré sans carte"; case .hidden: return "Masquée" }
+        switch self { case .card: return L("Carte"); case .fullURL: return L("Adresse complète"); case .domainPill: return L("Domaine centré"); case .titleReading: return L("Titre et lecture"); case .centered: return L("Centré sans carte"); case .hidden: return L("Masquée") }
     }
 }
 
 enum AddressTapAction: String, Codable, CaseIterable, Identifiable {
     case edit, menu
     var id: String { rawValue }
-    var label: String { self == .edit ? "Modifier l'adresse" : "Ouvrir le menu" }
+    var label: String { self == .edit ? L("Modifier l'adresse") : L("Ouvrir le menu") }
 }
 
 enum AddressLongPressAction: String, Codable, CaseIterable, Identifiable {
     case menu, copy, none
     var id: String { rawValue }
-    var label: String { switch self { case .menu: return "Ouvrir le menu"; case .copy: return "Copier l'adresse"; case .none: return "Rien" } }
+    var label: String { switch self { case .menu: return L("Ouvrir le menu"); case .copy: return L("Copier l'adresse"); case .none: return L("Rien") } }
 }
 
 // MARK: - Onglets
@@ -179,31 +179,31 @@ enum AddressLongPressAction: String, Codable, CaseIterable, Identifiable {
 enum TabsLayout: String, Codable, CaseIterable, Identifiable {
     case list, grid
     var id: String { rawValue }
-    var label: String { self == .list ? "Liste" : "Grille" }
+    var label: String { self == .list ? L("Liste") : L("Grille") }
 }
 
 enum TabsSort: String, Codable, CaseIterable, Identifiable {
     case date, readingTime, title
     var id: String { rawValue }
-    var label: String { switch self { case .date: return "Date"; case .readingTime: return "Temps de lecture"; case .title: return "Titre" } }
+    var label: String { switch self { case .date: return L("Date"); case .readingTime: return L("Temps de lecture"); case .title: return L("Titre") } }
 }
 
 enum ThumbnailSize: String, Codable, CaseIterable, Identifiable {
     case small, large
     var id: String { rawValue }
-    var label: String { self == .small ? "Petites" : "Grandes" }
+    var label: String { self == .small ? L("Petites") : L("Grandes") }
 }
 
 enum NewTabPage: String, Codable, CaseIterable, Identifiable {
     case start, search, blank, custom
     var id: String { rawValue }
-    var label: String { switch self { case .start: return "Démarrage"; case .search: return "Moteur de recherche"; case .blank: return "Page vide"; case .custom: return "Site personnalisé" } }
+    var label: String { switch self { case .start: return L("Démarrage"); case .search: return L("Moteur de recherche"); case .blank: return L("Page vide"); case .custom: return L("Site personnalisé") } }
 }
 
 enum AutoCloseTabs: String, Codable, CaseIterable, Identifiable {
     case never, day, week, month
     var id: String { rawValue }
-    var label: String { switch self { case .never: return "Jamais"; case .day: return "Après 1 jour"; case .week: return "Après 1 semaine"; case .month: return "Après 1 mois" } }
+    var label: String { switch self { case .never: return L("Jamais"); case .day: return L("Après 1 jour"); case .week: return L("Après 1 semaine"); case .month: return L("Après 1 mois") } }
     var interval: TimeInterval? { switch self { case .never: return nil; case .day: return 86_400; case .week: return 604_800; case .month: return 2_592_000 } }
 }
 
@@ -212,7 +212,7 @@ enum AutoCloseTabs: String, Codable, CaseIterable, Identifiable {
 enum TranslateLanguage: String, Codable, CaseIterable, Identifiable {
     case fr, en, ar, es, de, it, pt
     var id: String { rawValue }
-    var label: String { switch self { case .fr: return "Français"; case .en: return "Anglais"; case .ar: return "Arabe"; case .es: return "Espagnol"; case .de: return "Allemand"; case .it: return "Italien"; case .pt: return "Portugais" } }
+    var label: String { switch self { case .fr: return L("Français"); case .en: return L("Anglais"); case .ar: return L("Arabe"); case .es: return L("Espagnol"); case .de: return L("Allemand"); case .it: return L("Italien"); case .pt: return L("Portugais") } }
 }
 
 // MARK: - Réglages

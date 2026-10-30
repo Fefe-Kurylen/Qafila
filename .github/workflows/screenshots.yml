@@ -71,11 +71,28 @@ jobs:
           xcrun simctl ui "$UDID" appearance dark
           shoot floating-dark 10-flottante-sombre
           sips -g pixelWidth -g pixelHeight "$OUT"/*.png
+          # Vérification des traductions (hors captures des stores) : arabe (droite à gauche), anglais, allemand.
+          xcrun simctl ui "$UDID" appearance light
+          LANGS=store-screenshots/ios-langues
+          mkdir -p "$LANGS"
+          shootl() {
+            xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
+            xcrun simctl launch "$UDID" "$BUNDLE" -QafilaDemo "$2" -AppleLanguages "($1)" -AppleLocale "$1"
+            sleep 16
+            xcrun simctl io "$UDID" screenshot "$LANGS/$1-$2.png"
+          }
+          shootl ar menu
+          shootl ar settings
+          shootl en menu
+          shootl en settings
+          shootl de appearance
 
       - uses: actions/upload-artifact@v4
         with:
           name: store-screenshots-ios
-          path: ios-browser/store-screenshots/ios/*.png
+          path: |
+            ios-browser/store-screenshots/ios/*.png
+            ios-browser/store-screenshots/ios-langues/*.png
 
   android:
     name: Captures Android

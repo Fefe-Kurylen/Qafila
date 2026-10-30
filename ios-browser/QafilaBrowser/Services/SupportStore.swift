@@ -54,19 +54,19 @@ final class SupportStore: ObservableObject {
         busy = true
         defer { busy = false }
         if product == nil { await load() }
-        guard let product else { message = "Achat indisponible pour le moment. Réessayez plus tard."; return }
+        guard let product else { message = L("Achat indisponible pour le moment. Réessayez plus tard."); return }
         do {
             switch try await product.purchase() {
             case .success(let result):
                 if case .verified(let t) = result { await t.finish() }
                 await refresh()
-                if isSupporter { message = "Merci pour votre soutien ♥" }
-            case .pending: message = "Achat en attente de validation."
+                if isSupporter { message = L("Merci pour votre soutien ♥") }
+            case .pending: message = L("Achat en attente de validation.")
             case .userCancelled: break
             @unknown default: break
             }
         } catch {
-            message = "L'achat n'a pas abouti : \(error.localizedDescription)"
+            message = L("L'achat n'a pas abouti : %@", error.localizedDescription)
         }
     }
 
@@ -75,7 +75,7 @@ final class SupportStore: ObservableObject {
         defer { busy = false }
         try? await AppStore.sync()
         await refresh()
-        message = isSupporter ? "Abonnement retrouvé. Merci ♥" : "Aucun abonnement trouvé pour ce compte Apple."
+        message = isSupporter ? L("Abonnement retrouvé. Merci ♥") : L("Aucun abonnement trouvé pour ce compte Apple.")
     }
 
     /// Mode démo (captures) : simule un soutien actif.

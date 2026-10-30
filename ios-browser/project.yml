@@ -1,6 +1,7 @@
 # Projet Xcode généré avec XcodeGen : `brew install xcodegen && xcodegen generate` puis ouvrir QafilaBrowser.xcodeproj
 name: QafilaBrowser
 options:
+  developmentLanguage: fr
   bundleIdPrefix: fr.qafila
   deploymentTarget:
     iOS: "17.0"
@@ -44,6 +45,6 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         ITSAppUsesNonExemptEncryption: false
-        CFBundleLocalizations: [fr, en]
+        CFBundleLocalizations: [fr, en, ar, es, de]
         CFBundleDevelopmentRegion: fr
         LSApplicationCategoryType: public.app-category.utilities

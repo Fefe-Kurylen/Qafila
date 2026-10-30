@@ -60,14 +60,14 @@ struct FloatingMenu: View {
     }
 
     private func tileRow(_ slots: [ToolbarSlot]) -> some View {
-        let labelled = slots.count <= 2
+        let labelled = slots.count <= 3
         return HStack(spacing: 0) {
             ForEach(Array(slots.enumerated()), id: \.element.id) { i, slot in
                 if i > 0 { Divider().frame(height: labelled ? 36 : 24) }
                 Button { act(slot.action) } label: {
                     VStack(spacing: 5) {
                         ActionGlyph(action: slot.action, size: labelled ? 19 : 18, tint: slot.action.isDestructive ? .red : nil)
-                        if labelled { Text(slot.action.label).font(.system(size: 12)).foregroundStyle(.primary).lineLimit(1) }
+                        if labelled { Text(slot.action.tileLabel).font(.system(size: 11.5)).foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary).lineLimit(1).minimumScaleFactor(0.8) }
                     }
                     .frame(maxWidth: .infinity).frame(height: labelled ? 62 : 48)
                     .contentShape(Rectangle())
@@ -112,15 +112,18 @@ struct FloatingMenu: View {
     private func lineLabel(_ a: ToolbarAction) -> String {
         guard let t = store.selectedTab else { return a.label }
         switch a {
-        case .blocker: return store.isBlockerActive(for: t.url) ? "Désactiver le bloqueur" : "Activer le bloqueur"
-        case .darken: return store.isDarkened(t) ? "Ne plus assombrir" : "Assombrir le site"
-        case .javascript: return store.isJavaScriptEnabled(for: t.url) ? "Désactiver JavaScript" : "Activer JavaScript"
-        case .desktopSite: return store.isDesktop(t) ? "Version mobile" : "Version bureau"
-        case .reader: return store.tabManager.readerActive.contains(t.id) ? "Quitter le lecteur" : "Lecteur"
-        case .addBookmark: return store.isBookmarked(t) ? "Retirer des favoris" : "Ajouter aux favoris"
-        case .closeTab: return "Fermer l'onglet"
-        case .closeAllTabs: return store.tabs.count > 1 ? "Fermer les \(store.tabs.count) onglets" : "Fermer tous les onglets"
-        case .translate: return "Traduire en \(store.settings.translateLanguage.label.lowercased())"
+        case .blocker: return store.isBlockerActive(for: t.url) ? L("Désactiver le bloqueur") : L("Activer le bloqueur")
+        case .darken: return store.isDarkened(t) ? L("Ne plus assombrir") : L("Assombrir le site")
+        case .javascript: return store.isJavaScriptEnabled(for: t.url) ? L("Désactiver JavaScript") : L("Activer JavaScript")
+        case .desktopSite: return store.isDesktop(t) ? L("Version mobile") : L("Version bureau")
+        case .reader: return store.tabManager.readerActive.contains(t.id) ? L("Quitter le lecteur") : L("Lecteur")
+        case .addBookmark: return store.isBookmarked(t) ? L("Retirer des favoris") : L("Ajouter aux favoris")
+        case .closeTab: return L("Fermer l'onglet")
+        case .closeAllTabs: return store.tabs.count > 1 ? L("Fermer les %ld onglets", store.tabs.count) : L("Fermer tous les onglets")
+        case .translate: let lang = store.settings.translateLanguage.label
+            // Les noms de langue prennent une minuscule en français et en espagnol, une majuscule ailleurs.
+            let lower = ["fr", "es", "it", "pt"].contains(Locale.current.language.languageCode?.identifier ?? "fr")
+            return L("Traduire en %@", lower ? lang.lowercased() : lang)
         default: return a.label
         }
     }

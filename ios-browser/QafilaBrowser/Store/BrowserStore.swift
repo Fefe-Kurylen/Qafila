@@ -192,7 +192,7 @@ final class BrowserStore: ObservableObject {
     func copyAddress() {
         guard let u = selectedTab?.url else { return }
         UIPasteboard.general.url = u
-        flash("Adresse copiée")
+        flash(L("Adresse copiée"))
     }
 
     func flash(_ message: String) {
@@ -242,8 +242,8 @@ final class BrowserStore: ObservableObject {
     func isBookmarked(_ tab: BrowserTab) -> Bool { tab.url.map { u in bookmarks.contains { $0.url == u } } ?? false }
     func toggleBookmark(_ tab: BrowserTab) {
         guard let u = tab.url else { return }
-        if let i = bookmarks.firstIndex(where: { $0.url == u }) { bookmarks.remove(at: i); flash("Retiré des favoris") }
-        else { bookmarks.insert(Bookmark(title: tab.displayTitle, url: u), at: 0); flash("Ajouté aux favoris") }
+        if let i = bookmarks.firstIndex(where: { $0.url == u }) { bookmarks.remove(at: i); flash(L("Retiré des favoris")) }
+        else { bookmarks.insert(Bookmark(title: tab.displayTitle, url: u), at: 0); flash(L("Ajouté aux favoris")) }
     }
     func recordVisit(_ tab: BrowserTab) {
         guard !tab.isPrivate, let u = tab.url, u.scheme?.hasPrefix("http") == true else { return }

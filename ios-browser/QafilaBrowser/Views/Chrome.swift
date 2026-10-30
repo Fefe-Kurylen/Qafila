@@ -107,7 +107,7 @@ struct MiniChrome: View {
     var body: some View {
         HStack(spacing: 4) {
             if store.selectedTab?.url?.scheme == "https" { Image(systemName: "lock.fill").font(.system(size: 8, weight: .semibold)) }
-            Text(store.selectedTab?.host ?? "Qafila").font(.system(size: 12, weight: .semibold))
+            Text(store.selectedTab?.host ?? L("Qafila")).font(.system(size: 12, weight: .semibold))
         }
         .foregroundStyle(Color.primary.opacity(0.75))
         .frame(maxWidth: .infinity).frame(height: 26)
@@ -144,7 +144,7 @@ struct AddressCard: View {
             .onTapGesture { tap() }
             .onLongPressGesture(minimumDuration: 0.45) { longPress() }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(tab?.displayTitle ?? "Rechercher ou saisir une adresse")
+            .accessibilityLabel(tab?.displayTitle ?? L("Rechercher ou saisir une adresse"))
             .accessibilityAddTraits(.isButton)
     }
 
@@ -207,7 +207,7 @@ struct AddressCard: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(title).font(.system(size: 14, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
                 if s.addressShowsReadingTime, let r = tab?.readingLabel {
-                    Text("\(r) de lecture").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(L("%@ de lecture", r)).font(.system(size: 11)).foregroundStyle(.secondary)
                 } else {
                     Text(tab?.host ?? "").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }

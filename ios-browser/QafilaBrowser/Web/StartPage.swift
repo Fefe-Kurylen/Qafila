@@ -34,7 +34,7 @@ enum StartPage {
         """
         <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
         <style>body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,system-ui;text-align:center;padding:24px;color:#17191c}@media(prefers-color-scheme:dark){body{background:#17191c;color:#f2f4f7}}h1{font-size:22px;margin:0 0 8px}p{color:#8395af;font-size:15px;max-width:360px}</style>
-        </head><body><h1>Page inaccessible</h1><p>\(message)</p><p style="font-size:13px;word-break:break-all">\(url)</p></body></html>
+        </head><body><h1>\(L("Page inaccessible"))</h1><p>\(message)</p><p style="font-size:13px;word-break:break-all">\(url)</p></body></html>
         """
     }
 }
