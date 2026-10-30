@@ -8,6 +8,8 @@ ACT=fr.qafila.browser.MainActivity
 OUT=store-screenshots/android
 mkdir -p "$OUT"
 adb install -r "$APK"
+# Captures des stores en français, quelle que soit la langue de l'émulateur (langue par appli, Android 13+).
+adb shell cmd locale set-app-locales "$PKG" --locales fr-FR >/dev/null 2>&1 || true
 # Barre d'état propre (heure 9:41, batterie pleine, pas de notifications)
 adb shell settings put global sysui_demo_allowed 1
 adb shell am broadcast -a com.android.systemui.demo -e command enter >/dev/null

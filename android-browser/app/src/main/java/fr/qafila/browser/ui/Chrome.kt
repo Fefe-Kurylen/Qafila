@@ -106,7 +106,8 @@ fun Modifier.floatingGlass(colors: BarColors, elevation: Dp = 14.dp): Modifier {
     return this
         .shadow(elevation, shape, ambientColor = Color.Black.copy(alpha = 0.10f), spotColor = Color.Black.copy(alpha = 0.16f))
         .clip(shape)
-        .background(colors.bg.copy(alpha = if (colors.light) 0.82f else 0.85f))
+        // Compose ne peut pas flouter la page derrière la barre : verre presque opaque pour rester lisible.
+        .background(colors.bg.copy(alpha = if (colors.light) 0.95f else 0.96f))
         .border(0.8.dp, Brush.verticalGradient(rim), shape)
 }
 
