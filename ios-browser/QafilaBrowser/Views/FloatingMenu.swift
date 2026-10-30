@@ -114,6 +114,7 @@ struct FloatingMenu: View {
         switch a {
         case .blocker: return store.isBlockerActive(for: t.url) ? L("Désactiver le bloqueur") : L("Activer le bloqueur")
         case .darken: return store.isDarkened(t) ? L("Ne plus assombrir") : L("Assombrir le site")
+        case .darkMode: return store.isDarkScheme ? L("Mode clair") : L("Mode sombre")
         case .javascript: return store.isJavaScriptEnabled(for: t.url) ? L("Désactiver JavaScript") : L("Activer JavaScript")
         case .desktopSite: return store.isDesktop(t) ? L("Version mobile") : L("Version bureau")
         case .reader: return store.tabManager.readerActive.contains(t.id) ? L("Quitter le lecteur") : L("Lecteur")

@@ -179,6 +179,7 @@ final class BrowserStore: ObservableObject {
         case .customize: showToolbarEditor = true
         case .menu: showMenu.toggle()
         case .address: beginEditing()
+        case .darkMode: settings.appearance = isDarkScheme ? .light : .dark
         case .separator: break
         }
     }

@@ -40,6 +40,7 @@ final class AddressEditModel: ObservableObject {
 struct AddressEditorRow: View {
     @EnvironmentObject var store: BrowserStore
     @Environment(\.chromeCard) private var cardColor
+    @Environment(\.chromeCardRadius) private var cardRadius
     @ObservedObject var editor: AddressEditModel
     @FocusState private var focused: Bool
 
@@ -59,7 +60,7 @@ struct AddressEditorRow: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 44)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(cardColor))
+            .background(RoundedRectangle(cornerRadius: cardRadius ?? 12, style: .continuous).fill(cardColor))
 
             Button("Annuler") { cancel() }.font(.system(size: 15)).foregroundStyle(.primary)
         }

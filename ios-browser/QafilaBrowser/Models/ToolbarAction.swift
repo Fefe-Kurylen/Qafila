@@ -7,7 +7,7 @@ enum ToolbarAction: String, Codable, CaseIterable, Identifiable {
     case bookmarks, addBookmark, history, share, find
     case blocker, darken, reader, javascript, desktopSite, translate
     case scrollTop, scrollBottom, home, settings, customize, menu
-    case address
+    case address, darkMode
     case separator
 
     var id: String { rawValue }
@@ -41,6 +41,7 @@ enum ToolbarAction: String, Codable, CaseIterable, Identifiable {
         case .customize: return L("Personnaliser")
         case .menu: return L("Menu")
         case .address: return L("Adresse")
+        case .darkMode: return L("Mode sombre")
         case .separator: return L("Séparateur")
         }
     }
@@ -74,6 +75,7 @@ enum ToolbarAction: String, Codable, CaseIterable, Identifiable {
         case .customize: return "slider.horizontal.3"
         case .menu: return "ellipsis"
         case .address: return "link"
+        case .darkMode: return "moon"
         case .separator: return "minus"
         }
     }
@@ -113,7 +115,7 @@ struct ToolbarSlot: Identifiable, Codable, Equatable {
 struct ToolbarConfig: Codable, Equatable {
     var bar: [ToolbarSlot]
     var menu: [ToolbarSlot]
-    var style: ToolbarStyle = .classic
+    var style: ToolbarStyle = .floating
     var position: ToolbarPosition = .bottom
 
     var hasInlineAddress: Bool { bar.contains { $0.action == .address } }
@@ -123,9 +125,9 @@ struct ToolbarConfig: Codable, Equatable {
         func s(_ a: ToolbarAction, label: Bool = true) -> ToolbarSlot { ToolbarSlot(action: a, showsLabel: label) }
         // Comme Quiche : tuiles « Nouvel onglet / Onglet privé », lignes d'actions, fermetures en rouge,
         // tuiles « Rechercher / Onglets / Partager », puis la navigation.
+        // Léger, comme Quiche : le reste (bloqueur, lecteur, version bureau…) s'ajoute dans l'éditeur.
         return [s(.newTab, label: false), s(.newPrivateTab, label: false), s(.separator),
-                s(.history), s(.bookmarks), s(.addBookmark), s(.separator),
-                s(.blocker), s(.darken), s(.reader), s(.desktopSite), s(.translate), s(.separator),
+                s(.history), s(.bookmarks), s(.darkMode), s(.separator),
                 s(.closeTab), s(.closeAllTabs), s(.separator),
                 s(.find, label: false), s(.tabs, label: false), s(.share, label: false), s(.separator),
                 s(.back, label: false), s(.forward, label: false), s(.reload, label: false), s(.settings, label: false)]

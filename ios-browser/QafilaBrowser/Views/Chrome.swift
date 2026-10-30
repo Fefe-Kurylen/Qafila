@@ -45,12 +45,17 @@ struct ChromeBackground: View {
 /// Barre flottante (comme Quiche) : capsule arrondie détachée des bords, verre teinté et ombre douce.
 struct FloatingBarShape: View {
     let palette: ChromePalette
+    static let radius: CGFloat = 32
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 26, style: .continuous)
-        shape.fill(.regularMaterial)
-            .overlay(shape.fill(palette.bar.opacity(0.78)))
-            .overlay(shape.strokeBorder(Color.primary.opacity(palette.contentScheme == .dark ? 0.14 : 0.07), lineWidth: 0.5))
-            .shadow(color: .black.opacity(0.16), radius: 20, y: 6)
+        let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
+        let dark = palette.contentScheme == .dark
+        shape.fill(.ultraThinMaterial)
+            .overlay(shape.fill(palette.bar.opacity(dark ? 0.45 : 0.35)))
+            // Liseré de verre : plus clair en haut, presque invisible en bas.
+            .overlay(shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(dark ? 0.22 : 0.85), Color.white.opacity(dark ? 0.04 : 0.25)],
+                                                       startPoint: .top, endPoint: .bottom), lineWidth: 0.8))
+            .overlay(shape.strokeBorder(Color.black.opacity(dark ? 0.3 : 0.05), lineWidth: 0.5).padding(-0.5))
+            .shadow(color: .black.opacity(dark ? 0.35 : 0.10), radius: 18, y: 6)
     }
 }
 
@@ -121,6 +126,7 @@ struct MiniChrome: View {
 struct AddressCard: View {
     @EnvironmentObject var store: BrowserStore
     @Environment(\.chromeCard) private var cardColor
+    @Environment(\.chromeCardRadius) private var cardRadius
     /// Dans la rangée d'icônes (style Minimal / Zen / paysage).
     var inline = false
 
@@ -136,7 +142,7 @@ struct AddressCard: View {
             .frame(height: inline ? 38 : 44)
             .background {
                 if style != .centered {
-                    RoundedRectangle(cornerRadius: inline ? 10 : 12, style: .continuous).fill(cardColor)
+                    RoundedRectangle(cornerRadius: cardRadius ?? (inline ? 10 : 12), style: .continuous).fill(cardColor)
                 }
             }
             .overlay(alignment: .bottom) { ProgressLine().padding(.horizontal, 10) }
@@ -305,10 +311,16 @@ struct ProgressLine: View {
 }
 
 private struct ChromeCardKey: EnvironmentKey { static let defaultValue: Color = Color(.secondarySystemBackground) }
+private struct ChromeCardRadiusKey: EnvironmentKey { static let defaultValue: CGFloat? = nil }
 extension EnvironmentValues {
     var chromeCard: Color {
         get { self[ChromeCardKey.self] }
         set { self[ChromeCardKey.self] = newValue }
+    }
+    /// Rayon de la carte d'adresse (nil = carte classique ; une valeur = pilule concentrique dans la barre flottante).
+    var chromeCardRadius: CGFloat? {
+        get { self[ChromeCardRadiusKey.self] }
+        set { self[ChromeCardRadiusKey.self] = newValue }
     }
 }
 
@@ -447,6 +459,7 @@ struct ActionGlyph: View {
     private var symbol: String {
         let t = store.selectedTab
         switch action {
+        case .darkMode: return store.isDarkScheme ? "sun.max" : "moon"
         case .menu: return store.settings.menuIcon.symbol
         case .blocker: return store.isBlockerActive(for: t?.url) ? "shield.lefthalf.filled" : "shield.slash"
         case .javascript: return store.isJavaScriptEnabled(for: t?.url) ? "curlybraces" : "curlybraces.square"

@@ -57,8 +57,15 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                Section { ChromePreview().listRowInsets(EdgeInsets()).listRowBackground(Color.clear) }
-                Section { link(.support) }
+                Section {
+                    NavigationLink { ToolbarGalleryView(embedded: true) } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "square.grid.2x2").font(.system(size: 17, weight: store.settings.buttonWeight.fontWeight)).frame(width: 28)
+                            Text("Galerie de barres")
+                        }
+                    }
+                    link(.support)
+                }
                 Section { ForEach([SettingsRoute.appearance, .toolbar, .address, .tabs]) { link($0) } }
                 Section { ForEach([SettingsRoute.search, .privacy, .reading, .energy]) { link($0) } }
                 Section { link(.about) }

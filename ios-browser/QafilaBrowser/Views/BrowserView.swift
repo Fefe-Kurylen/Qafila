@@ -56,18 +56,28 @@ struct BrowserView: View {
             if let tab = store.selectedTab {
                 WebContainer(tabID: tab.id,
                              topInset: atTop ? chromeHeight + safe.top : safe.top,
-                             bottomInset: atTop ? safe.bottom : chromeHeight + safe.bottom,
+                             bottomInset: atTop ? safe.bottom : chromeHeight + safe.bottom - lift(safe),
                              onScroll: handleScroll)
                     .id(tab.id)
             }
         }
         .ignoresSafeArea()
         .overlay(alignment: atTop ? .bottom : .top) {
-            // Bande derrière la barre d'état (ou l'indicateur d'accueil) pour que la page ne s'y mélange pas.
-            ChromeBackground(palette: palette, style: floating ? .classic : s.toolbar.style)
-                .frame(height: atTop ? safe.bottom : safe.top)
-                .ignoresSafeArea()
-                .opacity((atTop && collapsed && s.scrollBehavior == .hide) || (atTop && floating) ? 0 : 1)
+            if floating {
+                // Verre : la page passe sous la barre d'état, adoucie par un léger flou qui s'estompe.
+                Rectangle().fill(.ultraThinMaterial)
+                    .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
+                    .frame(height: (atTop ? safe.bottom : safe.top) + 14)
+                    .ignoresSafeArea()
+                    .opacity(atTop ? 0 : 1)
+                    .allowsHitTesting(false)
+            } else {
+                // Bande derrière la barre d'état (ou l'indicateur d'accueil) pour que la page ne s'y mélange pas.
+                ChromeBackground(palette: palette, style: s.toolbar.style)
+                    .frame(height: atTop ? safe.bottom : safe.top)
+                    .ignoresSafeArea()
+                    .opacity(atTop && collapsed && s.scrollBehavior == .hide ? 0 : 1)
+            }
         }
     }
 
@@ -81,9 +91,10 @@ struct BrowserView: View {
                     ChromeBar(editor: editor, singleRow: landscape, atTop: atTop)
                 }
             }
-            .padding(.bottom, atTop ? 6 : (floating ? 4 : 0))
+            .padding(.bottom, atTop ? 6 : (floating ? 8 : 0))
             .padding(.top, floating && atTop ? 2 : 0)
-            .environment(\.chromeCard, palette.card)
+            .environment(\.chromeCard, floating ? glassCard : palette.card)
+            .environment(\.chromeCardRadius, floating ? FloatingBarShape.radius - 10 : nil)
             .modifier(SchemeOverride(scheme: palette.contentScheme))
             .background {
                 if floating {
@@ -93,13 +104,24 @@ struct BrowserView: View {
                         .overlay(alignment: atTop ? .bottom : .top) { Rectangle().fill(Color.black.opacity(palette.contentScheme == .dark ? 0.35 : 0.07)).frame(height: 0.5) }
                 }
             }
-            .padding(.horizontal, floating ? 10 : 0)
+            .padding(.horizontal, floating ? Self.floatMargin : 0)
             .padding(atTop ? .top : .bottom, floating ? 6 : 0)
             .background(GeometryReader { g in Color.clear.onAppear { chromeHeight = g.size.height }.onChange(of: g.size.height) { _, h in if !collapsed { chromeHeight = h } } })
-            .offset(y: hideOffset(safe))
+            .offset(y: hideOffset(safe) + lift(safe))
             if store.isEditingAddress && atTop { SuggestionsPanel(editor: editor).padding(.horizontal, 10) }
         }
     }
+
+    static let floatMargin: CGFloat = 12
+
+    /// Barre flottante en bas : même distance des bords latéraux et du bas de l'écran (comme Quiche / Liquid Glass).
+    private func lift(_ safe: EdgeInsets) -> CGFloat {
+        guard floating, !atTop, !store.isEditingAddress else { return 0 }
+        return max(0, safe.bottom + 6 - Self.floatMargin)
+    }
+
+    /// Carte d'adresse discrète sur le verre.
+    private var glassCard: Color { palette.contentScheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.6) }
 
     private func hideOffset(_ safe: EdgeInsets) -> CGFloat {
         guard collapsed, s.scrollBehavior == .hide else { return 0 }
@@ -118,7 +140,7 @@ struct BrowserView: View {
                 .frame(maxHeight: max(200, available))
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.leading, x)
-                .padding(atTop ? .top : .bottom, chromeHeight + 8)
+                .padding(atTop ? .top : .bottom, chromeHeight + 8 - lift(geo.safeAreaInsets))
                 .transition(.scale(scale: 0.85, anchor: atTop ? .topTrailing : .bottomTrailing).combined(with: .opacity))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: atTop ? .topLeading : .bottomLeading)
