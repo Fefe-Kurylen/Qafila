@@ -25,6 +25,8 @@ android {
         versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
         versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
         vectorDrawables.useSupportLibrary = true
+        // Langues livrées (les ressources d'autres langues venant des bibliothèques sont écartées).
+        resourceConfigurations += listOf("fr", "en", "ar", "es", "de")
     }
 
     signingConfigs {

@@ -58,6 +58,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import fr.qafila.browser.data.BrowserTab
 import fr.qafila.browser.data.SettingsPage
@@ -79,11 +82,13 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
     val visible = state.tabs.filter { it.isPrivate == showPrivate }.let { t ->
         when (s.tabsSort) { TabsSort.DATE -> t.sortedByDescending { it.lastVisited }; TabsSort.READING_TIME -> t.sortedByDescending { it.readingMinutes }; TabsSort.TITLE -> t.sortedBy { it.displayTitle.lowercase() } }
     }
+    val newTabsLabel = stringResource(R.string.new_tabs_group)
+    val otherSitesLabel = stringResource(R.string.other_sites)
     val groups: List<Pair<String, List<BrowserTab>>> = if (!s.groupTabsByDomain) listOf("" to visible) else {
-        val byHost = visible.groupBy { it.hostOrNull ?: "Nouveaux onglets" }
+        val byHost = visible.groupBy { it.hostOrNull ?: newTabsLabel }
         val multi = byHost.filter { it.value.size > 1 }.map { it.key to it.value }
         val singles = byHost.filter { it.value.size == 1 }.flatMap { it.value }
-        multi + (if (singles.isEmpty()) emptyList() else listOf((if (multi.isEmpty()) "" else "Autres sites") to singles))
+        multi + (if (singles.isEmpty()) emptyList() else listOf((if (multi.isEmpty()) "" else otherSitesLabel) to singles))
     }
     fun open(t: BrowserTab) { store.select(t.id); onDismiss() }
     fun favicon(t: BrowserTab) = icons[store.tabManager.favicons.keyOf(t.url)]
@@ -93,7 +98,7 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
     Box(Modifier.fillMaxSize().background(q.groupedBg).blockTouches()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                if (visible.isEmpty()) Text(if (showPrivate) "Aucun onglet privé.\nTouchez + pour en ouvrir un." else "Aucun onglet.", Modifier.align(Alignment.Center), color = q.secondary, fontSize = 15.sp, lineHeight = 21.sp)
+                if (visible.isEmpty()) Text(stringResource(if (showPrivate) R.string.no_private_tabs else R.string.no_tabs), Modifier.align(Alignment.Center).padding(horizontal = 32.dp), color = q.secondary, fontSize = 15.sp, lineHeight = 21.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 else if (s.tabsLayout == TabsLayout.LIST) {
                     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp), reverseLayout = s.comfortMode) {
                         items(groups, key = { it.first.ifEmpty { "_" } }) { (host, tabs) ->
@@ -116,7 +121,7 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
                         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp), reverseLayout = s.comfortMode) {
                             items(groups, key = { it.first.ifEmpty { "_" } }) { (host, tabs) ->
                                 Column {
-                                    GroupHeader(host.ifEmpty { "Onglets" })
+                                    GroupHeader(host.ifEmpty { stringResource(R.string.action_tabs) })
                                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         items(tabs, key = { it.id }) { t ->
                                             TabThumb(t, favicon(t), snapshots[t.id], t.id == state.selectedTabId, Modifier.width(if (cols == 2) 150.dp else 104.dp), { open(t) }) { store.close(t.id) }
@@ -136,16 +141,16 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
             }
             // Barre du bas : +   « N onglets ⌃ »   réglages
             Row(Modifier.fillMaxWidth().background(q.groupedBg).navigationBarsPadding().height(54.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(44.dp).pressFade { store.newTab(isPrivate = showPrivate); onDismiss() }, contentAlignment = Alignment.Center) { QIconView(QIcon.PLUS, "Nouvel onglet", q.text, 22.dp) }
+                Box(Modifier.size(44.dp).pressFade { store.newTab(isPrivate = showPrivate); onDismiss() }, contentAlignment = Alignment.Center) { QIconView(QIcon.PLUS, stringResource(R.string.new_tab), q.text, 22.dp) }
                 Spacer(Modifier.weight(1f))
                 Row(Modifier.clip(RoundedCornerShape(50)).background(q.fill).pressFade { pillMenu = !pillMenu }.padding(start = 14.dp, end = 10.dp, top = 7.dp, bottom = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                     val n = if (showPrivate) privateCount else count
-                    Text(if (showPrivate) "$n privé${if (n > 1) "s" else ""}" else "$n onglet${if (n > 1) "s" else ""}", color = q.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Text(pluralStringResource(if (showPrivate) R.plurals.private_count else R.plurals.tabs_count, n, n), color = q.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                     Spacer(Modifier.width(4.dp))
                     QIconView(QIcon.CHEVRON_UPDOWN, null, q.text, 13.dp)
                 }
                 Spacer(Modifier.weight(1f))
-                Box(Modifier.size(44.dp).pressFade { store.openSettings(SettingsPage.TABS, standalone = true) }, contentAlignment = Alignment.Center) { QIconView(QIcon.SLIDERS, "Réglages des onglets", q.text, 22.dp) }
+                Box(Modifier.size(44.dp).pressFade { store.openSettings(SettingsPage.TABS, standalone = true) }, contentAlignment = Alignment.Center) { QIconView(QIcon.SLIDERS, stringResource(R.string.tab_settings), q.text, 22.dp) }
             }
         }
 
@@ -155,18 +160,18 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
             enter = scaleIn(initialScale = 0.92f, transformOrigin = TransformOrigin(0.5f, 1f)) + fadeIn(), exit = scaleOut(targetScale = 0.92f, transformOrigin = TransformOrigin(0.5f, 1f)) + fadeOut(),
         ) {
             FloatingCard(width = 240.dp) {
-                MenuLine("Onglets", QIcon.TABS, checked = !showPrivate) { showPrivate = false; pillMenu = false }
-                MenuLine("Onglets privés${if (privateCount > 0) " ($privateCount)" else ""}", QIcon.PRIVATE, checked = showPrivate) { showPrivate = true; pillMenu = false }
+                MenuLine(stringResource(R.string.action_tabs), QIcon.TABS, checked = !showPrivate) { showPrivate = false; pillMenu = false }
+                MenuLine(stringResource(R.string.private_tabs) + if (privateCount > 0) " ($privateCount)" else "", QIcon.PRIVATE, checked = showPrivate) { showPrivate = true; pillMenu = false }
                 Hairline()
-                MenuLine("Trier par : ${s.tabsSort.label.lowercase()}", QIcon.LIST) {
+                MenuLine(stringResource(R.string.sort_by_value, s.tabsSort.label), QIcon.LIST) {
                     store.updateSettings { it.copy(tabsSort = TabsSort.entries[(it.tabsSort.ordinal + 1) % TabsSort.entries.size]) }
                 }
-                MenuLine(if (s.tabsLayout == TabsLayout.LIST) "Afficher en grille" else "Afficher en liste", if (s.tabsLayout == TabsLayout.LIST) QIcon.GRID else QIcon.LIST) {
+                MenuLine(stringResource(if (s.tabsLayout == TabsLayout.LIST) R.string.show_as_grid else R.string.show_as_list), if (s.tabsLayout == TabsLayout.LIST) QIcon.GRID else QIcon.LIST) {
                     store.updateSettings { it.copy(tabsLayout = if (it.tabsLayout == TabsLayout.LIST) TabsLayout.GRID else TabsLayout.LIST) }; pillMenu = false
                 }
                 Hairline()
                 val n = if (showPrivate) privateCount else count
-                MenuLine(if (n > 1) "Fermer les $n onglets" else "Fermer l'onglet", QIcon.CLOSE, q.destructive) {
+                MenuLine(if (n > 1) pluralStringResource(R.plurals.close_n_tabs, n, n) else stringResource(R.string.action_close_tab), QIcon.CLOSE, q.destructive) {
                     pillMenu = false; store.closeAllTabs(privateOnly = showPrivate); onDismiss()
                 }
             }
@@ -186,19 +191,20 @@ private fun TabListRow(store: BrowserStore, t: BrowserTab, fav: android.graphics
     SwipeToDismissBox(
         state = dismiss, enableDismissFromStartToEnd = false,
         backgroundContent = {
-            Box(Modifier.fillMaxSize().background(q.destructive).padding(end = 20.dp), contentAlignment = Alignment.CenterEnd) { Text("Fermer", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+            Box(Modifier.fillMaxSize().background(q.destructive).padding(end = 20.dp), contentAlignment = Alignment.CenterEnd) { Text(stringResource(R.string.action_close_tab_short), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
         },
     ) {
         Row(Modifier.fillMaxWidth().background(q.card).rowClick(onClick = onOpen).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Favicon(fav, t.hostOrNull, 26.dp, corner = 6.dp, private = t.isPrivate)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(t.displayTitle, color = q.text, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(t.uiTitle(), color = q.text, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(2.dp))
-                Text((t.hostOrNull ?: "Page de démarrage").uppercase(), color = q.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(t.hostOrNull?.uppercase() ?: stringResource(R.string.newtab_start).uppercase(), color = q.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = if (t.hostOrNull != null) LtrText else androidx.compose.ui.text.TextStyle.Default)
             }
-            if (current) { Spacer(Modifier.width(8.dp)); QIconView(QIcon.CHECK, "Onglet actif", q.secondary, 14.dp) }
-            if (showRead && t.readingLabel != null) { Spacer(Modifier.width(8.dp)); Pill(t.readingLabel!!, q.fill, q.text) }
+            if (current) { Spacer(Modifier.width(8.dp)); QIconView(QIcon.CHECK, stringResource(R.string.current_tab), q.secondary, 14.dp) }
+            val read = readingLabel(t.readingMinutes)
+            if (showRead && read != null) { Spacer(Modifier.width(8.dp)); Pill(read, q.fill, q.text) }
         }
     }
 }
@@ -215,11 +221,11 @@ private fun TabThumb(t: BrowserTab, fav: android.graphics.Bitmap?, snapshot: and
             else Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Favicon(fav, t.hostOrNull, 34.dp, private = t.isPrivate)
                 Spacer(Modifier.height(10.dp))
-                Text(t.displayTitle, color = q.secondary, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(t.uiTitle(), color = q.secondary, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
             Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(26.dp).pressFade(onClick = onClose), contentAlignment = Alignment.Center) {
                 Box(Modifier.size(22.dp).clip(CircleShape).background(if (q.dark) Color(0xCC3A3A3C) else Color(0xE6F2F2F7)), contentAlignment = Alignment.Center) {
-                    QIconView(QIcon.CLOSE, "Fermer", q.text, 11.dp)
+                    QIconView(QIcon.CLOSE, stringResource(R.string.action_close_tab), q.text, 11.dp)
                 }
             }
         }
@@ -227,7 +233,7 @@ private fun TabThumb(t: BrowserTab, fav: android.graphics.Bitmap?, snapshot: and
         Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Favicon(fav, t.hostOrNull, 14.dp, corner = 3.dp, private = t.isPrivate)
             Spacer(Modifier.width(5.dp))
-            Text(t.displayTitle, color = q.text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(t.uiTitle(), color = q.text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

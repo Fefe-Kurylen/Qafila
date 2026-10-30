@@ -13,7 +13,7 @@ Qafila est un navigateur rapide, privé et entièrement personnalisable.
 PLACEZ CHAQUE BOUTON LÀ OÙ IL VOUS CONVIENT
 • Choisissez les boutons de la barre d'outils et du menu, leur ordre et leur taille
 • Ajoutez des séparateurs pour organiser le menu en sections
-• Galerie de barres prêtes à l'emploi : Complète, Minimaliste, Gestes, Lecture
+• Galerie de barres prêtes à l'emploi : Complète, Navigation, Outils, Lecteur, Minimal, Zen
 • Barre en bas ou en haut, style Classique ou Verre
 
 DES ONGLETS BEAUX ET BIEN RANGÉS
@@ -40,7 +40,7 @@ FAITES-LE VÔTRE
 • Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing ou votre propre instance Qafila
 • Navigateur par défaut Android pris en charge
 
-Toutes les fonctions sont gratuites, sans publicité ni abonnement.
+Toutes les fonctions sont gratuites, sans publicité. Un abonnement facultatif « Soutenir Qafila » (0,99 €/mois) aide le projet et débloque l'icône exclusive « Or ».
 
 **Catégorie** : Communication  **Classification du contenu** : Tout public (navigateur : contenu web non contrôlé, à déclarer dans le questionnaire)
 **E-mail de contact** : felix.bois@wanadoo.fr  **Politique de confidentialité** : https://fefe-kurylen.github.io/Qafila/confidentialite.html

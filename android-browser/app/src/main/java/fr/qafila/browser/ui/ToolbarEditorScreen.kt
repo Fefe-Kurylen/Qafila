@@ -25,11 +25,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import fr.qafila.browser.data.ButtonSize
 import fr.qafila.browser.data.ToolbarAction
@@ -52,14 +57,15 @@ fun ToolbarEditorPage(store: BrowserStore, backLabel: String, onBack: () -> Unit
         a != ToolbarAction.SEPARATOR && a !in used && !(tab == 1 && (a == ToolbarAction.ADDRESS || a == ToolbarAction.MENU || a == ToolbarAction.STOP))
     }
 
-    QPage("Personnaliser", onBack, backLabel = backLabel, header = {
+    QPage(stringResource(R.string.action_customize), onBack, backLabel = backLabel, header = {
         Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)) { ChromePreview(s, compact = true) }
-        Segmented(listOf("Barre", "Menu"), tab, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)) { tab = it }
+        Segmented(listOf(stringResource(R.string.editor_bar), stringResource(R.string.action_menu)), tab, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)) { tab = it }
     }) {
         item {
-            SectionHeader(if (tab == 0) "Barre · ${slots.count { it.action != ToolbarAction.SEPARATOR }} éléments" else "Menu · ${slots.count { it.action != ToolbarAction.SEPARATOR }} éléments")
+            val count = slots.count { it.action != ToolbarAction.SEPARATOR }
+            SectionHeader(stringResource(R.string.editor_section, stringResource(if (tab == 0) R.string.editor_bar else R.string.action_menu), pluralStringResource(R.plurals.items_count, count, count)))
             GroupCard {
-                if (slots.isEmpty()) Text("Aucun élément.", Modifier.padding(16.dp), color = q.secondary, fontSize = 14.sp)
+                if (slots.isEmpty()) Text(stringResource(R.string.no_items), Modifier.padding(16.dp), color = q.secondary, fontSize = 14.sp)
                 slots.forEachIndexed { i, slot ->
                     SlotRow(slot, inMenu = tab == 1, first = i == 0, last = i == slots.lastIndex,
                         onRemove = { change(slots - slot) },
@@ -68,20 +74,19 @@ fun ToolbarEditorPage(store: BrowserStore, backLabel: String, onBack: () -> Unit
                     if (i < slots.lastIndex) RowDivider(52.dp)
                 }
             }
-            SectionFooter(if (tab == 0) "« Adresse (en ligne) » place l'adresse dans la rangée d'icônes. Au-delà de 7 boutons, la barre devient serrée. Appui long sur un bouton de la barre : ce même éditeur."
-                else "Les éléments sans intitulé qui se suivent forment une rangée de tuiles ; les séparateurs créent des sections. Les actions de fermeture s'affichent en rouge.")
+            SectionFooter(if (tab == 0) stringResource(R.string.editor_bar_footer, ToolbarAction.ADDRESS.label) else stringResource(R.string.editor_menu_footer))
         }
         item {
-            SectionHeader("Ajouter")
+            SectionHeader(stringResource(R.string.add))
             GroupCard {
                 (available + ToolbarAction.SEPARATOR).forEachIndexed { i, a ->
                     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).rowClick { change(slots + ToolbarSlot(action = a, showsLabel = tab == 0 || a.destructive || a == ToolbarAction.SEPARATOR || slots.lastOrNull()?.showsLabel != false)) }
                         .padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(22.dp).clip(CircleShape).background(q.text), contentAlignment = Alignment.Center) { QIconView(QIcon.PLUS, "Ajouter", q.card, 14.dp) }
+                        Box(Modifier.size(22.dp).clip(CircleShape).background(q.text), contentAlignment = Alignment.Center) { QIconView(QIcon.PLUS, stringResource(R.string.add), q.card, 14.dp) }
                         Spacer(Modifier.width(12.dp))
                         QIconView(a.qicon(menuIcon = s.menuIcon), null, if (a.destructive) q.destructive else q.text, 19.dp)
                         Spacer(Modifier.width(12.dp))
-                        Text(a.label, color = q.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(a.label, color = q.text, fontSize = 15.sp, lineHeight = 19.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     if (i < available.size) RowDivider(52.dp)
                 }
@@ -90,8 +95,8 @@ fun ToolbarEditorPage(store: BrowserStore, backLabel: String, onBack: () -> Unit
         item {
             Spacer(Modifier.height(24.dp))
             GroupCard {
-                NavRow("Galerie de barres", icon = QIcon.GRID, onClick = openGallery); RowDivider(50.dp)
-                ActionRow("Rétablir la barre et le menu par défaut", q.destructive) { set(ToolbarConfig.preset(ToolbarConfig.Preset.COMPLETE).copy(style = cfg.style, position = cfg.position)) }
+                NavRow(stringResource(R.string.page_gallery), icon = QIcon.GRID, onClick = openGallery); RowDivider(50.dp)
+                ActionRow(stringResource(R.string.reset_bar_menu), q.destructive) { set(ToolbarConfig.preset(ToolbarConfig.Preset.COMPLETE).copy(style = cfg.style, position = cfg.position)) }
             }
         }
     }
@@ -101,8 +106,9 @@ fun ToolbarEditorPage(store: BrowserStore, backLabel: String, onBack: () -> Unit
 private fun SlotRow(slot: ToolbarSlot, inMenu: Boolean, first: Boolean, last: Boolean, onRemove: () -> Unit, onMove: (Int) -> Unit, onUpdate: (ToolbarSlot) -> Unit) {
     val q = LocalQ.current
     val a = slot.action
+    val removeLabel = stringResource(R.string.remove)
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(28.dp).pressFade(onClick = onRemove), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(28.dp).pressFade(onClick = onRemove).semantics { contentDescription = removeLabel }, contentAlignment = Alignment.Center) {
             Box(Modifier.size(20.dp).clip(CircleShape).background(q.destructive), contentAlignment = Alignment.Center) { Box(Modifier.width(9.dp).height(1.6.dp).background(Color.White)) }
         }
         Spacer(Modifier.width(8.dp))
@@ -112,15 +118,15 @@ private fun SlotRow(slot: ToolbarSlot, inMenu: Boolean, first: Boolean, last: Bo
             QIconView(a.qicon(), null, if (a.destructive) q.destructive else q.text, 20.dp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(a.label, color = q.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(a.label, color = q.text, fontSize = 15.sp, lineHeight = 19.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(Modifier.padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (!inMenu && a != ToolbarAction.ADDRESS) MiniSegment(ButtonSize.entries.map { it.label.take(1) }, slot.size.ordinal) { onUpdate(slot.copy(size = ButtonSize.entries[it])) }
-                    if (inMenu) Chip(if (slot.showsLabel) "Ligne avec intitulé" else "Tuile", selected = slot.showsLabel) { onUpdate(slot.copy(showsLabel = !slot.showsLabel)) }
+                    if (inMenu) Chip(stringResource(if (slot.showsLabel) R.string.row_with_label else R.string.tile), selected = slot.showsLabel) { onUpdate(slot.copy(showsLabel = !slot.showsLabel)) }
                 }
             }
         }
-        Box(Modifier.size(34.dp).pressFade(enabled = !first) { onMove(-1) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_UP, "Monter", q.text.copy(alpha = if (first) 0.25f else 1f), 16.dp) }
-        Box(Modifier.size(34.dp).pressFade(enabled = !last) { onMove(1) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_DOWN, "Descendre", q.text.copy(alpha = if (last) 0.25f else 1f), 16.dp) }
+        Box(Modifier.size(34.dp).pressFade(enabled = !first) { onMove(-1) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_UP, stringResource(R.string.move_up), q.text.copy(alpha = if (first) 0.25f else 1f), 16.dp) }
+        Box(Modifier.size(34.dp).pressFade(enabled = !last) { onMove(1) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_DOWN, stringResource(R.string.move_down), q.text.copy(alpha = if (last) 0.25f else 1f), 16.dp) }
     }
 }
 
@@ -150,8 +156,8 @@ fun ToolbarGalleryPage(store: BrowserStore, backLabel: String, onBack: () -> Uni
     val state by store.state.collectAsState()
     val s = state.settings
     val q = LocalQ.current
-    QPage("Galerie de barres", onBack, backLabel = backLabel) {
-        item { SectionFooter("Touchez une barre pour l'adopter ; vous pourrez ensuite l'ajuster dans Personnaliser."); Spacer(Modifier.height(6.dp)) }
+    QPage(stringResource(R.string.page_gallery), onBack, backLabel = backLabel) {
+        item { SectionFooter(stringResource(R.string.gallery_footer)); Spacer(Modifier.height(6.dp)) }
         ToolbarConfig.Preset.entries.forEach { p ->
             item(p.name) {
                 val cfg = ToolbarConfig.preset(p).copy(style = s.toolbar.style, position = s.toolbar.position)
@@ -160,15 +166,14 @@ fun ToolbarGalleryPage(store: BrowserStore, backLabel: String, onBack: () -> Uni
                     .border(if (current) 1.5.dp else 0.dp, if (current) q.text else Color.Transparent, RoundedCornerShape(16.dp))
                     .rowClick { store.applyPreset(p) }.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(p.label, color = q.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.weight(1f))
-                        if (current) QIconView(QIcon.CHECK, "Barre actuelle", q.text, 18.dp)
+                        Text(p.label, Modifier.weight(1f), color = q.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                        if (current) QIconView(QIcon.CHECK, stringResource(R.string.current_bar), q.text, 18.dp)
                     }
-                    Text(p.description, color = q.secondary, fontSize = 13.sp, lineHeight = 17.sp, modifier = Modifier.padding(top = 3.dp, bottom = 12.dp))
+                    Text(stringResource(p.descriptionRes), color = q.secondary, fontSize = 13.sp, lineHeight = 17.sp, modifier = Modifier.padding(top = 3.dp, bottom = 12.dp))
                     ChromePreview(s.copy(menuIcon = p.menuIcon ?: s.menuIcon), toolbar = cfg, compact = true)
                 }
             }
         }
-        item { Spacer(Modifier.height(8.dp)); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { Text("Style, couleurs et position sont conservés.", color = q.secondary, fontSize = 12.sp) } }
+        item { Spacer(Modifier.height(8.dp)); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { Text(stringResource(R.string.gallery_kept), Modifier.padding(horizontal = 32.dp), color = q.secondary, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center) } }
     }
 }

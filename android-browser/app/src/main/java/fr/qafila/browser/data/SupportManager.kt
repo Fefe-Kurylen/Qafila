@@ -19,6 +19,7 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.acknowledgePurchase
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import fr.qafila.browser.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -31,12 +32,11 @@ import kotlinx.coroutines.launch
 class SupportManager(private val app: Application, private val scope: CoroutineScope) : PurchasesUpdatedListener {
     companion object {
         const val PRODUCT_ID = "qafila_soutien_mensuel"
-        const val FALLBACK_PRICE = "0,99 €"
     }
 
     private val prefs = app.getSharedPreferences("qafila_support", Context.MODE_PRIVATE)
     val isSupporter = MutableStateFlow(prefs.getBoolean("supporter", false))
-    /** Prix affiché par Google Play (null tant qu'il n'est pas connu : l'interface affiche 0,99 €). */
+    /** Prix affiché par Google Play (null tant qu'il n'est pas connu : l'interface affiche R.string.support_fallback_price). */
     val price = MutableStateFlow<String?>(null)
     val busy = MutableStateFlow(false)
     val message = MutableStateFlow<String?>(null)
@@ -101,14 +101,14 @@ class SupportManager(private val app: Application, private val scope: CoroutineS
 
     fun purchase(activity: Activity) {
         if (busy.value) return
-        if (!client.isReady) { connect(); message.value = "Achat indisponible sur cet appareil pour le moment."; return }
+        if (!client.isReady) { connect(); message.value = app.getString(R.string.support_unavailable); return }
         scope.launch {
             busy.value = true
             if (details == null) loadDetails()
             val d = details
             val offer = d?.subscriptionOfferDetails?.firstOrNull()
             if (d == null || offer == null) {
-                message.value = "Achat indisponible sur cet appareil pour le moment."
+                message.value = app.getString(R.string.support_unavailable)
             } else {
                 val params = BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(
                     BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).setOfferToken(offer.offerToken).build(),
@@ -123,23 +123,23 @@ class SupportManager(private val app: Application, private val scope: CoroutineS
         when (result.responseCode) {
             BillingClient.BillingResponseCode.OK -> scope.launch {
                 val list = purchases.orEmpty()
-                if (list.any { it.purchaseState == Purchase.PurchaseState.PENDING }) message.value = "Achat en attente de validation."
+                if (list.any { it.purchaseState == Purchase.PurchaseState.PENDING }) message.value = app.getString(R.string.support_pending)
                 refreshNow()
-                if (isSupporter.value) message.value = "Merci pour votre soutien ♥"
+                if (isSupporter.value) message.value = app.getString(R.string.support_thanks)
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> Unit
-            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> scope.launch { refreshNow(); message.value = "Vous soutenez déjà Qafila. Merci ♥" }
-            else -> message.value = "L'achat n'a pas abouti (${result.debugMessage.ifBlank { "code ${result.responseCode}" }})."
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> scope.launch { refreshNow(); message.value = app.getString(R.string.support_already) }
+            else -> message.value = app.getString(R.string.support_failed, result.debugMessage.ifBlank { app.getString(R.string.support_error_code, result.responseCode) })
         }
     }
 
     fun restore() {
-        if (!client.isReady) { connect(); message.value = "Google Play est indisponible sur cet appareil pour le moment."; return }
+        if (!client.isReady) { connect(); message.value = app.getString(R.string.support_play_unavailable); return }
         scope.launch {
             busy.value = true
             refreshNow()
             busy.value = false
-            message.value = if (isSupporter.value) "Abonnement retrouvé. Merci ♥" else "Aucun abonnement trouvé pour ce compte Google."
+            message.value = app.getString(if (isSupporter.value) R.string.support_restored else R.string.support_none_found)
         }
     }
 

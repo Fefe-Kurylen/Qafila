@@ -43,17 +43,18 @@ img, video, canvas, picture, svg, iframe, [style*="background-image"] { filter: 
     """.trimIndent()
 
     fun readerPage(title: String, byline: String, html: String, host: String, dark: Boolean): String = """
-        <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+        <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
         <style>:root{color-scheme:${if (dark) "dark" else "light"}}
         body{margin:0 auto;padding:24px 20px 60px;font:19px/1.6 Georgia,serif;background:${if (dark) "#141416" else "#fbfaf7"};color:${if (dark) "#ececec" else "#1b1b1b"};max-width:680px}
         h1{font:700 30px/1.2 sans-serif;margin:0 0 8px}.meta{color:#888;font:14px sans-serif;margin-bottom:28px}img,video{max-width:100%;height:auto;border-radius:10px}a{color:${if (dark) "#8fb0ff" else "#004fd6"}}pre{white-space:pre-wrap;font-size:15px}</style>
         </head><body><h1>$title</h1><div class="meta">${if (byline.isEmpty()) "" else "$byline · "}$host</div>$html</body></html>
     """.trimIndent()
 
-    fun errorPage(message: String, url: String): String = """
-        <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    /** Page d'erreur dans la langue de l'interface ([title] localisé, [lang] « fr », « ar »…, droite à gauche si [rtl]). L'adresse reste LTR. */
+    fun errorPage(title: String, message: String, url: String, lang: String, rtl: Boolean): String = """
+        <!doctype html><html lang="$lang" dir="${if (rtl) "rtl" else "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
         <style>body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:24px;color:#17191c}@media(prefers-color-scheme:dark){body{background:#17191c;color:#f2f4f7}}h1{font-size:22px;margin:0 0 8px}p{color:#8395af;font-size:15px;max-width:360px}</style>
-        </head><body><h1>Page inaccessible</h1><p>$message</p><p style="font-size:13px;word-break:break-all">$url</p></body></html>
+        </head><body><h1>$title</h1><p dir="auto">$message</p><p dir="ltr" style="font-size:13px;word-break:break-all">$url</p></body></html>
     """.trimIndent()
 
     private fun jsString(s: String): String = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""

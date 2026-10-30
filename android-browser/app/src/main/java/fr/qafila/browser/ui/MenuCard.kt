@@ -27,6 +27,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import fr.qafila.browser.data.ToolbarAction
 import fr.qafila.browser.data.ToolbarSlot
@@ -90,17 +93,22 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
         ToolbarAction.ADD_BOOKMARK -> store.isBookmarked(tab)
         else -> false
     }
-    fun label(a: ToolbarAction): String = when (a) {
-        ToolbarAction.BLOCKER -> if (active(a)) "Désactiver le bloqueur ici" else "Activer le bloqueur ici"
-        ToolbarAction.DARKEN -> if (active(a)) "Ne plus assombrir" else "Assombrir le site"
-        ToolbarAction.JAVASCRIPT -> if (active(a)) "Désactiver JavaScript" else "Activer JavaScript"
-        ToolbarAction.DESKTOP_SITE -> if (active(a)) "Version mobile" else "Version bureau"
-        ToolbarAction.READER -> if (active(a)) "Quitter le lecteur" else "Lecteur"
-        ToolbarAction.ADD_BOOKMARK -> if (active(a)) "Retirer des favoris" else "Ajouter aux favoris"
-        ToolbarAction.RELOAD -> if (n?.loading == true) "Arrêter" else "Recharger"
-        ToolbarAction.CLOSE_TAB -> "Fermer cet onglet"
-        ToolbarAction.CLOSE_ALL_TABS -> if (state.tabs.size > 1) "Fermer les ${state.tabs.size} onglets" else "Fermer l'onglet"
+    @Composable fun label(a: ToolbarAction): String = when (a) {
+        ToolbarAction.BLOCKER -> stringResource(if (active(a)) R.string.menu_blocker_off_here else R.string.menu_blocker_on_here)
+        ToolbarAction.DARKEN -> stringResource(if (active(a)) R.string.menu_undarken else R.string.menu_darken_site)
+        ToolbarAction.JAVASCRIPT -> stringResource(if (active(a)) R.string.menu_js_off else R.string.menu_js_on)
+        ToolbarAction.DESKTOP_SITE -> stringResource(if (active(a)) R.string.menu_mobile_version else R.string.menu_desktop_version)
+        ToolbarAction.READER -> stringResource(if (active(a)) R.string.menu_exit_reader else R.string.action_reader)
+        ToolbarAction.ADD_BOOKMARK -> stringResource(if (active(a)) R.string.menu_remove_bookmark else R.string.action_add_bookmark)
+        ToolbarAction.RELOAD -> stringResource(if (n?.loading == true) R.string.action_stop else R.string.action_reload)
+        ToolbarAction.CLOSE_TAB -> stringResource(R.string.menu_close_this_tab)
+        ToolbarAction.CLOSE_ALL_TABS -> state.tabs.size.let { c -> if (c > 1) pluralStringResource(R.plurals.close_n_tabs, c, c) else stringResource(R.string.action_close_tab) }
         else -> a.label
+    }
+    /** Intitulé court des tuiles (suit l'état : Arrêter pendant le chargement, Retirer un favori…). */
+    @Composable fun tileLabel(a: ToolbarAction): String = when (a) {
+        ToolbarAction.RELOAD -> stringResource(if (n?.loading == true) R.string.action_stop else R.string.action_reload)
+        else -> a.shortLabel
     }
     fun icon(a: ToolbarAction) = if (a == ToolbarAction.RELOAD && n?.loading == true) QIcon.CLOSE else a.qicon(active(a), state.settings.menuIcon)
 
@@ -110,10 +118,10 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
             // Adresse masquée sans bouton Rechercher : la saisie reste accessible depuis le menu.
             val s = state.settings
             if (s.addressStyle == fr.qafila.browser.data.AddressStyle.HIDDEN && s.toolbar.bar.none { it.action == ToolbarAction.ADDRESS || it.action == ToolbarAction.SEARCH }) {
-                MenuLine("Rechercher ou saisir une adresse", QIcon.SEARCH) { act(ToolbarAction.SEARCH) }
+                MenuLine(stringResource(R.string.search_or_enter_address), QIcon.SEARCH) { act(ToolbarAction.SEARCH) }
                 if (blocks.isNotEmpty()) Hairline()
             }
-            if (blocks.isEmpty()) Text("Menu vide — ajoutez des éléments dans Personnaliser.", Modifier.padding(16.dp), color = q.secondary, fontSize = 13.sp)
+            if (blocks.isEmpty()) Text(stringResource(R.string.menu_empty), Modifier.padding(16.dp), color = q.secondary, fontSize = 13.sp)
             blocks.forEach { b ->
                 when (b) {
                     MenuBlock.Separator -> Hairline()
@@ -125,8 +133,9 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
                         }
                     }
                     is MenuBlock.Tiles -> {
+                        // Comme Quiche : jusqu'à 3 tuiles, un petit intitulé sous l'icône ; au-delà, icônes seules.
                         val withLabels = b.slots.size <= 3
-                        Row(Modifier.fillMaxWidth().height(if (withLabels) 62.dp else 46.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().height(if (withLabels) 60.dp else 46.dp), verticalAlignment = Alignment.CenterVertically) {
                             b.slots.forEachIndexed { i, s ->
                                 if (i > 0) Box(Modifier.width(0.5.dp).fillMaxHeight().background(q.separator))
                                 val a = s.action
@@ -135,10 +144,10 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
                                     Modifier.weight(1f).fillMaxHeight().alpha(if (enabled(a)) 1f else 0.3f).rowClick(enabled = enabled(a)) { act(a) },
                                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
                                 ) {
-                                    QIconView(icon(a), a.label, color, if (withLabels) 19.dp else 18.dp)
+                                    QIconView(icon(a), label(a), color, if (withLabels) 20.dp else 18.dp)
                                     if (withLabels) {
                                         Spacer(Modifier.height(5.dp))
-                                        Text(a.short, color = color, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 4.dp))
+                                        Text(tileLabel(a), color = color, fontSize = 11.5.sp, lineHeight = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 5.dp))
                                     }
                                 }
                             }

@@ -23,6 +23,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -49,6 +52,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 import fr.qafila.browser.data.AccentColor
 import fr.qafila.browser.data.AddressStyle
 import fr.qafila.browser.data.Settings
@@ -78,11 +83,10 @@ class ChromeCallbacks(
     val onMenuAnchor: (Float) -> Unit = {},
 )
 
-const val ADDRESS_PLACEHOLDER = "Rechercher ou saisir une adresse"
-
-/** Exemple utilisé par les aperçus (réglages, galerie, éditeur). */
+/** Exemple utilisé par les aperçus (réglages, galerie, éditeur) : un article réel, non traduit. */
+@Composable
 fun sampleChromeData() = ChromeData(
-    url = "https://aeon.co/essays/tech-vexed", host = "aeon.co", title = "Tech-vexed: how digital life threatens our capacity for awe", readLabel = "19 min",
+    url = "https://aeon.co/essays/tech-vexed", host = "aeon.co", title = "Tech-vexed: how digital life threatens our capacity for awe", readLabel = readingLabel(19),
     favicon = null, isPrivate = false, tabCount = 7, canBack = true, canForward = false, loading = false, progress = 1f, active = setOf(ToolbarAction.BLOCKER, ToolbarAction.JAVASCRIPT),
 )
 
@@ -180,7 +184,8 @@ private fun MiniAddress(data: ChromeData, colors: BarColors, interactive: Boolea
     ) {
         if (data.isPrivate) { QIconView(QIcon.PRIVATE, null, colors.secondary, 12.dp); Spacer(Modifier.width(4.dp)) }
         else if (data.url?.startsWith("https") == true) { QIconView(QIcon.LOCK, null, colors.secondary, 10.dp); Spacer(Modifier.width(4.dp)) }
-        Text(data.host ?: "Rechercher", color = colors.text, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        if (data.host != null) Text(data.host, color = colors.text, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, style = LtrText)
+        else Text(stringResource(R.string.action_search), color = colors.text, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
     }
 }
 
@@ -190,12 +195,16 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
     val style = styleOverride ?: s.addressStyle
     val empty = data.url == null
     val density = LocalDensity.current
+    val placeholder = stringResource(R.string.search_or_enter_address)
+    // En arabe (droite à gauche), le geste suit le sens de lecture : vers la gauche = Précédent.
+    val back = if (isRtl()) 1 else -1
+    val urlAlign = urlAlign()
     val gestures = if (!interactive) Modifier else Modifier
-        .pointerInput(s.swipeBarNavigation) {
+        .pointerInput(s.swipeBarNavigation, back) {
             if (!s.swipeBarNavigation) return@pointerInput
             var dx = 0f
             val threshold = with(density) { 56.dp.toPx() }
-            detectHorizontalDragGestures(onDragStart = { dx = 0f }, onDragEnd = { if (dx > threshold) cb.onSwipe(-1) else if (dx < -threshold) cb.onSwipe(1) }) { _, d -> dx += d }
+            detectHorizontalDragGestures(onDragStart = { dx = 0f }, onDragEnd = { if (dx > threshold) cb.onSwipe(back) else if (dx < -threshold) cb.onSwipe(-back) }) { _, d -> dx += d }
         }
         .pressFade(onLongClick = cb.onAddressLongPress, onClick = cb.onAddressTap)
     val showFav = s.addressShowsFavicon
@@ -209,9 +218,9 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
         AddressStyle.CARD -> Row(card.heightIn(min = if (inline) 40.dp else 44.dp).then(gestures).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showFav) { fav(22.dp); Spacer(Modifier.width(9.dp)) }
             Column(Modifier.weight(1f)) {
-                if (empty) Text(ADDRESS_PLACEHOLDER, color = colors.secondary, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (empty) Text(placeholder, color = colors.secondary, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 else {
-                    Text((data.host ?: "").uppercase(), color = colors.text, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text((data.host ?: "").uppercase(), color = colors.text, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
                     Text(data.title, color = colors.text, fontSize = 12.5.sp, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
@@ -219,16 +228,18 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
         }
         AddressStyle.FULL_URL -> Row(card.height(40.dp).then(gestures).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showFav) { fav(18.dp); Spacer(Modifier.width(8.dp)) }
-            Text(if (empty) ADDRESS_PLACEHOLDER else data.shortUrl, Modifier.weight(1f), color = if (empty) colors.secondary else colors.text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (empty) Text(placeholder, Modifier.weight(1f), color = colors.secondary, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            else Text(data.shortUrl, Modifier.weight(1f), color = colors.text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText, textAlign = urlAlign)
             if (showRead) { Spacer(Modifier.width(8.dp)); pill() }
         }
         AddressStyle.CENTERED_DOMAIN -> Row(Modifier.fillMaxWidth().height(40.dp).clip(cardShape).background(colors.capsule).then(gestures).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             if (showFav && !empty) { fav(16.dp); Spacer(Modifier.width(7.dp)) }
-            Text(if (empty) ADDRESS_PLACEHOLDER else data.host ?: "", color = if (empty) colors.secondary else colors.text, fontSize = if (empty) 14.sp else 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (empty) Text(placeholder, color = colors.secondary, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            else Text(data.host ?: "", color = colors.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
         }
         AddressStyle.TITLE_READ -> Row(card.height(40.dp).then(gestures).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showFav) { fav(20.dp); Spacer(Modifier.width(9.dp)) }
-            Text(if (empty) ADDRESS_PLACEHOLDER else data.title, Modifier.weight(1f), color = if (empty) colors.secondary else colors.text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (empty) placeholder else data.title, Modifier.weight(1f), color = if (empty) colors.secondary else colors.text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (showRead) { Spacer(Modifier.width(8.dp)); pill() }
         }
         AddressStyle.CENTERED_PLAIN, AddressStyle.HIDDEN -> {
@@ -236,10 +247,10 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
             val textAlign = if (inline) TextAlign.Start else TextAlign.Center
             if (style == AddressStyle.HIDDEN && !inline) return
             Column(Modifier.fillMaxWidth().heightIn(min = 38.dp).then(gestures).padding(horizontal = 4.dp, vertical = 3.dp), horizontalAlignment = align, verticalArrangement = Arrangement.Center) {
-                if (empty) Text(ADDRESS_PLACEHOLDER, color = colors.secondary, fontSize = 14.sp, maxLines = 1, textAlign = textAlign)
-                else if (style == AddressStyle.HIDDEN) Text(data.host ?: "", color = colors.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (empty) Text(placeholder, color = colors.secondary, fontSize = 14.sp, maxLines = 1, textAlign = textAlign)
+                else if (style == AddressStyle.HIDDEN) Text(data.host ?: "", color = colors.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
                 else {
-                    Text((data.host ?: "").uppercase(), color = colors.text, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, maxLines = 1, textAlign = textAlign)
+                    Text((data.host ?: "").uppercase(), color = colors.text, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, maxLines = 1, textAlign = textAlign, style = LtrText)
                     Text(data.title, color = colors.text, fontSize = 12.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = textAlign)
                 }
             }
@@ -250,6 +261,7 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
 /** Mode saisie : la carte devient un champ, avec « Annuler ». */
 @Composable
 fun AddressEditor(value: TextFieldValue, colors: BarColors, onChange: (TextFieldValue) -> Unit, onGo: () -> Unit, onCancel: () -> Unit) {
+    val placeholder = stringResource(R.string.search_or_enter_address)
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
@@ -262,13 +274,13 @@ fun AddressEditor(value: TextFieldValue, colors: BarColors, onChange: (TextField
                 textStyle = TextStyle(color = colors.text, fontSize = 15.sp), cursorBrush = SolidColor(colors.text),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go, autoCorrectEnabled = false),
                 keyboardActions = KeyboardActions(onGo = { onGo() }),
-                decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (value.text.isEmpty()) Text(ADDRESS_PLACEHOLDER, color = colors.secondary, fontSize = 15.sp, maxLines = 1); inner() } },
+                decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (value.text.isEmpty()) Text(placeholder, color = colors.secondary, fontSize = 15.sp, maxLines = 1); inner() } },
             )
             if (value.text.isNotEmpty()) Box(Modifier.size(32.dp).pressFade { onChange(TextFieldValue("")) }, contentAlignment = Alignment.Center) {
-                Box(Modifier.size(17.dp).clip(RoundedCornerShape(50)).background(colors.secondary.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) { QIconView(QIcon.CLOSE, "Effacer", colors.card, 11.dp) }
+                Box(Modifier.size(17.dp).clip(RoundedCornerShape(50)).background(colors.secondary.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) { QIconView(QIcon.CLOSE, stringResource(R.string.clear), colors.card, 11.dp) }
             }
         }
-        Text("Annuler", Modifier.pressFade(onClick = onCancel).padding(horizontal = 10.dp, vertical = 10.dp), color = colors.text, fontSize = 15.sp)
+        Text(stringResource(R.string.cancel), Modifier.pressFade(onClick = onCancel).padding(horizontal = 10.dp, vertical = 10.dp), color = colors.text, fontSize = 15.sp)
     }
 }
 
@@ -282,12 +294,15 @@ fun ChromePreview(s: Settings, modifier: Modifier = Modifier, toolbar: ToolbarCo
     val pageBg = if (q.dark) Color(0xFF121212) else Color.White
     val line = if (q.dark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
     Column(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).border(0.5.dp, q.separator, RoundedCornerShape(18.dp)).background(pageBg)) {
-        if (!compact) Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp)) {
-            Text("Tech-vexed", color = q.text, fontSize = 20.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
-            Spacer(Modifier.height(8.dp))
-            Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(line))
-            Spacer(Modifier.height(6.dp))
-            Box(Modifier.fillMaxWidth(0.8f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(line))
+        // Page d'exemple : contenu web, jamais retourné en miroir (seule la barre suit le sens de lecture).
+        if (!compact) CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp)) {
+                Text("Tech-vexed", color = q.text, fontSize = 20.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
+                Spacer(Modifier.height(8.dp))
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(line))
+                Spacer(Modifier.height(6.dp))
+                Box(Modifier.fillMaxWidth(0.8f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(line))
+            }
         }
         ChromeContent(sampleChromeData(), settings, toolbar, bar, interactive = false)
         Box(Modifier.fillMaxWidth().background(if (toolbar.style == ToolbarStyle.GLASS) bar.bg.copy(alpha = 0.8f) else bar.bg).padding(top = 6.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {

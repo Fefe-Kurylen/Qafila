@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.border
@@ -74,6 +75,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import fr.qafila.browser.data.AddressLongPressAction
@@ -129,7 +132,7 @@ fun BrowserScreen(store: BrowserStore) {
     LaunchedEffect(findTick) { if (findTick > 0) { showFind = true; store.expandBar() } }
     LaunchedEffect(shareUrl) {
         shareUrl?.let { u ->
-            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, u); putExtra(Intent.EXTRA_TITLE, tab?.displayTitle) }, null))
+            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, u); putExtra(Intent.EXTRA_TITLE, tab?.displayTitle?.ifEmpty { null }) }, null))
             store.shareRequest.value = null
         }
     }
@@ -185,7 +188,7 @@ fun BrowserScreen(store: BrowserStore) {
         }
     }
     val data = ChromeData(
-        url = tab?.url, host = tab?.hostOrNull, title = tab?.displayTitle ?: "", readLabel = tab?.readingLabel, favicon = icons[store.tabManager.favicons.keyOf(tab?.url)],
+        url = tab?.url, host = tab?.hostOrNull, title = tab?.uiTitle() ?: "", readLabel = tab?.let { readingLabel(it.readingMinutes) }, favicon = icons[store.tabManager.favicons.keyOf(tab?.url)],
         isPrivate = tab?.isPrivate == true, tabCount = state.tabs.count { it.isPrivate == (tab?.isPrivate == true) }, canBack = n?.canBack == true, canForward = n?.canForward == true,
         loading = n?.loading == true, progress = n?.progress ?: 1f, active = active,
     )
@@ -298,7 +301,8 @@ fun BrowserScreen(store: BrowserStore) {
         val maxMenu = with(density) { rootSize.height.toDp() } - chromeDp - statusInset - 24.dp
         AnimatedVisibility(
             showMenu,
-            modifier = Modifier.align(if (top) (if (right) Alignment.TopEnd else Alignment.TopStart) else (if (right) Alignment.BottomEnd else Alignment.BottomStart))
+            // Position absolue (gauche / droite à l'écran), quel que soit le sens de lecture : le menu suit le bouton.
+            modifier = Modifier.align(if (top) (if (right) AbsoluteAlignment.TopRight else AbsoluteAlignment.TopLeft) else (if (right) AbsoluteAlignment.BottomRight else AbsoluteAlignment.BottomLeft))
                 .padding(start = 10.dp, end = 10.dp, top = if (top) chromeDp + 6.dp else 0.dp, bottom = if (top) 0.dp else chromeDp + 6.dp),
             enter = scaleIn(tween(200), initialScale = 0.92f, transformOrigin = origin) + fadeIn(tween(140)),
             exit = scaleOut(tween(150), targetScale = 0.92f, transformOrigin = origin) + fadeOut(tween(120)),
@@ -349,9 +353,9 @@ private fun SuggestionRow(sg: Suggestion, onOpen: () -> Unit, onFill: () -> Unit
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(sg.title, color = q.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (sg.kind != SuggestionKind.SEARCH) Text(sg.url.removePrefix("https://").removePrefix("www."), color = q.secondary, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (sg.kind != SuggestionKind.SEARCH) Text(sg.url.removePrefix("https://").removePrefix("www."), color = q.secondary, fontSize = 11.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
         }
-        Box(Modifier.size(40.dp).pressFade(onClick = onFill), contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_UP, "Compléter", q.tertiary, 15.dp) }
+        Box(Modifier.size(40.dp).pressFade(onClick = onFill), contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_UP, stringResource(R.string.fill_in), q.tertiary, 15.dp) }
     }
 }
 
@@ -359,15 +363,16 @@ private fun SuggestionRow(sg: Suggestion, onOpen: () -> Unit, onFill: () -> Unit
 @Composable
 private fun FindBar(store: BrowserStore, tabId: String, bar: BarColors, onClose: () -> Unit) {
     var text by remember { mutableStateOf("") }
+    val hint = stringResource(R.string.action_find)
     Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f).height(38.dp).clip(RoundedCornerShape(10.dp)).background(bar.card).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             QIconView(QIcon.FIND, null, bar.secondary, 16.dp)
             Spacer(Modifier.width(8.dp))
             BasicTextField(text, { text = it; store.tabManager.find(tabId, it) }, Modifier.weight(1f), singleLine = true, textStyle = TextStyle(color = bar.text, fontSize = 15.sp), cursorBrush = SolidColor(bar.text),
-                decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (text.isEmpty()) Text("Rechercher dans la page", color = bar.secondary, fontSize = 15.sp); inner() } })
+                decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (text.isEmpty()) Text(hint, color = bar.secondary, fontSize = 15.sp, maxLines = 1); inner() } })
         }
-        Box(Modifier.size(38.dp).pressFade { store.tabManager.findNext(tabId, false) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_UP, "Précédent", bar.text, 17.dp) }
-        Box(Modifier.size(38.dp).pressFade { store.tabManager.findNext(tabId, true) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_DOWN, "Suivant", bar.text, 17.dp) }
-        Text("OK", Modifier.pressFade(onClick = onClose).padding(horizontal = 10.dp, vertical = 8.dp), color = bar.text, fontSize = 15.sp)
+        Box(Modifier.size(38.dp).pressFade { store.tabManager.findNext(tabId, false) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_UP, stringResource(R.string.find_previous), bar.text, 17.dp) }
+        Box(Modifier.size(38.dp).pressFade { store.tabManager.findNext(tabId, true) }, contentAlignment = Alignment.Center) { QIconView(QIcon.CHEVRON_DOWN, stringResource(R.string.find_next), bar.text, 17.dp) }
+        Text(stringResource(R.string.done), Modifier.pressFade(onClick = onClose).padding(horizontal = 10.dp, vertical = 8.dp), color = bar.text, fontSize = 15.sp)
     }
 }

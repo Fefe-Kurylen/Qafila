@@ -15,6 +15,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -228,7 +229,12 @@ class TabManager(private val context: Context, private val store: BrowserStore, 
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-            if (request.isForMainFrame) view.loadDataWithBaseURL(null, Scripts.errorPage(error.description.toString(), request.url.toString()), "text/html", "utf-8", null)
+            if (request.isForMainFrame) {
+                val res = context.resources
+                val page = Scripts.errorPage(res.getString(R.string.error_page_title), error.description.toString(), request.url.toString(),
+                    res.configuration.locales[0].language, res.configuration.layoutDirection == android.view.View.LAYOUT_DIRECTION_RTL)
+                view.loadDataWithBaseURL(null, page, "text/html", "utf-8", null)
+            }
         }
     }
 

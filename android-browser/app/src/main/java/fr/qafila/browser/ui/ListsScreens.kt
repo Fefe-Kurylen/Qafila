@@ -29,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import java.text.DateFormat
 import java.util.Date
@@ -40,7 +42,7 @@ private fun SearchField(value: String, placeholder: String, onChange: (String) -
         QIconView(QIcon.SEARCH, null, q.secondary, 16.dp)
         Spacer(Modifier.width(8.dp))
         BasicTextField(value, onChange, Modifier.weight(1f), singleLine = true, textStyle = TextStyle(color = q.text, fontSize = 15.sp), cursorBrush = SolidColor(q.text),
-            decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (value.isEmpty()) Text(placeholder, color = q.secondary, fontSize = 15.sp); inner() } })
+            decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (value.isEmpty()) Text(placeholder, color = q.secondary, fontSize = 15.sp, maxLines = 1); inner() } })
     }
 }
 
@@ -53,10 +55,10 @@ private fun SiteRow(store: BrowserStore, title: String, url: String, trailing: S
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title.ifBlank { url }, color = q.text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 18.sp)
-            Text((store.hostOf(url) ?: url).uppercase(), color = q.secondary, fontSize = 10.sp, letterSpacing = 0.5.sp, maxLines = 1)
+            Text((store.hostOf(url) ?: url).uppercase(), color = q.secondary, fontSize = 10.sp, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
         }
         if (trailing != null) Text(trailing, color = q.secondary, fontSize = 12.sp)
-        Box(Modifier.size(40.dp).pressFade(onClick = onDelete), contentAlignment = Alignment.Center) { QIconView(QIcon.CLOSE, "Supprimer", q.secondary, 14.dp) }
+        Box(Modifier.size(40.dp).pressFade(onClick = onDelete), contentAlignment = Alignment.Center) { QIconView(QIcon.CLOSE, stringResource(R.string.delete), q.secondary, 14.dp) }
     }
 }
 
@@ -69,15 +71,15 @@ fun BookmarksScreen(store: BrowserStore, onDismiss: () -> Unit) {
     val items = state.bookmarks.filter { query.isBlank() || it.title.contains(query, true) || it.url.contains(query, true) }
     fun open(url: String) { onDismiss(); store.navigate(url) }
     BackHandler(onBack = onDismiss)
-    QPage("Favoris", onDismiss, backLabel = "OK", header = { SearchField(query, "Rechercher dans les favoris") { query = it } }) {
+    QPage(stringResource(R.string.action_bookmarks), onDismiss, backLabel = stringResource(R.string.done), header = { SearchField(query, stringResource(R.string.search_bookmarks)) { query = it } }) {
         if (tab?.url != null && !store.isBookmarked(tab)) item {
             Spacer(Modifier.height(10.dp))
-            GroupCard { ActionRow("Ajouter « ${tab.displayTitle} »", icon = QIcon.STAR) { store.toggleBookmark(tab) } }
+            GroupCard { ActionRow(stringResource(R.string.add_named, tab.uiTitle()), icon = QIcon.STAR) { store.toggleBookmark(tab) } }
         }
         item {
             Spacer(Modifier.height(16.dp))
             GroupCard {
-                if (items.isEmpty()) Text("Aucun favori pour l'instant.", Modifier.padding(16.dp), color = q.secondary, fontSize = 14.sp)
+                if (items.isEmpty()) Text(stringResource(R.string.no_bookmarks), Modifier.padding(16.dp), color = q.secondary, fontSize = 14.sp)
                 items.forEachIndexed { i, b ->
                     SiteRow(store, b.title, b.url, null, { open(b.url) }) { store.removeBookmark(b.id) }
                     if (i < items.lastIndex) RowDivider(52.dp)
@@ -99,10 +101,10 @@ fun HistoryScreen(store: BrowserStore, onDismiss: () -> Unit) {
     val sections = items.groupBy { dayFmt.format(Date(it.visitedAt)) }
     fun open(url: String) { onDismiss(); store.navigate(url) }
     BackHandler(onBack = onDismiss)
-    QPage("Historique", onDismiss, backLabel = "OK",
-        trailing = { TextAction(if (confirm) "Confirmer" else "Effacer", q.destructive, bold = confirm, enabled = state.history.isNotEmpty()) { if (confirm) { store.clearHistory(); confirm = false } else confirm = true } },
-        header = { SearchField(query, "Rechercher dans l'historique") { query = it } }) {
-        if (items.isEmpty()) item { SectionFooter("Aucun historique. Les onglets privés n'y sont jamais enregistrés.") }
+    QPage(stringResource(R.string.action_history), onDismiss, backLabel = stringResource(R.string.done),
+        trailing = { TextAction(stringResource(if (confirm) R.string.confirm else R.string.clear), q.destructive, bold = confirm, enabled = state.history.isNotEmpty()) { if (confirm) { store.clearHistory(); confirm = false } else confirm = true } },
+        header = { SearchField(query, stringResource(R.string.search_history)) { query = it } }) {
+        if (items.isEmpty()) item { SectionFooter(stringResource(R.string.no_history)) }
         sections.forEach { (day, entries) ->
             item(day) {
                 SectionHeader(day)

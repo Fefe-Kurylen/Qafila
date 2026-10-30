@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
@@ -62,6 +63,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 
 /** Clic « à la iOS » : pas d'onde, l'élément pâlit pendant l'appui. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -97,7 +100,7 @@ fun Hairline(modifier: Modifier = Modifier, color: Color = LocalQ.current.separa
 fun QPage(
     title: String,
     onBack: (() -> Unit)?,
-    backLabel: String = "Retour",
+    backLabel: String? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
     header: (@Composable ColumnScope.() -> Unit)? = null,
     content: LazyListScope.() -> Unit,
@@ -106,8 +109,11 @@ fun QPage(
     Column(Modifier.fillMaxSize().background(q.groupedBg).blockTouches().statusBarsPadding().imePadding()) {
         Box(Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 8.dp)) {
             if (onBack != null) Row(Modifier.align(Alignment.CenterStart).pressFade(onClick = onBack).padding(horizontal = 4.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                QIconView(QIcon.BACK, null, q.text, 20.dp)
-                Text(backLabel, color = q.text, fontSize = 16.sp, maxLines = 1)
+                // Intitulé trop long (« Einstellungen »…) : « Retour » générique, pour ne jamais empiéter sur le titre.
+                val generic = stringResource(R.string.back)
+                val label = backLabel?.takeIf { it.length <= 12 } ?: generic
+                QIconView(QIcon.BACK, if (label == generic) null else generic, q.text, 20.dp)
+                Text(label, Modifier.widthIn(max = 84.dp), color = q.text, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Text(title, Modifier.align(Alignment.Center).padding(horizontal = 96.dp), color = q.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (trailing != null) Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically, content = trailing)
@@ -122,7 +128,7 @@ fun TextAction(text: String, color: Color = LocalQ.current.text, bold: Boolean =
     Text(text, Modifier.pressFade(enabled = enabled, onClick = onClick).padding(horizontal = 10.dp, vertical = 10.dp), color = if (enabled) color else color.copy(alpha = 0.3f), fontSize = 16.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal)
 
 @Composable
-fun SectionHeader(text: String) = Text(text.uppercase(), Modifier.padding(start = 32.dp, end = 32.dp, top = 22.dp, bottom = 7.dp), color = LocalQ.current.secondary, fontSize = 12.sp, letterSpacing = 0.4.sp)
+fun SectionHeader(text: String) = Text(text.uppercase(), Modifier.padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 7.dp), color = LocalQ.current.secondary, fontSize = 12.sp, lineHeight = 15.sp, letterSpacing = 0.4.sp)
 
 @Composable
 fun SectionFooter(text: String) = Text(text, Modifier.padding(start = 32.dp, end = 32.dp, top = 7.dp), color = LocalQ.current.secondary, fontSize = 12.5.sp, lineHeight = 16.sp)
@@ -136,22 +142,22 @@ fun GroupCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.()
 fun RowDivider(start: Dp = 16.dp) = Box(Modifier.padding(start = start).fillMaxWidth().height(0.5.dp).background(LocalQ.current.separator))
 
 @Composable
-private fun RowShell(icon: QIcon?, onClick: (() -> Unit)?, minHeight: Dp = 46.dp, content: @Composable RowScope.() -> Unit) {
+private fun RowShell(icon: QIcon?, onClick: (() -> Unit)?, minHeight: Dp = 46.dp, iconTint: Color? = null, content: @Composable RowScope.() -> Unit) {
     val q = LocalQ.current
     Row(
         Modifier.fillMaxWidth().heightIn(min = minHeight).then(if (onClick != null) Modifier.rowClick(onClick = onClick) else Modifier).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) { QIconView(icon, null, q.text, 20.dp); Spacer(Modifier.width(14.dp)) }
+        if (icon != null) { QIconView(icon, null, iconTint ?: q.text, 20.dp); Spacer(Modifier.width(14.dp)) }
         content()
     }
 }
 
 @Composable
-fun NavRow(title: String, value: String? = null, icon: QIcon? = null, onClick: () -> Unit) = RowShell(icon, onClick) {
+fun NavRow(title: String, value: String? = null, icon: QIcon? = null, iconTint: Color? = null, onClick: () -> Unit) = RowShell(icon, onClick, iconTint = iconTint) {
     val q = LocalQ.current
-    Text(title, Modifier.weight(1f), color = q.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    if (value != null) Text(value, Modifier.padding(start = 8.dp), color = q.secondary, fontSize = 15.sp, maxLines = 1)
+    Text(title, Modifier.weight(1f), color = q.text, fontSize = 15.sp, lineHeight = 19.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    if (value != null) Text(value, Modifier.padding(start = 8.dp).widthIn(max = 150.dp), color = q.secondary, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     Spacer(Modifier.width(6.dp))
     QIconView(QIcon.CHEVRON_RIGHT, null, q.tertiary, 14.dp)
 }
@@ -159,21 +165,21 @@ fun NavRow(title: String, value: String? = null, icon: QIcon? = null, onClick: (
 @Composable
 fun ValueRow(title: String, value: String) = RowShell(null, null) {
     val q = LocalQ.current
-    Text(title, Modifier.weight(1f), color = q.text, fontSize = 15.sp)
-    Text(value, color = q.secondary, fontSize = 15.sp, textAlign = TextAlign.End)
+    Text(title, Modifier.weight(1f), color = q.text, fontSize = 15.sp, lineHeight = 19.sp)
+    Text(value, Modifier.padding(start = 8.dp), color = q.secondary, fontSize = 15.sp, textAlign = TextAlign.End)
 }
 
 @Composable
 fun ActionRow(title: String, color: Color = LocalQ.current.text, icon: QIcon? = null, onClick: () -> Unit) = RowShell(null, onClick) {
-    Text(title, Modifier.weight(1f), color = color, fontSize = 15.sp)
-    if (icon != null) QIconView(icon, null, color, 18.dp)
+    Text(title, Modifier.weight(1f), color = color, fontSize = 15.sp, lineHeight = 19.sp)
+    if (icon != null) { Spacer(Modifier.width(8.dp)); QIconView(icon, null, color, 18.dp) }
 }
 
 @Composable
 fun ToggleRow(title: String, checked: Boolean, subtitle: String? = null, enabled: Boolean = true, icon: QIcon? = null, onChange: (Boolean) -> Unit) = RowShell(icon, if (enabled) ({ onChange(!checked) }) else null) {
     val q = LocalQ.current
     Column(Modifier.weight(1f).alpha(if (enabled) 1f else 0.4f)) {
-        Text(title, color = q.text, fontSize = 15.sp)
+        Text(title, color = q.text, fontSize = 15.sp, lineHeight = 19.sp)
         if (subtitle != null) Text(subtitle, color = q.secondary, fontSize = 12.5.sp, lineHeight = 16.sp)
     }
     Spacer(Modifier.width(12.dp))
@@ -185,15 +191,15 @@ fun CheckRow(title: String, selected: Boolean, subtitle: String? = null, leading
     val q = LocalQ.current
     if (leading != null) { leading(); Spacer(Modifier.width(12.dp)) }
     Column(Modifier.weight(1f)) {
-        Text(title, color = q.text, fontSize = 15.sp)
+        Text(title, color = q.text, fontSize = 15.sp, lineHeight = 19.sp)
         if (subtitle != null) Text(subtitle, color = q.secondary, fontSize = 12.5.sp, lineHeight = 16.sp)
     }
-    if (selected) QIconView(QIcon.CHECK, "Sélectionné", q.accent, 18.dp)
+    if (selected) { Spacer(Modifier.width(8.dp)); QIconView(QIcon.CHECK, stringResource(R.string.selected), q.accent, 18.dp) }
 }
 
 /** Liste de choix à coche (style réglages iOS). */
 @Composable
-fun <T> ChoiceCard(values: List<T>, selected: T, label: (T) -> String, subtitle: ((T) -> String?)? = null, onSelect: (T) -> Unit) = GroupCard {
+fun <T> ChoiceCard(values: List<T>, selected: T, label: @Composable (T) -> String, subtitle: (@Composable (T) -> String?)? = null, onSelect: (T) -> Unit) = GroupCard {
     values.forEachIndexed { i, v ->
         CheckRow(label(v), v == selected, subtitle?.invoke(v)) { onSelect(v) }
         if (i < values.lastIndex) RowDivider()
@@ -223,7 +229,7 @@ fun Segmented(options: List<String>, selected: Int, modifier: Modifier = Modifie
                 Modifier.weight(1f).fillMaxSize().then(if (sel) Modifier.shadow(1.dp, RoundedCornerShape(7.dp)).clip(RoundedCornerShape(7.dp)).background(if (q.dark) Color(0xFF636366) else Color.White) else Modifier)
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(i) },
                 contentAlignment = Alignment.Center,
-            ) { Text(o, color = q.text, fontSize = 13.sp, fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1) }
+            ) { Text(o, Modifier.padding(horizontal = 4.dp), color = q.text, fontSize = 13.sp, fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
     }
 }
@@ -249,8 +255,8 @@ fun HostListCard(hosts: Set<String>, empty: String, onRemove: (String) -> Unit) 
     if (hosts.isEmpty()) Text(empty, Modifier.padding(16.dp), color = q.secondary, fontSize = 14.sp)
     hosts.sorted().forEachIndexed { i, h ->
         Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(h, Modifier.weight(1f), color = q.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("Retirer", Modifier.pressFade { onRemove(h) }.padding(10.dp), color = q.destructive, fontSize = 14.sp)
+            Text(h, Modifier.weight(1f), color = q.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText, textAlign = urlAlign())
+            Text(stringResource(R.string.remove), Modifier.pressFade { onRemove(h) }.padding(10.dp), color = q.destructive, fontSize = 14.sp)
         }
         if (i < hosts.size - 1) RowDivider()
     }
@@ -289,17 +295,17 @@ fun FloatingCard(modifier: Modifier = Modifier, width: Dp = 250.dp, content: @Co
     val q = LocalQ.current
     Column(
         modifier.width(width).shadow(18.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.15f), spotColor = Color.Black.copy(alpha = 0.15f))
-            .clip(RoundedCornerShape(18.dp)).background(q.menuBg).blockTouches(),
+            .clip(RoundedCornerShape(18.dp)).background(q.menuBg.copy(alpha = 0.96f)).border(0.5.dp, q.separator.copy(alpha = 0.6f), RoundedCornerShape(18.dp)).blockTouches(),
         verticalArrangement = Arrangement.Top, content = content,
     )
 }
 
 @Composable
 fun MenuLine(title: String, icon: QIcon?, color: Color = LocalQ.current.text, checked: Boolean = false, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().height(42.dp).rowClick(onClick = onClick).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 42.dp).rowClick(onClick = onClick).padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         if (checked) { QIconView(QIcon.CHECK, null, color, 14.dp); Spacer(Modifier.width(8.dp)) }
-        Text(title, Modifier.weight(1f), color = color, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (icon != null) QIconView(icon, null, color, 17.dp)
+        Text(title, Modifier.weight(1f), color = color, fontSize = 15.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (icon != null) { Spacer(Modifier.width(10.dp)); QIconView(icon, null, color, 17.dp) }
     }
 }
 

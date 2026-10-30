@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathBuilder
 import androidx.compose.ui.graphics.vector.path
@@ -34,9 +35,13 @@ private val cache = HashMap<Pair<QIcon, IconWeight>, ImageVector>()
 
 fun QIcon.vector(weight: IconWeight = IconWeight.REGULAR): ImageVector = cache.getOrPut(this to weight) { build(this, weight.stroke) }
 
+/** Icônes directionnelles, retournées en miroir quand l'interface est de droite à gauche (arabe). */
+private val MIRRORED_IN_RTL = setOf(QIcon.BACK, QIcon.FORWARD, QIcon.CHEVRON_RIGHT, QIcon.UNDO)
+
 @Composable
 fun QIconView(icon: QIcon, contentDescription: String?, tint: Color, size: Dp = 20.dp, modifier: Modifier = Modifier, weight: IconWeight? = null) {
-    Icon(icon.vector(weight ?: LocalIconWeight.current), contentDescription, modifier.size(size), tint = tint)
+    val mirror = icon in MIRRORED_IN_RTL && isRtl()
+    Icon(icon.vector(weight ?: LocalIconWeight.current), contentDescription, modifier.size(size).then(if (mirror) Modifier.graphicsLayer(scaleX = -1f) else Modifier), tint = tint)
 }
 
 private fun PathBuilder.circle(cx: Float, cy: Float, r: Float) { moveTo(cx - r, cy); arcToRelative(r, r, 0f, true, true, 2 * r, 0f); arcToRelative(r, r, 0f, true, true, -2 * r, 0f); close() }

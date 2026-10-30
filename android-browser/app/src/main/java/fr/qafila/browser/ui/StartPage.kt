@@ -29,6 +29,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import fr.qafila.browser.data.BrowserTab
 
@@ -44,14 +46,14 @@ fun StartPage(store: BrowserStore, tab: BrowserTab, modifier: Modifier = Modifie
     BoxWithConstraints(modifier.fillMaxSize().background(q.page)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Spacer(Modifier.height(48.dp))
-            Text("Qafila", color = q.text, fontSize = 46.sp, fontFamily = FontFamily.Serif, letterSpacing = (-1).sp)
-            Text("قافلة", color = q.secondary, fontSize = 24.sp, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.app_name), color = q.text, fontSize = 46.sp, fontFamily = FontFamily.Serif, letterSpacing = (-1).sp)
+            Text(stringResource(R.string.app_name_arabic), color = q.secondary, fontSize = 24.sp, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Medium)
             if (tab.isPrivate) {
                 Spacer(Modifier.height(18.dp))
-                Text("Navigation privée : ni historique, ni cache, ni onglet conservé.", color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.private_browsing_note), color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
             }
             Spacer(Modifier.height(36.dp))
-            if (bookmarks.isEmpty()) Text("Touchez l'adresse pour commencer.", color = q.secondary, fontSize = 13.sp)
+            if (bookmarks.isEmpty()) Text(stringResource(R.string.tap_address_to_start), color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
             else FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalArrangement = Arrangement.spacedBy(18.dp), maxItemsInEachRow = 4) {
                 bookmarks.forEach { b ->
                     Column(Modifier.width(76.dp).pressFade { store.navigate(b.url) }, horizontalAlignment = Alignment.CenterHorizontally) {

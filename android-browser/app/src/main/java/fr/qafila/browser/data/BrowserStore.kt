@@ -18,9 +18,11 @@ import android.os.VibratorManager
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import fr.qafila.browser.R
 import fr.qafila.browser.web.TabManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,10 +36,10 @@ import java.io.File
 import java.net.URI
 
 /** Pages des réglages (navigation à sous-pages). */
-enum class SettingsPage(val title: String) {
-    ROOT("Réglages"), APPEARANCE("Apparence"), TOOLBAR("Barre d'outils"), ADDRESS("Barre d'adresse"), TABS("Onglets"), SEARCH("Recherche"),
-    PRIVACY("Confidentialité"), READING("Lecture"), ENERGY("Énergie"), ABOUT("À propos"), EDITOR("Personnaliser"), GALLERY("Galerie de barres"),
-    SUPPORT("Soutenir Qafila"),
+enum class SettingsPage(@StringRes val titleRes: Int) {
+    ROOT(R.string.action_settings), APPEARANCE(R.string.page_appearance), TOOLBAR(R.string.page_toolbar), ADDRESS(R.string.page_address), TABS(R.string.action_tabs),
+    SEARCH(R.string.page_search), PRIVACY(R.string.page_privacy), READING(R.string.page_reading), ENERGY(R.string.page_energy), ABOUT(R.string.page_about),
+    EDITOR(R.string.action_customize), GALLERY(R.string.page_gallery), SUPPORT(R.string.page_support),
 }
 
 /** État global de l'application (onglets, favoris, historique, réglages) + persistance JSON. */
@@ -152,7 +154,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         haptic()
     }
     fun reopenClosedTab() {
-        val t = closedTabs.removeLastOrNull() ?: return toast("Aucun onglet fermé récemment")
+        val t = closedTabs.removeLastOrNull() ?: return toast(R.string.toast_no_closed_tabs)
         newTab(url = t.url, isPrivate = t.isPrivate)
     }
     fun closeAllTabs(clearData: Boolean = settings.clearOnCloseAll, privateOnly: Boolean? = null) {
@@ -297,7 +299,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         val u = tab.url ?: return
         val adding = _state.value.bookmarks.none { it.url == u }
         mutate { s -> if (!adding) s.copy(bookmarks = s.bookmarks.filterNot { it.url == u }) else s.copy(bookmarks = listOf(Bookmark(title = tab.displayTitle, url = u)) + s.bookmarks) }
-        toast(if (adding) "Ajouté aux favoris" else "Retiré des favoris")
+        toast(if (adding) R.string.toast_bookmark_added else R.string.toast_bookmark_removed)
     }
     fun removeBookmark(id: String) = mutate { s -> s.copy(bookmarks = s.bookmarks.filterNot { it.id == id }) }
     fun recordVisit(tab: BrowserTab) {
@@ -319,16 +321,17 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         WebStorage.getInstance().deleteAllData()
         tabManager.clearCaches()
         tabManager.favicons.clear()
-        toast("Historique et données de sites effacés")
+        toast(R.string.toast_data_cleared)
     }
 
     // ----- Utilitaires -----
     fun copyToClipboard(text: String) {
         val app = getApplication<Application>()
-        app.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Adresse", text))
-        if (Build.VERSION.SDK_INT < 33) toast("Adresse copiée")
+        app.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText(app.getString(R.string.address_clip_label), text))
+        if (Build.VERSION.SDK_INT < 33) toast(R.string.toast_address_copied)
     }
     fun toast(message: String) = Toast.makeText(getApplication(), message, Toast.LENGTH_SHORT).show()
+    fun toast(@StringRes message: Int) = toast(getApplication<Application>().getString(message))
 
     fun haptic() {
         if (!settings.haptics) return
