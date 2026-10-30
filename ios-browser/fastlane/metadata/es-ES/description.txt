@@ -1,0 +1,36 @@
+Qafila (قافلة) significa «caravana» en árabe.
+
+Qafila es un navegador rápido, privado y totalmente personalizable para iPhone. Limpio, elegante, sin anuncios ni rastreo.
+
+CADA BOTÓN DONDE TÚ QUIERAS
+• Elige los botones de la barra y del menú, su orden y su tamaño
+• Galería de barras listas para usar: Completa, Navegación, Herramientas, Lector, Mínima, Zen
+• Barra abajo o arriba, estilo Clásico, Cristal o Flotante
+• 6 estilos de barra de direcciones, iconos finos, normales o gruesos
+
+PESTAÑAS BONITAS Y ORDENADAS
+• Pestañas agrupadas por sitio, en lista o en cuadrícula de miniaturas
+• Orden por fecha, tiempo de lectura o título
+• Pestañas privadas, nunca guardadas en el historial
+• Cierre automático de las pestañas olvidadas
+
+NAVEGA SIN QUE TE SIGAN
+• Bloqueador integrado de anuncios, rastreadores y avisos de cookies
+• JavaScript activado o desactivado por sitio
+• Cambio automático a HTTPS
+• Sin recopilación de datos, sin cuenta, sin servicios de terceros
+
+LEE CÓMODAMENTE
+• Modo claro, oscuro o automático, y oscurecimiento de todos los sitios
+• Vista de lector, tamaño de texto del 80 al 150 %
+• Tiempo de lectura estimado en la barra de direcciones y en la lista de pestañas
+• Versión de escritorio, traducción, búsqueda en la página
+
+HAZLO TUYO
+• Colores de barra para el modo claro y el oscuro, 8 colores de acento
+• 5 iconos de app en forma de pirámide
+• Buscador a elegir: DuckDuckGo, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Google, Bing o el tuyo
+• Disponible en español, inglés, francés, árabe y alemán
+
+Qafila usa WebKit, el motor de Safari: las webs se ven exactamente como esperas.
+Todas las funciones son gratuitas. Una suscripción opcional «Apoyar Qafila» ayuda al proyecto y desbloquea el icono exclusivo «Oro».

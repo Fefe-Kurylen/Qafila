@@ -1,35 +1,36 @@
 Qafila (قافلة) signifie « caravane » en arabe.
 
-Qafila est un navigateur rapide, privé et entièrement personnalisable, conçu pour iPhone.
+Qafila est un navigateur rapide, privé et entièrement personnalisable, conçu pour iPhone. Épuré, élégant, sans publicité ni pistage.
 
 PLACEZ CHAQUE BOUTON LÀ OÙ IL VOUS CONVIENT
-• Choisissez les boutons de la barre d'outils et du menu, leur ordre et leur taille
-• Ajoutez des séparateurs pour organiser le menu en sections
-• Galerie de barres prêtes à l'emploi : Complète, Minimaliste, Gestes, Lecture
-• Barre en bas ou en haut, style Classique ou Verre
+• Choisissez les boutons de la barre et du menu, leur ordre et leur taille
+• Galerie de barres prêtes à l'emploi : Complète, Navigation, Outils, Lecteur, Minimal, Zen
+• Barre en bas ou en haut, style Classique, Verre ou Flottante
+• 6 styles de barre d'adresse, icônes fines, normales ou grasses
 
 DES ONGLETS BEAUX ET BIEN RANGÉS
 • Onglets groupés par site, en liste ou en grille de vignettes
 • Tri par date, par temps de lecture ou par titre
 • Onglets privés, jamais enregistrés dans l'historique
+• Fermeture automatique des onglets oubliés
 
 NAVIGUEZ SANS ÊTRE SUIVI
-• Bloqueur de publicités et de traqueurs intégré
-• Masquage des bandeaux de cookies
+• Bloqueur de publicités, de traqueurs et de bandeaux de cookies intégré
 • JavaScript activable ou désactivable site par site
 • Passage automatique en HTTPS
 • Aucune collecte de données, aucun compte, aucun service tiers
 
 LISEZ CONFORTABLEMENT
-• Mode sombre pour tous les sites, ou site par site
-• Lecteur qui extrait l'article
+• Mode clair, sombre ou automatique, et assombrissement de tous les sites
+• Lecteur qui extrait l'article, taille du texte de 80 à 150 %
 • Temps de lecture estimé dans la barre d'adresse et la liste des onglets
-• Barres qui se masquent au défilement pour une lecture plein écran
 • Version bureau, traduction, recherche dans la page
 
 FAITES-LE VÔTRE
-• Couleur de l'interface adaptée au site visité, 8 couleurs d'accent
-• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing ou votre propre instance Qafila
-• Page de nouvel onglet configurable
+• Couleurs de barre pour le mode clair et le mode sombre, 8 couleurs d'accent
+• 5 icônes d'application en forme de pyramide
+• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Google, Bing ou le vôtre
+• Disponible en français, anglais, arabe, espagnol et allemand
 
-Qafila utilise WebKit, le moteur de Safari : les sites s'affichent exactement comme vous en avez l'habitude. Toutes les fonctions sont gratuites.
+Qafila utilise WebKit, le moteur de Safari : les sites s'affichent exactement comme vous en avez l'habitude.
+Toutes les fonctions sont gratuites. Un abonnement facultatif « Soutenir Qafila » (0,99 €/mois) aide le projet et débloque l'icône exclusive « Or ».

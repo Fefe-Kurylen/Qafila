@@ -1,1 +1,1 @@
-First release of Qafila: customizable toolbar, tabs grouped by site, built-in blocker, dark mode for every site, reader view.
+New pyramid icon, floating toolbar, new languages (English, Arabic, Spanish, German) and an optional “Support Qafila” subscription.

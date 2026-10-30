@@ -1,1 +1,1 @@
-Première version de Qafila : barre d'outils personnalisable, onglets groupés par site, bloqueur intégré, mode sombre pour tous les sites, lecteur.
+Nouvelle icône pyramide, barre flottante, nouvelles langues (anglais, arabe, espagnol, allemand) et abonnement facultatif « Soutenir Qafila ».
