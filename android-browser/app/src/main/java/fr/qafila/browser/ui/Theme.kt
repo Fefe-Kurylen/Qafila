@@ -58,7 +58,13 @@ fun qColors(dark: Boolean, accent: AccentColor): QColors {
 
 /** Couleurs de la barre, dérivées de sa couleur de fond (lisibles sur n'importe quelle teinte). */
 @Immutable
-data class BarColors(val bg: Color, val card: Color, val capsule: Color, val text: Color, val secondary: Color, val pill: Color, val light: Boolean, val hairline: Color)
+data class BarColors(val bg: Color, val card: Color, val capsule: Color, val text: Color, val secondary: Color, val pill: Color, val light: Boolean, val hairline: Color, val glass: Boolean = false)
+
+/** Barre flottante « verre » : l'adresse devient une pastille translucide (blanc 60 % en clair, 10 % en sombre). */
+fun BarColors.glassy(): BarColors {
+    val tint = if (light) Color.White.copy(alpha = 0.60f) else Color.White.copy(alpha = 0.10f)
+    return copy(card = tint, capsule = tint, glass = true)
+}
 
 fun barColorsFor(bg: Color): BarColors {
     val light = bg.luminance() > 0.45f

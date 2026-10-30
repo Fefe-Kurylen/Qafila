@@ -56,9 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.border
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
@@ -161,6 +160,8 @@ fun BrowserScreen(store: BrowserStore) {
     val bar = barColorsFor(barBg)
     val glass = s.toolbar.style == ToolbarStyle.GLASS
     val floating = s.toolbar.style == ToolbarStyle.FLOATING
+    // Couleurs du contenu de la barre (adresse en pastille translucide sur la barre flottante).
+    val chromeColors = if (floating) bar.glassy() else bar
     val statusColor = when {
         tab?.url == null -> q.page
         siteColor != null && !darkened && (!q.dark || siteColor.luminance() < 0.5f) -> siteColor
@@ -171,7 +172,8 @@ fun BrowserScreen(store: BrowserStore) {
     SideEffect {
         val window = view.context.findActivity()?.window ?: return@SideEffect
         val ctl = WindowCompat.getInsetsController(window, view)
-        ctl.isAppearanceLightStatusBars = if (anyOverlay) !q.dark else (if (top) bar.light else statusColor.luminance() > 0.5f)
+        // Barre flottante : sous la barre d'état, c'est la page (et son voile) qui se voit, pas la barre.
+        ctl.isAppearanceLightStatusBars = if (anyOverlay) !q.dark else (if (top && !floating) bar.light else statusColor.luminance() > 0.5f)
         ctl.isAppearanceLightNavigationBars = if (anyOverlay) !q.dark else (if (top) statusColor.luminance() > 0.5f else bar.light)
     }
 
@@ -186,6 +188,7 @@ fun BrowserScreen(store: BrowserStore) {
             if (store.isDesktop(tab)) add(ToolbarAction.DESKTOP_SITE)
             if (tab.id in reader) add(ToolbarAction.READER)
         }
+        if (q.dark) add(ToolbarAction.DARK_MODE)
     }
     val data = ChromeData(
         url = tab?.url, host = tab?.hostOrNull, title = tab?.uiTitle() ?: "", readLabel = tab?.let { readingLabel(it.readingMinutes) }, favicon = icons[store.tabManager.favicons.keyOf(tab?.url)],
@@ -224,8 +227,13 @@ fun BrowserScreen(store: BrowserStore) {
         val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val chromeDp = with(density) { chromeHeightPx.toDp() }
         val reserve = when { hidden -> 0.dp; (glass || floating) && s.scrollBehavior != ScrollBehavior.FIXED -> 0.dp; else -> chromeDp }
-        val contentPad = if (top) Modifier.padding(top = if (hidden) statusInset else reserve.coerceAtLeast(statusInset)).windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom))
-            else Modifier.padding(top = statusInset, bottom = reserve)
+        val contentPad = when {
+            // Barre flottante : la page passe sous la barre d'état (voile en haut) et, sauf défilement « Fixe », sous la barre.
+            floating && top -> Modifier.padding(top = reserve).windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom))
+            floating -> Modifier.padding(bottom = reserve)
+            top -> Modifier.padding(top = if (hidden) statusInset else reserve.coerceAtLeast(statusInset)).windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom))
+            else -> Modifier.padding(top = statusInset, bottom = reserve)
+        }
 
         // ----- Contenu : page de démarrage ou WebView -----
         Box(Modifier.fillMaxSize().then(contentPad)) {
@@ -247,6 +255,10 @@ fun BrowserScreen(store: BrowserStore) {
                 )
             }
         }
+
+        // Voile discret sous la barre d'état (barre flottante) : les icônes système restent lisibles sur la page.
+        if (floating) Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(statusInset + 14.dp)
+            .background(Brush.verticalGradient(listOf(statusColor.copy(alpha = 0.7f), Color.Transparent))))
 
         // Barre masquée : un tap en bas (ou en haut) la fait revenir.
         if (hidden) Box(Modifier.align(if (top) Alignment.TopCenter else Alignment.BottomCenter).fillMaxWidth().height((if (top) statusInset else navInset) + 26.dp)
@@ -271,24 +283,27 @@ fun BrowserScreen(store: BrowserStore) {
             visible = !hidden, modifier = Modifier.align(if (top) Alignment.TopCenter else Alignment.BottomCenter),
             enter = slideInVertically(tween(200)) { if (top) -it else it }, exit = slideOutVertically(tween(200)) { if (top) -it else it },
         ) {
+            // Barre flottante (comme Quiche) : à 12 dp des bords gauche, droit ET bas de l'écran (elle descend dans la zone
+            // de la barre de gestes, les icônes restant au-dessus de la poignée). Navigation à 3 boutons : au-dessus des boutons.
+            // Clavier ouvert : posée au-dessus du clavier.
+            val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+            val floatGap = when { imeBottom > 0.dp -> imeBottom + 8.dp; navInset > 32.dp -> navInset + 8.dp; else -> 12.dp }
             Column(
                 if (floating) {
-                    // Barre flottante (comme Quiche) : détachée des bords, arrondie, avec une ombre douce.
                     Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }
-                        .then(if (top) Modifier.statusBarsPadding() else Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom)))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                        .shadow(16.dp, RoundedCornerShape(24.dp), ambientColor = Color.Black.copy(alpha = 0.18f), spotColor = Color.Black.copy(alpha = 0.22f))
-                        .clip(RoundedCornerShape(24.dp)).background(bar.bg.copy(alpha = 0.96f)).border(0.5.dp, bar.hairline, RoundedCornerShape(24.dp))
-                        .padding(bottom = if (top) 0.dp else 4.dp, top = if (top) 4.dp else 0.dp)
+                        .then(if (top) Modifier.statusBarsPadding().padding(top = 6.dp) else Modifier.padding(bottom = floatGap))
+                        .padding(horizontal = 12.dp)
+                        .floatingGlass(chromeColors)
+                        .padding(bottom = if (top) 6.dp else 8.dp, top = if (top) 2.dp else 0.dp)
                 } else Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }.background(if (glass) bar.bg.copy(alpha = 0.80f) else bar.bg)
                     .then(if (top) Modifier.statusBarsPadding() else Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom))),
             ) {
-                if (showFind && tab != null && !top) FindBar(store, tab.id, bar) { showFind = false; store.tabManager.clearFind(tab.id) }
+                if (showFind && tab != null && !top) FindBar(store, tab.id, chromeColors) { showFind = false; store.tabManager.clearFind(tab.id) }
                 ChromeContent(
                     data, s, s.toolbar, bar, collapsed = collapsed && !editing, cb = cb, background = false,
-                    editing = if (editing) ({ AddressEditor(query, bar, { query = it }, { store.navigate(query.text) }, { store.isEditingAddress.value = false }) }) else null,
+                    editing = if (editing) ({ AddressEditor(query, chromeColors, { query = it }, { store.navigate(query.text) }, { store.isEditingAddress.value = false }) }) else null,
                 )
-                if (showFind && tab != null && top) FindBar(store, tab.id, bar) { showFind = false; store.tabManager.clearFind(tab.id) }
+                if (showFind && tab != null && top) FindBar(store, tab.id, chromeColors) { showFind = false; store.tabManager.clearFind(tab.id) }
             }
         }
 
@@ -365,7 +380,7 @@ private fun FindBar(store: BrowserStore, tabId: String, bar: BarColors, onClose:
     var text by remember { mutableStateOf("") }
     val hint = stringResource(R.string.action_find)
     Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f).height(38.dp).clip(RoundedCornerShape(10.dp)).background(bar.card).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).height(38.dp).clip(RoundedCornerShape(if (bar.glass) 19.dp else 10.dp)).background(bar.card).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             QIconView(QIcon.FIND, null, bar.secondary, 16.dp)
             Spacer(Modifier.width(8.dp))
             BasicTextField(text, { text = it; store.tabManager.find(tabId, it) }, Modifier.weight(1f), singleLine = true, textStyle = TextStyle(color = bar.text, fontSize = 15.sp), cursorBrush = SolidColor(bar.text),

@@ -44,7 +44,10 @@ enum class ToolbarAction(@StringRes override val labelRes: Int, val destructive:
     BOOKMARKS(R.string.action_bookmarks), ADD_BOOKMARK(R.string.action_add_bookmark, shortRes = R.string.action_add_bookmark_short), HISTORY(R.string.action_history),
     SHARE(R.string.action_share), COPY_LINK(R.string.action_copy_link, shortRes = R.string.action_copy_link_short),
     FIND(R.string.action_find, shortRes = R.string.action_find_short), SEARCH(R.string.action_search),
-    BLOCKER(R.string.action_blocker), DARKEN(R.string.action_darken), READER(R.string.action_reader, shortRes = R.string.action_reader_short), JAVASCRIPT(R.string.javascript),
+    BLOCKER(R.string.action_blocker), DARKEN(R.string.action_darken),
+    /** Bascule l'interface entre clair et sombre (« Mode clair » quand elle est sombre). */
+    DARK_MODE(R.string.action_dark_mode),
+    READER(R.string.action_reader, shortRes = R.string.action_reader_short), JAVASCRIPT(R.string.javascript),
     DESKTOP_SITE(R.string.action_desktop_site, shortRes = R.string.action_desktop_site_short), TRANSLATE(R.string.action_translate),
     SCROLL_TOP(R.string.action_scroll_top, shortRes = R.string.action_scroll_top_short), SCROLL_BOTTOM(R.string.action_scroll_bottom, shortRes = R.string.action_scroll_bottom_short),
     HOME(R.string.action_home), SETTINGS(R.string.action_settings), CUSTOMIZE(R.string.action_customize), MENU(R.string.action_menu),
@@ -64,7 +67,7 @@ data class ToolbarSlot(val id: String = UUID.randomUUID().toString(), val action
 @Serializable enum class ToolbarPosition(@StringRes override val labelRes: Int) : Labeled { BOTTOM(R.string.position_bottom), TOP(R.string.position_top) }
 
 @Serializable
-data class ToolbarConfig(val bar: List<ToolbarSlot>, val menu: List<ToolbarSlot>, val style: ToolbarStyle = ToolbarStyle.CLASSIC, val position: ToolbarPosition = ToolbarPosition.BOTTOM) {
+data class ToolbarConfig(val bar: List<ToolbarSlot>, val menu: List<ToolbarSlot>, val style: ToolbarStyle = ToolbarStyle.FLOATING, val position: ToolbarPosition = ToolbarPosition.BOTTOM) {
     val hasInlineAddress: Boolean get() = bar.any { it.action == ToolbarAction.ADDRESS }
 
     /** Galerie de barres (DESIGN.md §7). */
@@ -81,14 +84,16 @@ data class ToolbarConfig(val bar: List<ToolbarSlot>, val menu: List<ToolbarSlot>
         private fun s(a: ToolbarAction, size: ButtonSize = ButtonSize.MEDIUM, label: Boolean = true) = ToolbarSlot(action = a, size = size, showsLabel = label)
         private val SEP get() = s(ToolbarAction.SEPARATOR)
 
-        /** Menu par défaut (DESIGN.md §3) : tuiles Nouvel onglet | Onglet privé, lignes, actions rouges, tuiles de navigation. */
+        /**
+         * Menu par défaut, allégé comme Quiche : tuiles Nouvel onglet | Onglet privé, lignes Historique / Favoris / Mode sombre,
+         * fermetures en rouge, puis deux rangées de tuiles. Le reste (bloqueur, assombrir, lecteur…) s'ajoute dans l'éditeur.
+         */
         fun defaultMenu(): List<ToolbarSlot> = listOf(
             s(ToolbarAction.NEW_TAB, label = false), s(ToolbarAction.NEW_PRIVATE_TAB, label = false), SEP,
-            s(ToolbarAction.BOOKMARKS), s(ToolbarAction.HISTORY), s(ToolbarAction.ADD_BOOKMARK), SEP,
-            s(ToolbarAction.BLOCKER), s(ToolbarAction.DARKEN), s(ToolbarAction.READER), SEP,
-            s(ToolbarAction.SETTINGS), SEP,
+            s(ToolbarAction.HISTORY), s(ToolbarAction.BOOKMARKS), s(ToolbarAction.DARK_MODE), SEP,
             s(ToolbarAction.CLOSE_TAB), s(ToolbarAction.CLOSE_ALL_TABS), SEP,
-            s(ToolbarAction.BACK, label = false), s(ToolbarAction.FORWARD, label = false), s(ToolbarAction.RELOAD, label = false), s(ToolbarAction.SHARE, label = false),
+            s(ToolbarAction.FIND, label = false), s(ToolbarAction.TABS, label = false), s(ToolbarAction.SHARE, label = false), SEP,
+            s(ToolbarAction.BACK, label = false), s(ToolbarAction.FORWARD, label = false), s(ToolbarAction.RELOAD, label = false), s(ToolbarAction.SETTINGS, label = false),
         )
 
         fun preset(p: Preset): ToolbarConfig = when (p) {

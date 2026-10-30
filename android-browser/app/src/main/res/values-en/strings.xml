@@ -42,6 +42,8 @@
     <string name="action_search">Search</string>
     <string name="action_blocker">Blocker</string>
     <string name="action_darken">Darken</string>
+    <string name="action_dark_mode">Dark Mode</string>
+    <string name="menu_light_mode">Light Mode</string>
     <string name="action_reader">Reader</string>
     <string name="action_reader_short">Reader</string>
     <string name="action_desktop_site">Desktop site</string>

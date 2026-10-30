@@ -42,6 +42,8 @@
     <string name="action_search">Suchen</string>
     <string name="action_blocker">Blocker</string>
     <string name="action_darken">Abdunkeln</string>
+    <string name="action_dark_mode">Dunkelmodus</string>
+    <string name="menu_light_mode">Heller Modus</string>
     <string name="action_reader">Leseansicht</string>
     <string name="action_reader_short">Lesen</string>
     <string name="action_desktop_site">Desktop-Version</string>

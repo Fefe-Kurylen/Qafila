@@ -242,6 +242,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
             ToolbarAction.SEARCH, ToolbarAction.ADDRESS -> { expandBar(); isEditingAddress.value = true }
             ToolbarAction.BLOCKER -> { toggleBlockerForSite(tab); tabManager.reload(tab.id) }
             ToolbarAction.DARKEN -> toggleDarken(tab)
+            ToolbarAction.DARK_MODE -> updateSettings { it.copy(appearance = if (isAppDark()) Appearance.LIGHT else Appearance.DARK) }
             ToolbarAction.READER -> tabManager.toggleReader(tab.id)
             ToolbarAction.JAVASCRIPT -> { toggleJavaScript(tab); tabManager.applySettings(tab.id); tabManager.reload(tab.id) }
             ToolbarAction.DESKTOP_SITE -> { toggleDesktop(tab); tabManager.applySettings(tab.id); tabManager.reload(tab.id) }

@@ -91,6 +91,7 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
         ToolbarAction.DESKTOP_SITE -> store.isDesktop(tab)
         ToolbarAction.READER -> tab.id in reader
         ToolbarAction.ADD_BOOKMARK -> store.isBookmarked(tab)
+        ToolbarAction.DARK_MODE -> q.dark
         else -> false
     }
     @Composable fun label(a: ToolbarAction): String = when (a) {
@@ -101,6 +102,7 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
         ToolbarAction.READER -> stringResource(if (active(a)) R.string.menu_exit_reader else R.string.action_reader)
         ToolbarAction.ADD_BOOKMARK -> stringResource(if (active(a)) R.string.menu_remove_bookmark else R.string.action_add_bookmark)
         ToolbarAction.RELOAD -> stringResource(if (n?.loading == true) R.string.action_stop else R.string.action_reload)
+        ToolbarAction.DARK_MODE -> stringResource(if (q.dark) R.string.menu_light_mode else R.string.action_dark_mode)
         ToolbarAction.CLOSE_TAB -> stringResource(R.string.menu_close_this_tab)
         ToolbarAction.CLOSE_ALL_TABS -> state.tabs.size.let { c -> if (c > 1) pluralStringResource(R.plurals.close_n_tabs, c, c) else stringResource(R.string.action_close_tab) }
         else -> a.label
@@ -108,6 +110,7 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
     /** Intitulé court des tuiles (suit l'état : Arrêter pendant le chargement, Retirer un favori…). */
     @Composable fun tileLabel(a: ToolbarAction): String = when (a) {
         ToolbarAction.RELOAD -> stringResource(if (n?.loading == true) R.string.action_stop else R.string.action_reload)
+        ToolbarAction.DARK_MODE -> stringResource(if (q.dark) R.string.menu_light_mode else R.string.action_dark_mode)
         else -> a.shortLabel
     }
     fun icon(a: ToolbarAction) = if (a == ToolbarAction.RELOAD && n?.loading == true) QIcon.CLOSE else a.qicon(active(a), state.settings.menuIcon)

@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -90,6 +91,25 @@ fun sampleChromeData() = ChromeData(
     favicon = null, isPrivate = false, tabCount = 7, canBack = true, canForward = false, loading = false, progress = 1f, active = setOf(ToolbarAction.BLOCKER, ToolbarAction.JAVASCRIPT),
 )
 
+/** Rayon de la barre flottante ; l'adresse, en retrait de 10 dp, garde un rayon concentrique (32 − 10 = 22). */
+val FLOATING_RADIUS = 32.dp
+private val GLASS_INNER_RADIUS = 22.dp
+
+/**
+ * Matériau « Liquid Glass » de la barre flottante (comme Quiche) : couleur de la barre légèrement transparente
+ * (Compose ne peut pas flouter la WebView dessous), liseré dégradé clair en haut, ombre douce.
+ */
+fun Modifier.floatingGlass(colors: BarColors, elevation: Dp = 14.dp): Modifier {
+    val shape = RoundedCornerShape(FLOATING_RADIUS)
+    val rim = if (colors.light) listOf(Color.White.copy(alpha = 0.85f), Color.White.copy(alpha = 0.25f))
+        else listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.04f))
+    return this
+        .shadow(elevation, shape, ambientColor = Color.Black.copy(alpha = 0.10f), spotColor = Color.Black.copy(alpha = 0.16f))
+        .clip(shape)
+        .background(colors.bg.copy(alpha = if (colors.light) 0.82f else 0.85f))
+        .border(0.8.dp, Brush.verticalGradient(rim), shape)
+}
+
 /**
  * La barre (« chrome ») : carte d'adresse + rangée d'icônes, ou mini-adresse (défilement « Réduire »), ou champ de saisie.
  * Le fond est dessiné ici ; les marges système (barre de navigation / d'état) sont ajoutées par l'appelant.
@@ -99,7 +119,7 @@ fun ChromeContent(
     data: ChromeData,
     s: Settings,
     toolbar: ToolbarConfig,
-    colors: BarColors,
+    barColors: BarColors,
     modifier: Modifier = Modifier,
     collapsed: Boolean = false,
     interactive: Boolean = true,
@@ -110,11 +130,10 @@ fun ChromeContent(
     val glass = toolbar.style == ToolbarStyle.GLASS
     val q = LocalQ.current
     val floating = toolbar.style == ToolbarStyle.FLOATING
+    val colors = if (floating) barColors.glassy() else barColors
     val bgMod = when {
         !background -> Modifier
-        floating -> Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-            .shadow(10.dp, RoundedCornerShape(22.dp), ambientColor = Color.Black.copy(alpha = 0.16f), spotColor = Color.Black.copy(alpha = 0.2f))
-            .clip(RoundedCornerShape(22.dp)).background(colors.bg).padding(bottom = 4.dp)
+        floating -> Modifier.padding(horizontal = 12.dp, vertical = 8.dp).floatingGlass(colors, elevation = 10.dp).padding(bottom = 8.dp)
         else -> Modifier.background(if (glass) colors.bg.copy(alpha = 0.80f) else colors.bg)
     }
     Box(modifier.fillMaxWidth().animateContentSize(tween(180)).then(bgMod)) {
@@ -159,7 +178,7 @@ private fun BarButton(slot: ToolbarSlot, data: ChromeData, s: Settings, colors: 
     val a = slot.action
     val enabled = when (a) { ToolbarAction.BACK -> data.canBack; ToolbarAction.FORWARD -> data.canForward; else -> true }
     val active = a in data.active
-    val base = if (active && s.accent != AccentColor.MONO && a !in listOf(ToolbarAction.JAVASCRIPT, ToolbarAction.BLOCKER)) q.accent else colors.text
+    val base = if (active && s.accent != AccentColor.MONO && a !in listOf(ToolbarAction.JAVASCRIPT, ToolbarAction.BLOCKER, ToolbarAction.DARK_MODE)) q.accent else colors.text
     val tint = base.copy(alpha = if (enabled) 1f else 0.3f)
     var mod = Modifier.size(44.dp)
     if (a == ToolbarAction.MENU) mod = mod.onGloballyPositioned { cb.onMenuAnchor(it.boundsInRoot().center.x) }
@@ -211,7 +230,7 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
     val showRead = s.addressShowsReadingTime && data.readLabel != null && !empty
     @Composable fun fav(size: Dp) = Favicon(data.favicon, data.host, size, private = data.isPrivate, bg = colors.pill, fg = colors.secondary)
     @Composable fun pill() = Pill(data.readLabel ?: "", colors.pill, colors.text)
-    val cardShape = RoundedCornerShape(12.dp)
+    val cardShape = RoundedCornerShape(if (colors.glass) GLASS_INNER_RADIUS else 12.dp)
     val card = Modifier.fillMaxWidth().clip(cardShape).background(colors.card)
 
     when (style) {
@@ -266,7 +285,7 @@ fun AddressEditor(value: TextFieldValue, colors: BarColors, onChange: (TextField
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
     Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(12.dp)).background(colors.card).padding(start = 10.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(if (colors.glass) GLASS_INNER_RADIUS else 12.dp)).background(colors.card).padding(start = 10.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             QIconView(QIcon.SEARCH, null, colors.secondary, 16.dp)
             Spacer(Modifier.width(8.dp))
             BasicTextField(
@@ -277,7 +296,7 @@ fun AddressEditor(value: TextFieldValue, colors: BarColors, onChange: (TextField
                 decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (value.text.isEmpty()) Text(placeholder, color = colors.secondary, fontSize = 15.sp, maxLines = 1); inner() } },
             )
             if (value.text.isNotEmpty()) Box(Modifier.size(32.dp).pressFade { onChange(TextFieldValue("")) }, contentAlignment = Alignment.Center) {
-                Box(Modifier.size(17.dp).clip(RoundedCornerShape(50)).background(colors.secondary.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) { QIconView(QIcon.CLOSE, stringResource(R.string.clear), colors.card, 11.dp) }
+                Box(Modifier.size(17.dp).clip(RoundedCornerShape(50)).background(colors.secondary.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) { QIconView(QIcon.CLOSE, stringResource(R.string.clear), if (colors.light) Color.White else Color.Black, 11.dp) }
             }
         }
         Text(stringResource(R.string.cancel), Modifier.pressFade(onClick = onCancel).padding(horizontal = 10.dp, vertical = 10.dp), color = colors.text, fontSize = 15.sp)
@@ -305,8 +324,11 @@ fun ChromePreview(s: Settings, modifier: Modifier = Modifier, toolbar: ToolbarCo
             }
         }
         ChromeContent(sampleChromeData(), settings, toolbar, bar, interactive = false)
-        Box(Modifier.fillMaxWidth().background(if (toolbar.style == ToolbarStyle.GLASS) bar.bg.copy(alpha = 0.8f) else bar.bg).padding(top = 6.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.width(110.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(bar.text.copy(alpha = 0.85f)))
+        // Barre de gestes du système : sous une barre flottante, c'est la page qui se voit.
+        val floating = toolbar.style == ToolbarStyle.FLOATING
+        val homeBg = when { floating -> pageBg; toolbar.style == ToolbarStyle.GLASS -> bar.bg.copy(alpha = 0.8f); else -> bar.bg }
+        Box(Modifier.fillMaxWidth().background(homeBg).padding(top = if (floating) 0.dp else 6.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.width(110.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background((if (floating) q.text else bar.text).copy(alpha = 0.85f)))
         }
     }
 }

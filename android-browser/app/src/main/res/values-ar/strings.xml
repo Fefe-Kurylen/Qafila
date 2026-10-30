@@ -42,6 +42,8 @@
     <string name="action_search">بحث</string>
     <string name="action_blocker">حظر الإعلانات</string>
     <string name="action_darken">تعتيم</string>
+    <string name="action_dark_mode">الوضع الداكن</string>
+    <string name="menu_light_mode">الوضع الفاتح</string>
     <string name="action_reader">وضع القراءة</string>
     <string name="action_reader_short">القراءة</string>
     <string name="action_desktop_site">إصدار سطح المكتب</string>

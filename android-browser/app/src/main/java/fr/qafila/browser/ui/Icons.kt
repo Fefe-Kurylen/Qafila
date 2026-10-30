@@ -199,6 +199,7 @@ fun ToolbarAction.qicon(active: Boolean = false, menuIcon: MenuIconStyle = MenuI
     ToolbarAction.SEARCH -> QIcon.SEARCH
     ToolbarAction.BLOCKER -> if (active) QIcon.SHIELD else QIcon.SHIELD_SLASH
     ToolbarAction.DARKEN -> if (active) QIcon.SUN else QIcon.MOON
+    ToolbarAction.DARK_MODE -> if (active) QIcon.SUN else QIcon.MOON
     ToolbarAction.READER -> QIcon.READER
     ToolbarAction.JAVASCRIPT -> if (active) QIcon.JS else QIcon.JS_SLASH
     ToolbarAction.DESKTOP_SITE -> if (active) QIcon.PHONE else QIcon.DESKTOP

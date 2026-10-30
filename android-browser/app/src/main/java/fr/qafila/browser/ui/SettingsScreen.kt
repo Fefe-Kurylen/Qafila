@@ -119,6 +119,9 @@ private fun RootPage(store: BrowserStore, onDismiss: () -> Unit, open: (Settings
             Spacer(Modifier.height(12.dp))
             val supporter by store.support.isSupporter.collectAsState()
             val price by store.support.price.collectAsState()
+            // Pas d'aperçu en tête : la galerie de barres d'abord (les aperçus restent dans les sous-pages).
+            GroupCard { NavRow(stringResource(R.string.page_gallery), icon = QIcon.GRID) { open(SettingsPage.GALLERY) } }
+            Spacer(Modifier.height(24.dp))
             GroupCard {
                 // Rangée « premium » mais sobre : seul le cœur est en couleur.
                 NavRow(stringResource(R.string.page_support), value = if (supporter) stringResource(R.string.support_thanks_short) else stringResource(R.string.price_per_month, price ?: stringResource(R.string.support_fallback_price)),
@@ -399,6 +402,7 @@ private fun AddressPage(store: BrowserStore) {
     val q = LocalQ.current
     fun up(c: (Settings) -> Settings) = store.updateSettings(c)
     val bar = barColorsFor(resolveBarColor(s, q.dark, if (q.dark) Color(0xFF1E1D1B) else Color(0xFFF6F3EE), private = false, darkened = false))
+        .let { if (s.toolbar.style == ToolbarStyle.FLOATING) it.glassy() else it }
     Column {
         LivePreview(s)
         SectionHeader(stringResource(R.string.style))
