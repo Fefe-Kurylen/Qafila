@@ -36,3 +36,88 @@ jobs:
           XC=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
           if [ -n "$XC" ]; then sudo xcode-select -s "$XC"; fi
           xcodebuild -version
+
+      - name: Version de Xcode
+        run: xcodebuild -version
+
+      - name: Installer XcodeGen et fastlane
+        run: |
+          brew install xcodegen
+          gem install bundler
+          bundle install
+
+      - name: Générer le projet
+        run: xcodegen generate
+        env:
+          QAFILA_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Compilation de vérification (appareil iOS, sans signature)
+        if: ${{ (github.event.inputs.lane || 'build') == 'build' }}
+        run: |
+          set -o pipefail
+          xcodebuild -project QafilaBrowser.xcodeproj -scheme QafilaBrowser \
+            -destination 'generic/platform=iOS' -configuration Release -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee xcodebuild.log | grep -E --line-buffered "error:|warning:|BUILD|Compiling|Linking|CompileAssetCatalog" || true
+          grep -q "BUILD SUCCEEDED" xcodebuild.log
+
+      # .ipa non signée, pour tester gratuitement sur iPhone avec Sideloadly / AltStore (identifiant Apple gratuit).
+      - name: Fabriquer l'IPA de test
+        if: ${{ (github.event.inputs.lane || 'build') == 'build' }}
+        run: |
+          mkdir -p ipa/Payload
+          cp -R build/Build/Products/Release-iphoneos/QafilaBrowser.app ipa/Payload/
+          (cd ipa && zip -qry ../Qafila-test.ipa Payload)
+          ls -lh Qafila-test.ipa
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ (github.event.inputs.lane || 'build') == 'build' }}
+        with:
+          name: qafila-iphone-ipa
+          path: ios-browser/Qafila-test.ipa
+
+      - name: Nommer l'IPA de test
+        if: ${{ github.event_name == 'push' }}
+        run: cp Qafila-test.ipa Qafila-iPhone-test.ipa
+
+      # Release « test » toujours à jour : téléchargeable directement depuis le téléphone (onglet Releases du dépôt).
+      - name: Publier dans la release de test
+        if: ${{ github.event_name == 'push' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test
+          name: Version de test
+          prerelease: true
+          make_latest: false
+          body: |
+            Version de test de Qafila, refaite automatiquement à chaque modification.
+            
+            **Android** : ouvrir Qafila-Android-test.apk sur le téléphone et installer.
+            **iPhone** : installer Qafila-iPhone-test.ipa avec Sideloadly (identifiant Apple gratuit). Voir TESTER.md.
+          files: ios-browser/Qafila-iPhone-test.ipa
+
+      - name: TestFlight / App Store
+        if: ${{ github.event.inputs.lane == 'beta' || github.event.inputs.lane == 'release' }}
+        run: bundle exec fastlane ios ${{ github.event.inputs.lane }}
+        env:
+          CI: true
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+          IOS_CERT_P12_BASE64: ${{ secrets.IOS_CERT_P12_BASE64 }}
+          IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          MATCH_KEYCHAIN_NAME: fastlane.keychain-db
+          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          FASTLANE_SKIP_UPDATE_CHECK: 1
+
+      - name: Conserver les journaux
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-logs
+          path: |
+            ios-browser/xcodebuild.log
+            ~/Library/Logs/gym/*.log
+            ~/Library/Logs/fastlane/**
+          if-no-files-found: ignore
