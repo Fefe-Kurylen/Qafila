@@ -75,7 +75,7 @@ struct GlassSurface: View {
     @ViewBuilder private var surface: some View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
-            let glass = Glass.regular.tint(palette.bar.opacity((1 - t) * 0.7))
+            let glass = Glass.regular.tint(palette.bar.opacity(1 - t))
             Color.clear.glassEffect(interactive ? glass.interactive() : glass, in: shape)
         } else {
             fallback
@@ -89,7 +89,7 @@ struct GlassSurface: View {
     private var fallback: some View {
         let dark = palette.contentScheme == .dark
         return shape.fill(.ultraThinMaterial)
-            .overlay(shape.fill(palette.bar.opacity(0.05 + (1 - t) * 0.9)))
+            .overlay(shape.fill(palette.bar.opacity(0.05 + (1 - t) * 0.95)))
             .overlay(shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(dark ? 0.18 : 0.8), Color.white.opacity(dark ? 0.03 : 0.2)],
                                                        startPoint: .top, endPoint: .bottom), lineWidth: radius > 0 ? 0.8 : 0))
             .shadow(color: .black.opacity(shadow ? (dark ? 0.35 : 0.10) * (0.4 + 0.6 * (1 - t)) : 0), radius: 18, y: 6)

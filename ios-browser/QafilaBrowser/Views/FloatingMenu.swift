@@ -17,6 +17,8 @@ struct FloatingMenu: View {
             ScrollView(showsIndicators: false) { content }
         }
         .frame(width: Self.width)
+        // On ne découpe que le contenu : le fond (et son ombre portée) reste intact.
+        .clipShape(RoundedRectangle(cornerRadius: GlassSurface.menuRadius, style: .continuous))
         .modifier(SchemeOverride(scheme: glass ? palette.contentScheme : nil))
         .background {
             if glass {
@@ -26,7 +28,6 @@ struct FloatingMenu: View {
                     .shadow(color: .black.opacity(0.15), radius: 24, y: 8)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: GlassSurface.menuRadius, style: .continuous))
     }
 
     private var content: some View {
