@@ -70,7 +70,10 @@ val canBlurGlass: Boolean = android.os.Build.VERSION.SDK_INT >= 31
  * Opacité du fond de verre selon la transparence [t] : avec flou, de 1 à 0,4 ; sans flou (ou pour le menu et les pastilles,
  * qui ne floutent pas), de 1 à 0,7 pour rester lisible.
  */
-fun glassAlpha(t: Float, blurred: Boolean = canBlurGlass): Float = if (blurred) 1f - 0.6f * t else 1f - 0.3f * t
+fun glassAlpha(t: Float, blurred: Boolean = canBlurGlass): Float =
+    // Sans flou derrière (menu, pilule des onglets, Android < 12), une surface trop transparente laisse lire la page au travers :
+    // on reste entre 100 % et 88 % d'opacité ; avec le flou, le verre peut descendre à 40 %.
+    if (blurred) 1f - 0.6f * t else 1f - 0.12f * t
 
 /** Barre « verre » : l'adresse devient une pastille translucide, plus ou moins laiteuse selon la transparence [t] (blanc 12–16 % en sombre). */
 fun BarColors.glassy(t: Float, floating: Boolean = true): BarColors {

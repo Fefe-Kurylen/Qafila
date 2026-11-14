@@ -42,7 +42,7 @@ Le compte Apple Developer (99 €/an) ne sert qu'à publier sur l'App Store / Te
 - [ ] Se connecter sur gmail.com ou youtube.com, fermer l'appli, rouvrir : toujours connecté
 
 **Apparence (Réglages)**
-- [ ] Style de barre : Classique / Verre / **Flottante**
+- [ ] Style de barre : Classique / Verre / **Flottante**, et le curseur **Transparence** juste en dessous (aperçu en direct ; vrai Liquid Glass sur iOS 26)
 - [ ] Couleurs de barre clair et sombre, épaisseur des icônes, icône du menu
 - [ ] Les 6 styles d'adresse, la galerie de barres, l'éditeur de boutons
 - [ ] Icône de l'appli (Classique, Nuit, Encre, Désert)
