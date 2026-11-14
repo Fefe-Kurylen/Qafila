@@ -13,19 +13,20 @@ struct BrowserView: View {
     private var s: Settings { store.settings }
     private var landscape: Bool { vClass == .compact }
     private var atTop: Bool { s.toolbar.position == .top || (landscape && s.landscapeTopBar) }
-    private var palette: ChromePalette { ChromePalette.make(s, scheme: scheme, site: store.siteThemeColor) }
     private var floating: Bool { s.toolbar.style == .floating }
     private var collapsed: Bool { store.barsHidden && !store.isEditingAddress && !store.showMenu }
 
     var body: some View {
         GeometryReader { geo in
             let safe = geo.safeAreaInsets
+            // Calculée une seule fois par rendu (conversion UIColor et luminance).
+            let palette = ChromePalette.make(s, scheme: scheme, site: store.siteThemeColor)
             ZStack {
-                web(safe)
+                web(safe, palette)
                 VStack(spacing: 0) {
-                    if atTop { chrome(safe) }
+                    if atTop { chrome(safe, palette) }
                     Spacer(minLength: 0)
-                    if !atTop { chrome(safe) }
+                    if !atTop { chrome(safe, palette) }
                 }
                 if store.showMenu { menuLayer(geo) }
                 if let t = store.toast { toast(t) }
@@ -45,13 +46,13 @@ struct BrowserView: View {
         .onChange(of: store.selectedTabID) { _, _ in store.siteThemeColor = nil; store.barsHidden = false; store.showMenu = false }
         .onAppear { store.isDarkScheme = scheme == .dark }
         .onChange(of: scheme) { _, v in store.isDarkScheme = v == .dark }
-        .onChange(of: scenePhase) { _, p in if p == .active { store.closeExpiredTabs() } }
+        .onChange(of: scenePhase) { _, p in if p == .active { store.closeExpiredTabs(); store.syncAppIcon() } }
         .onChange(of: s) { old, new in applyChanges(old, new) }
     }
 
     // MARK: Couches
 
-    private func web(_ safe: EdgeInsets) -> some View {
+    private func web(_ safe: EdgeInsets, _ palette: ChromePalette) -> some View {
         Group {
             if let tab = store.selectedTab {
                 WebContainer(tabID: tab.id,
@@ -81,7 +82,7 @@ struct BrowserView: View {
         }
     }
 
-    @ViewBuilder private func chrome(_ safe: EdgeInsets) -> some View {
+    @ViewBuilder private func chrome(_ safe: EdgeInsets, _ palette: ChromePalette) -> some View {
         VStack(spacing: 8) {
             if store.isEditingAddress && !atTop { SuggestionsPanel(editor: editor).padding(.horizontal, 10).transition(.move(edge: .bottom).combined(with: .opacity)) }
             Group {
@@ -93,7 +94,7 @@ struct BrowserView: View {
             }
             .padding(.bottom, atTop ? 6 : (floating ? 8 : 0))
             .padding(.top, floating && atTop ? 2 : 0)
-            .environment(\.chromeCard, floating ? glassCard : palette.card)
+            .environment(\.chromeCard, floating ? glassCard(palette) : palette.card)
             .environment(\.chromeCardRadius, floating ? FloatingBarShape.radius - 10 : nil)
             .modifier(SchemeOverride(scheme: palette.contentScheme))
             .background {
@@ -121,7 +122,7 @@ struct BrowserView: View {
     }
 
     /// Carte d'adresse discrète sur le verre.
-    private var glassCard: Color { palette.contentScheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.6) }
+    private func glassCard(_ palette: ChromePalette) -> Color { palette.contentScheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.6) }
 
     private func hideOffset(_ safe: EdgeInsets) -> CGFloat {
         guard collapsed, s.scrollBehavior == .hide else { return 0 }
@@ -136,7 +137,7 @@ struct BrowserView: View {
         return ZStack(alignment: atTop ? .topLeading : .bottomLeading) {
             Color.black.opacity(0.1).ignoresSafeArea()
                 .onTapGesture { withAnimation(.easeOut(duration: 0.18)) { store.showMenu = false } }
-            FloatingMenu()
+            FloatingMenu(tabManager: store.tabManager)
                 .frame(maxHeight: max(200, available))
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.leading, x)
@@ -175,9 +176,7 @@ struct BrowserView: View {
         if old.desktopByDefault != new.desktopByDefault || old.customUserAgent != new.customUserAgent {
             tm.applyUserAgentToOpenTabs()
         }
-        if old.appIcon != new.appIcon, UIApplication.shared.supportsAlternateIcons {
-            UIApplication.shared.setAlternateIconName(new.appIcon.iconName) { _ in }
-        }
+        if old.appIcon != new.appIcon { store.syncAppIcon() }
         if old.scrollBehavior != new.scrollBehavior { store.barsHidden = false }
     }
 }

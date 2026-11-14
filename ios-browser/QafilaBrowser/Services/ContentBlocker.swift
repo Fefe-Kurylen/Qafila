@@ -62,19 +62,41 @@ enum ContentBlocker {
     }
 
     private static func json(_ obj: Any) -> String {
-        guard let data = try? JSONSerialization.data(withJSONObject: obj), let s = String(data: data, encoding: .utf8) else { return "[]" }
+        // Clés triées : le JSON (donc son empreinte, voir `compile`) est identique d'un lancement à l'autre.
+        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: [.sortedKeys]), let s = String(data: data, encoding: .utf8) else { return "[]" }
         return s
     }
 
-    /// Compile (ou recharge depuis le cache de WebKit) les deux listes.
+    /// Recharge les trois listes depuis le cache de WebKit, et ne les compile que si leur contenu a changé
+    /// (l'identifiant porte l'empreinte des règles) ; les versions périmées sont supprimées.
     static func compile(completion: @escaping (WKContentRuleList?, WKContentRuleList?, WKContentRuleList?) -> Void) {
-        let store = WKContentRuleListStore.default()
-        store?.compileContentRuleList(forIdentifier: adsIdentifier, encodedContentRuleList: adsRules()) { ads, _ in
-            store?.compileContentRuleList(forIdentifier: trackersIdentifier, encodedContentRuleList: trackerRules()) { trackers, _ in
-                store?.compileContentRuleList(forIdentifier: cookiesIdentifier, encodedContentRuleList: cookieRules()) { cookies, _ in
-                    completion(ads, trackers, cookies)
-                }
+        guard let store = WKContentRuleListStore.default() else { completion(nil, nil, nil); return }
+        let ads = (adsIdentifier, adsRules()), trackers = (trackersIdentifier, trackerRules()), cookies = (cookiesIdentifier, cookieRules())
+        let current = Set([ads, trackers, cookies].map { identifier($0.0, $0.1) })
+        store.getAvailableContentRuleListIdentifiers { ids in
+            for id in ids ?? [] where id.hasPrefix("qafila-") && !current.contains(id) { store.removeContentRuleList(forIdentifier: id) { _ in } }
+        }
+        load(ads, in: store) { a in
+            load(trackers, in: store) { t in
+                load(cookies, in: store) { c in completion(a, t, c) }
             }
         }
+    }
+
+    private static func load(_ list: (String, String), in store: WKContentRuleListStore, completion: @escaping (WKContentRuleList?) -> Void) {
+        let id = identifier(list.0, list.1)
+        store.lookUpContentRuleList(forIdentifier: id) { cached, _ in
+            if let cached { completion(cached); return }
+            store.compileContentRuleList(forIdentifier: id, encodedContentRuleList: list.1) { compiled, _ in completion(compiled) }
+        }
+    }
+
+    private static func identifier(_ base: String, _ rules: String) -> String { "\(base)-\(checksum(rules))" }
+
+    /// Empreinte FNV-1a (stable d'un lancement à l'autre, contrairement à `hashValue`).
+    private static func checksum(_ s: String) -> String {
+        var h: UInt64 = 0xcbf2_9ce4_8422_2325
+        for b in s.utf8 { h = (h ^ UInt64(b)) &* 0x0000_0100_0000_01b3 }
+        return String(h, radix: 36)
     }
 }

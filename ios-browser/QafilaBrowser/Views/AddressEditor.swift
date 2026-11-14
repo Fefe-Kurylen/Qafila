@@ -6,11 +6,18 @@ final class AddressEditModel: ObservableObject {
     @Published var text = ""
     @Published var suggestions: [String] = []
     private var task: Task<Void, Never>?
+    /// Adresses des favoris et de l'historique, dédoublonnées une fois par saisie (pas à chaque frappe).
+    private var localIndex: [(url: String, lower: String)]?
 
     func fetch(_ q: String, store: BrowserStore) {
         task?.cancel()
+        // L'adresse de la page courante pré-remplit le champ : rien à chercher tant qu'elle n'est pas modifiée.
+        if q == store.selectedTab?.url?.absoluteString { suggestions = []; return }
         let lower = q.lowercased()
-        let local = Array(Set((store.bookmarks.map(\.url.absoluteString) + store.history.map(\.url.absoluteString)).filter { $0.lowercased().contains(lower) }).prefix(2))
+        if localIndex == nil {
+            localIndex = Array(Set(store.bookmarks.map(\.url.absoluteString) + store.history.map(\.url.absoluteString))).map { (url: $0, lower: $0.lowercased()) }
+        }
+        let local = Array((localIndex ?? []).lazy.filter { $0.lower.contains(lower) }.prefix(2).map(\.url))
         let s = store.settings
         let allowed: Bool = {
             switch s.suggestions {
@@ -33,7 +40,7 @@ final class AddressEditModel: ObservableObject {
         }
     }
 
-    func reset() { task?.cancel(); suggestions = []; text = "" }
+    func reset() { task?.cancel(); suggestions = []; text = ""; localIndex = nil }
 }
 
 /// Barre en mode saisie : champ dans la carte + « Annuler ».

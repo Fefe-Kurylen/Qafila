@@ -145,7 +145,7 @@ struct AddressCard: View {
                     RoundedRectangle(cornerRadius: cardRadius ?? (inline ? 10 : 12), style: .continuous).fill(cardColor)
                 }
             }
-            .overlay(alignment: .bottom) { ProgressLine().padding(.horizontal, 10) }
+            .overlay(alignment: .bottom) { ProgressLine(tabManager: store.tabManager).padding(.horizontal, 10) }
             .contentShape(Rectangle())
             .onTapGesture { tap() }
             .onLongPressGesture(minimumDuration: 0.45) { longPress() }
@@ -295,13 +295,14 @@ struct Favicon: View {
     }
 }
 
-/// Fine ligne de progression au bas de la carte d'adresse.
+/// Fine ligne de progression au bas de la carte d'adresse. Observe le gestionnaire d'onglets : seule cette vue se redessine à chaque tic.
 struct ProgressLine: View {
     @EnvironmentObject var store: BrowserStore
+    @ObservedObject var tabManager: TabManager
     var body: some View {
         let id = store.selectedTabID
-        let p = id.flatMap { store.tabManager.progress[$0] } ?? 0
-        let loading = id.map { store.tabManager.loading.contains($0) } ?? false
+        let p = id.flatMap { tabManager.progress[$0] } ?? 0
+        let loading = id.map { tabManager.loading.contains($0) } ?? false
         GeometryReader { g in
             Capsule().fill(Color.accentColor).frame(width: max(0, g.size.width * p)).opacity(loading && p < 1 ? 1 : 0)
         }
@@ -346,7 +347,7 @@ struct ToolbarRow: View {
                 switch slot.action {
                 case .separator: Spacer().frame(width: 10)
                 case .address: AddressCard(inline: true).padding(.horizontal, 4).layoutPriority(1)
-                default: ToolbarButton(slot: slot).frame(maxWidth: .infinity)
+                default: ToolbarButton(tabManager: store.tabManager, slot: slot).frame(maxWidth: .infinity)
                 }
             }
         }
@@ -359,10 +360,11 @@ struct ToolbarRow: View {
 
 struct ToolbarButton: View {
     @EnvironmentObject var store: BrowserStore
+    @ObservedObject var tabManager: TabManager
     let slot: ToolbarSlot
 
     private var tab: BrowserTab? { store.selectedTab }
-    private var nav: (back: Bool, forward: Bool) { tab.flatMap { store.tabManager.navState[$0.id] } ?? (false, false) }
+    private var nav: (back: Bool, forward: Bool) { tab.flatMap { tabManager.navState[$0.id] } ?? (false, false) }
     private var weight: ButtonWeight { store.settings.buttonWeight }
 
     private var isEnabled: Bool {
@@ -381,7 +383,7 @@ struct ToolbarButton: View {
                 store.perform(slot.action)
             }
         } label: {
-            ActionGlyph(action: slot.action, size: slot.size.pointSize)
+            ActionGlyph(tabManager: tabManager, action: slot.action, size: slot.size.pointSize)
                 .opacity(isEnabled ? 1 : 0.28)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .contentShape(Rectangle())
@@ -428,6 +430,7 @@ struct ToolbarPressStyle: ButtonStyle {
 /// Icône d'une action, avec son état (actif / inactif) et le style choisi (graisse, icône du menu, compteur d'onglets).
 struct ActionGlyph: View {
     @EnvironmentObject var store: BrowserStore
+    @ObservedObject var tabManager: TabManager
     let action: ToolbarAction
     var size: CGFloat = 20
     var tint: Color? = nil
@@ -450,7 +453,7 @@ struct ActionGlyph: View {
         switch action {
         case .darken: return store.isDarkened(t)
         case .desktopSite: return store.isDesktop(t)
-        case .reader: return store.tabManager.readerActive.contains(t.id)
+        case .reader: return tabManager.readerActive.contains(t.id)
         case .addBookmark: return store.isBookmarked(t)
         default: return false
         }
@@ -464,7 +467,7 @@ struct ActionGlyph: View {
         case .blocker: return store.isBlockerActive(for: t?.url) ? "shield.lefthalf.filled" : "shield.slash"
         case .javascript: return store.isJavaScriptEnabled(for: t?.url) ? "curlybraces" : "curlybraces.square"
         case .addBookmark: return isActive ? "bookmark.fill" : "bookmark"
-        case .reload: return t.map { store.tabManager.loading.contains($0.id) } == true ? "xmark" : "arrow.clockwise"
+        case .reload: return t.map { tabManager.loading.contains($0.id) } == true ? "xmark" : "arrow.clockwise"
         default: return action.symbol
         }
     }

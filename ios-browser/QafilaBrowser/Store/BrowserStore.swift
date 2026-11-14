@@ -41,8 +41,8 @@ final class BrowserStore: ObservableObject {
         if tabs.isEmpty { newTab() }
         if selectedTabID == nil { selectedTabID = tabs.first?.id }
         tabManager.store = self
-        // Les vues observent le store : on relaie les changements du gestionnaire d'onglets (progression, état de navigation…).
-        tabManager.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)
+        // Progression, état de navigation… : les vues qui en ont besoin observent directement `tabManager` (pas de relais ici,
+        // qui redessinerait toute l'interface à chaque tic de chargement).
         support.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)
         // Fin du soutien : retour à l'icône classique.
         support.onSupportEnded = { [weak self] in
@@ -50,7 +50,10 @@ final class BrowserStore: ObservableObject {
             self.settings.appIcon = .classic
         }
         if settings.appIcon.supportersOnly && !support.isSupporter { settings.appIcon = .classic }
-        $tabs.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
+        $tabs.sink { [weak self] tabs in
+            self?.scheduleSave()
+            if !tabs.contains(where: { $0.isPrivate }) { self?.tabManager.dropPrivateData() }
+        }.store(in: &cancellables)
         $bookmarks.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
         $history.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
         $selectedTabID.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
@@ -153,7 +156,7 @@ final class BrowserStore: ObservableObject {
         switch action {
         case .back: web.goBack()
         case .forward: web.goForward()
-        case .reload: web.reload()
+        case .reload: if tabManager.loading.contains(tab.id) { web.stopLoading() } else { web.reload() }
         case .stop: web.stopLoading()
         case .tabs: showTabs = true
         case .newTab: newTab()
@@ -260,6 +263,13 @@ final class BrowserStore: ObservableObject {
         UIApplication.shared.topViewController?.present(av, animated: true)
     }
 
+    /// L'icône de l'écran d'accueil suit le réglage (y compris au lancement : retour à l'icône classique si le soutien a pris fin).
+    func syncAppIcon() {
+        let app = UIApplication.shared
+        guard app.supportsAlternateIcons, app.alternateIconName != settings.appIcon.iconName else { return }
+        app.setAlternateIconName(settings.appIcon.iconName) { _ in }
+    }
+
     func haptic(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
         guard settings.haptics else { return }
         UIImpactFeedbackGenerator(style: style).impactOccurred()
@@ -323,7 +333,8 @@ final class BrowserStore: ObservableObject {
     private func load() {
         guard let data = try? Data(contentsOf: fileURL), let s = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
         tabs = s.tabs.filter { !$0.isPrivate }   // les onglets privés ne survivent pas au redémarrage
-        selectedTabID = s.selected
+        // L'onglet sélectionné était privé (ou a disparu) : on reprend le dernier onglet visité.
+        selectedTabID = tabs.contains { $0.id == s.selected } ? s.selected : tabs.max { $0.lastVisited < $1.lastVisited }?.id
         bookmarks = s.bookmarks
         history = s.history
         settings = s.settings

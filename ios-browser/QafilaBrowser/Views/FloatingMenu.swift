@@ -4,6 +4,7 @@ import SwiftUI
 /// les autres des lignes (intitulé à gauche, icône à droite). Fermetures en rouge. Entièrement configurable dans l'éditeur.
 struct FloatingMenu: View {
     @EnvironmentObject var store: BrowserStore
+    @ObservedObject var tabManager: TabManager
     static let width: CGFloat = 256
 
     var body: some View {
@@ -66,7 +67,7 @@ struct FloatingMenu: View {
                 if i > 0 { Divider().frame(height: labelled ? 36 : 24) }
                 Button { act(slot.action) } label: {
                     VStack(spacing: 5) {
-                        ActionGlyph(action: slot.action, size: labelled ? 19 : 18, tint: slot.action.isDestructive ? .red : nil)
+                        ActionGlyph(tabManager: tabManager, action: slot.action, size: labelled ? 19 : 18, tint: slot.action.isDestructive ? .red : nil)
                         if labelled { Text(slot.action.tileLabel).font(.system(size: 11.5)).foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary).lineLimit(1).minimumScaleFactor(0.8) }
                     }
                     .frame(maxWidth: .infinity).frame(height: labelled ? 62 : 48)
@@ -89,7 +90,7 @@ struct FloatingMenu: View {
                 if slot.action.isDestructive {
                     Image(systemName: slot.action.symbol).font(.system(size: 16, weight: store.settings.buttonWeight.fontWeight))
                 } else {
-                    ActionGlyph(action: slot.action, size: 16)
+                    ActionGlyph(tabManager: tabManager, action: slot.action, size: 16)
                 }
             }
             .foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary)
@@ -101,7 +102,7 @@ struct FloatingMenu: View {
 
     private func enabled(_ a: ToolbarAction) -> Bool {
         guard let t = store.selectedTab else { return true }
-        let nav = store.tabManager.navState[t.id] ?? (false, false)
+        let nav = tabManager.navState[t.id] ?? (false, false)
         switch a {
         case .back: return nav.back
         case .forward: return nav.forward
@@ -117,7 +118,7 @@ struct FloatingMenu: View {
         case .darkMode: return store.isDarkScheme ? L("Mode clair") : L("Mode sombre")
         case .javascript: return store.isJavaScriptEnabled(for: t.url) ? L("Désactiver JavaScript") : L("Activer JavaScript")
         case .desktopSite: return store.isDesktop(t) ? L("Version mobile") : L("Version bureau")
-        case .reader: return store.tabManager.readerActive.contains(t.id) ? L("Quitter le lecteur") : L("Lecteur")
+        case .reader: return tabManager.readerActive.contains(t.id) ? L("Quitter le lecteur") : L("Lecteur")
         case .addBookmark: return store.isBookmarked(t) ? L("Retirer des favoris") : L("Ajouter aux favoris")
         case .closeTab: return L("Fermer l'onglet")
         case .closeAllTabs: return store.tabs.count > 1 ? L("Fermer les %ld onglets", store.tabs.count) : L("Fermer tous les onglets")

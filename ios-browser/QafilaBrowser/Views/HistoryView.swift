@@ -8,11 +8,14 @@ struct HistoryView: View {
     private var items: [HistoryEntry] {
         query.isEmpty ? store.history : store.history.filter { $0.title.localizedCaseInsensitiveContains(query) || $0.url.absoluteString.localizedCaseInsensitiveContains(query) }
     }
+    private static let dayFormatter: DateFormatter = { let f = DateFormatter(); f.dateStyle = .full; f.doesRelativeDateFormatting = true; return f }()
+
+    /// Regroupement par jour (une date formatée par section, pas par entrée).
     private var sections: [(day: String, entries: [HistoryEntry])] {
-        let f = DateFormatter(); f.dateStyle = .full; f.doesRelativeDateFormatting = true
-        var order: [String] = []; var dict: [String: [HistoryEntry]] = [:]
-        for e in items { let k = f.string(from: e.visitedAt); if dict[k] == nil { order.append(k) }; dict[k, default: []].append(e) }
-        return order.map { (day: $0, entries: dict[$0]!) }
+        let cal = Calendar.current
+        var order: [Date] = []; var dict: [Date: [HistoryEntry]] = [:]
+        for e in items { let k = cal.startOfDay(for: e.visitedAt); if dict[k] == nil { order.append(k) }; dict[k, default: []].append(e) }
+        return order.map { (day: Self.dayFormatter.string(from: $0), entries: dict[$0]!) }
     }
 
     var body: some View {

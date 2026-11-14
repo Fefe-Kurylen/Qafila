@@ -48,6 +48,8 @@ struct TabsView: View {
             bottomBar
         }
         .onAppear { captureSnapshots() }
+        .onChange(of: s.tabsLayout) { _, _ in captureSnapshots() }
+        .onChange(of: showPrivate) { _, _ in captureSnapshots() }
     }
 
     // MARK: En-tête et pied
@@ -254,9 +256,12 @@ struct TabsView: View {
         dismiss()
     }
 
+    /// Seule la grille affiche des vignettes ; elles sont capturées à la largeur des cartes, pas à la résolution de l'écran.
     private func captureSnapshots() {
-        for t in store.tabs where snapshots[t.id] == nil {
-            store.tabManager.snapshot(t.id) { img in if let img { snapshots[t.id] = img } }
+        guard s.tabsLayout == .grid else { return }
+        let width: CGFloat = columns == 2 ? 162 : 112
+        for t in store.tabs where snapshots[t.id] == nil && t.isPrivate == showPrivate {
+            store.tabManager.snapshot(t.id, width: width) { img in if let img { snapshots[t.id] = img } }
         }
     }
 }

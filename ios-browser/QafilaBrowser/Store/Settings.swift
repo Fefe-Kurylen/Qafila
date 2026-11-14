@@ -22,8 +22,11 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
     }
     var needsBaseURL: Bool { self == .qafila || self == .searxng }
 
+    /// Caractères laissés tels quels dans la requête ; tout le reste (espaces, &, +, #, =…) est encodé pour arriver intact au moteur.
+    static let queryAllowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
+
     func url(for query: String, settings s: Settings) -> URL? {
-        let q = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let q = query.addingPercentEncoding(withAllowedCharacters: Self.queryAllowed) ?? query
         let b = s.searchBaseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
         switch self {
         case .duckduckgo: return URL(string: "https://duckduckgo.com/?q=\(q)")
