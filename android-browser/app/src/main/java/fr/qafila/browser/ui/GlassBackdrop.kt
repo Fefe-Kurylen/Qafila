@@ -61,10 +61,15 @@ class GlassBackdrop(private val scope: CoroutineScope) {
     private var lastCapture = 0L
     private var pending: Job? = null
 
-    /** Défilement de la page : une capture toutes les 100 ms au plus, puis une dernière à l'arrêt. */
+    /**
+     * Défilement de la page : une capture toutes les 100 ms au plus, puis une dernière à l'arrêt.
+     * Toujours différée (scope.launch) : WebView.draw() ne doit jamais être appelé depuis onScrollChanged, qui est
+     * déclenché par Chromium pendant son propre dessin.
+     */
     fun onScroll() {
         if (!active) return
-        if (SystemClock.uptimeMillis() - lastCapture >= 100) capture()
+        val now = SystemClock.uptimeMillis()
+        if (now - lastCapture >= 100) { lastCapture = now; scope.launch { capture() } }
         refresh(150)
     }
 
