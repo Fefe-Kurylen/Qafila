@@ -173,6 +173,8 @@
 "Style" = "Style";
 "Style de la barre" = "Toolbar Style";
 "Classique : couleur pleine. Verre : translucide. Flottante : barre arrondie détachée des bords, la page passe autour." = "Classic: solid color. Glass: translucent. Floating: a rounded bar away from the edges, the page flows around it.";
+"Transparence" = "Transparency";
+"Ajuste la transparence du verre de la barre." = "Adjusts how see-through the toolbar glass is.";
 "Icône de l'app" = "App Icon";
 "Merci de soutenir Qafila ♥ L'icône Or est à vous." = "Thanks for supporting Qafila ♥ The Gold icon is yours.";
 "L'icône Or est offerte aux personnes qui soutiennent Qafila (%@/mois)." = "The Gold icon is a gift for Qafila supporters (%@/month).";

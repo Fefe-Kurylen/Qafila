@@ -28,11 +28,11 @@ struct BrowserView: View {
                     Spacer(minLength: 0)
                     if !atTop { chrome(safe, palette) }
                 }
-                if store.showMenu { menuLayer(geo) }
+                if store.showMenu { menuLayer(geo, palette) }
                 if let t = store.toast { toast(t) }
             }
             .coordinateSpace(name: "browser")
-            .onPreferenceChange(MenuAnchorKey.self) { menuAnchor = $0 }
+            .onPreferenceChange(MenuAnchorKey.self) { if menuAnchor != $0 { menuAnchor = $0 } }
         }
         .animation(.spring(response: 0.32, dampingFraction: 0.86), value: store.barsHidden)
         .animation(.spring(response: 0.3), value: store.toast)
@@ -64,20 +64,20 @@ struct BrowserView: View {
         }
         .ignoresSafeArea()
         .overlay(alignment: atTop ? .bottom : .top) {
-            if floating {
-                // Verre : la page passe sous la barre d'état, adoucie par un léger flou qui s'estompe.
-                Rectangle().fill(.ultraThinMaterial)
-                    .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
-                    .frame(height: (atTop ? safe.bottom : safe.top) + 14)
-                    .ignoresSafeArea()
-                    .opacity(atTop ? 0 : 1)
-                    .allowsHitTesting(false)
-            } else {
+            if s.toolbar.style == .classic {
                 // Bande derrière la barre d'état (ou l'indicateur d'accueil) pour que la page ne s'y mélange pas.
-                ChromeBackground(palette: palette, style: s.toolbar.style)
+                ChromeBackground(palette: palette, style: .classic)
                     .frame(height: atTop ? safe.bottom : safe.top)
                     .ignoresSafeArea()
                     .opacity(atTop && collapsed && s.scrollBehavior == .hide ? 0 : 1)
+            } else {
+                // Verre : aucun aplat, la page passe sous la barre d'état (sa propre couleur de fond), adoucie par un court flou qui s'estompe.
+                Rectangle().fill(.ultraThinMaterial)
+                    .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
+                    .frame(height: (atTop ? safe.bottom : safe.top) + 16)
+                    .ignoresSafeArea()
+                    .opacity(atTop ? 0 : 1)
+                    .allowsHitTesting(false)
             }
         }
     }
@@ -92,16 +92,14 @@ struct BrowserView: View {
                     ChromeBar(editor: editor, singleRow: landscape, atTop: atTop)
                 }
             }
-            .padding(.bottom, atTop ? 6 : (floating ? 8 : 0))
+            .padding(.bottom, atTop ? 6 : (floating ? 6 : 0))
             .padding(.top, floating && atTop ? 2 : 0)
-            .environment(\.chromeCard, floating ? glassCard(palette) : palette.card)
-            .environment(\.chromeCardRadius, floating ? FloatingBarShape.radius - 10 : nil)
-            .modifier(SchemeOverride(scheme: palette.contentScheme))
+            .modifier(ChromeDressing(palette: palette, settings: s))
             .background {
                 if floating {
-                    FloatingBarShape(palette: palette)
+                    ChromeBackground(palette: palette, style: .floating, transparency: s.glassTransparency)
                 } else {
-                    ChromeBackground(palette: palette, style: s.toolbar.style).ignoresSafeArea(edges: atTop ? .top : .bottom)
+                    ChromeBackground(palette: palette, style: s.toolbar.style, transparency: s.glassTransparency).ignoresSafeArea(edges: atTop ? .top : .bottom)
                         .overlay(alignment: atTop ? .bottom : .top) { Rectangle().fill(Color.black.opacity(palette.contentScheme == .dark ? 0.35 : 0.07)).frame(height: 0.5) }
                 }
             }
@@ -121,15 +119,12 @@ struct BrowserView: View {
         return max(0, safe.bottom + 6 - Self.floatMargin)
     }
 
-    /// Carte d'adresse discrète sur le verre.
-    private func glassCard(_ palette: ChromePalette) -> Color { palette.contentScheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.6) }
-
     private func hideOffset(_ safe: EdgeInsets) -> CGFloat {
         guard collapsed, s.scrollBehavior == .hide else { return 0 }
         return atTop ? -(chromeHeight + safe.top + 10) : chromeHeight + safe.bottom + 10
     }
 
-    private func menuLayer(_ geo: GeometryProxy) -> some View {
+    private func menuLayer(_ geo: GeometryProxy, _ palette: ChromePalette) -> some View {
         let width = geo.size.width
         let anchorX = menuAnchor == .zero ? width - 30 : menuAnchor.midX - geo.frame(in: .global).minX
         let x = min(max(anchorX + 26 - FloatingMenu.width, 10), width - FloatingMenu.width - 10)
@@ -137,7 +132,7 @@ struct BrowserView: View {
         return ZStack(alignment: atTop ? .topLeading : .bottomLeading) {
             Color.black.opacity(0.1).ignoresSafeArea()
                 .onTapGesture { withAnimation(.easeOut(duration: 0.18)) { store.showMenu = false } }
-            FloatingMenu(tabManager: store.tabManager)
+            FloatingMenu(tabManager: store.tabManager, palette: palette)
                 .frame(maxHeight: max(200, available))
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.leading, x)

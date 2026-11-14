@@ -173,6 +173,8 @@
 "Style" = "Estilo";
 "Style de la barre" = "Estilo de la barra";
 "Classique : couleur pleine. Verre : translucide. Flottante : barre arrondie détachée des bords, la page passe autour." = "Clásico: color sólido. Cristal: translúcido. Flotante: barra redondeada separada de los bordes, la página pasa alrededor.";
+"Transparence" = "Transparencia";
+"Ajuste la transparence du verre de la barre." = "Ajusta la transparencia del cristal de la barra.";
 "Icône de l'app" = "Icono de la app";
 "Merci de soutenir Qafila ♥ L'icône Or est à vous." = "Gracias por apoyar Qafila ♥ El icono Oro es tuyo.";
 "L'icône Or est offerte aux personnes qui soutiennent Qafila (%@/mois)." = "El icono Oro es un regalo para quienes apoyan Qafila (%@/mes).";

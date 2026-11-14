@@ -173,6 +173,8 @@
 "Style" = "النمط";
 "Style de la barre" = "نمط الشريط";
 "Classique : couleur pleine. Verre : translucide. Flottante : barre arrondie détachée des bords, la page passe autour." = "كلاسيكي: لون مصمت. زجاجي: شفاف. عائم: شريط مستدير بعيد عن الحواف تمرّ الصفحة حوله.";
+"Transparence" = "الشفافية";
+"Ajuste la transparence du verre de la barre." = "يضبط مدى شفافية زجاج الشريط.";
 "Icône de l'app" = "أيقونة التطبيق";
 "Merci de soutenir Qafila ♥ L'icône Or est à vous." = "شكرًا لدعمك Qafila ♥ الأيقونة الذهبية لك.";
 "L'icône Or est offerte aux personnes qui soutiennent Qafila (%@/mois)." = "الأيقونة الذهبية هدية لداعمي Qafila (%@/شهريًا).";

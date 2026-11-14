@@ -19,6 +19,12 @@ struct ChromePalette {
         else { card = Color.white.opacity(0.92) }
         return ChromePalette(bar: bar, card: card, contentScheme: dark ? .dark : .light)
     }
+
+    /// Carte d'adresse posée sur le verre : blanc à 12–16 % sur verre sombre, 55–65 % sur verre clair (plus opaque quand le verre l'est).
+    func glassCard(_ transparency: Double) -> Color {
+        let solid = 1 - min(max(transparency, 0), 1)
+        return contentScheme == .dark ? Color.white.opacity(0.12 + 0.04 * solid) : Color.white.opacity(0.55 + 0.10 * solid)
+    }
 }
 
 extension Color {
@@ -29,33 +35,77 @@ extension Color {
     }
 }
 
-/// Fond de la barre : couleur unie (Classique) ou verre dépoli teinté (Verre).
+/// Fond de la barre : couleur unie (Classique) ou verre (Verre : pleine largeur, Flottante : capsule arrondie).
 struct ChromeBackground: View {
     let palette: ChromePalette
     let style: ToolbarStyle
+    var transparency: Double = 0.5
     var body: some View {
         switch style {
         case .classic: palette.bar
-        case .glass: Rectangle().fill(.ultraThinMaterial).overlay(palette.bar.opacity(0.55))
-        case .floating: FloatingBarShape(palette: palette)
+        case .glass: GlassSurface(palette: palette, radius: 0, transparency: transparency, shadow: false)
+        case .floating: GlassSurface(palette: palette, radius: GlassSurface.barRadius, transparency: transparency, interactive: true)
         }
     }
 }
 
-/// Barre flottante (comme Quiche) : capsule arrondie détachée des bords, verre teinté et ombre douce.
-struct FloatingBarShape: View {
+/// Le verre de Qafila, partagé par la barre, le menu et la pilule des onglets pour un habillage cohérent :
+/// Liquid Glass sur iOS 26, matériau teinté avant. `transparency` vient du réglage « Transparence » (0 = couleur opaque, 1 = le plus transparent).
+struct GlassSurface: View {
     let palette: ChromePalette
-    static let radius: CGFloat = 32
+    var radius: CGFloat = GlassSurface.barRadius
+    var transparency: Double = 0.5
+    /// Réagit au toucher (barre d'outils) sur iOS 26.
+    var interactive = false
+    var shadow = true
+
+    static let barRadius: CGFloat = 32
+    static let pillRadius: CGFloat = 22
+    static let menuRadius: CGFloat = 18
+
+    private var t: Double { min(max(transparency, 0), 1) }
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: radius, style: .continuous) }
+
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
+        surface
+            // Le verre se rend toujours dans le thème de la barre (verre sombre profond, jamais gris boueux).
+            .environment(\.colorScheme, palette.contentScheme)
+    }
+
+    @ViewBuilder private var surface: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            let glass = Glass.regular.tint(palette.bar.opacity((1 - t) * 0.7))
+            Color.clear.glassEffect(interactive ? glass.interactive() : glass, in: shape)
+        } else {
+            fallback
+        }
+        #else
+        fallback
+        #endif
+    }
+
+    /// iOS 17/18 : matériau ultra-fin teinté, liseré plus clair en haut, ombre d'autant plus douce que le verre est transparent.
+    private var fallback: some View {
         let dark = palette.contentScheme == .dark
-        shape.fill(.ultraThinMaterial)
-            .overlay(shape.fill(palette.bar.opacity(dark ? 0.45 : 0.35)))
-            // Liseré de verre : plus clair en haut, presque invisible en bas.
-            .overlay(shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(dark ? 0.22 : 0.85), Color.white.opacity(dark ? 0.04 : 0.25)],
-                                                       startPoint: .top, endPoint: .bottom), lineWidth: 0.8))
-            .overlay(shape.strokeBorder(Color.black.opacity(dark ? 0.3 : 0.05), lineWidth: 0.5).padding(-0.5))
-            .shadow(color: .black.opacity(dark ? 0.35 : 0.10), radius: 18, y: 6)
+        return shape.fill(.ultraThinMaterial)
+            .overlay(shape.fill(palette.bar.opacity(0.05 + (1 - t) * 0.9)))
+            .overlay(shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(dark ? 0.18 : 0.8), Color.white.opacity(dark ? 0.03 : 0.2)],
+                                                       startPoint: .top, endPoint: .bottom), lineWidth: radius > 0 ? 0.8 : 0))
+            .shadow(color: .black.opacity(shadow ? (dark ? 0.35 : 0.10) * (0.4 + 0.6 * (1 - t)) : 0), radius: 18, y: 6)
+    }
+}
+
+/// Habillage commun de la barre (écran, aperçus, galerie) : carte d'adresse en verre ou pleine, rayon de pilule, thème des icônes.
+struct ChromeDressing: ViewModifier {
+    let palette: ChromePalette
+    let settings: Settings
+    func body(content: Content) -> some View {
+        let style = settings.toolbar.style
+        content
+            .environment(\.chromeCard, style == .classic ? palette.card : palette.glassCard(settings.glassTransparency))
+            .environment(\.chromeCardRadius, style == .floating ? GlassSurface.pillRadius : nil)
+            .modifier(SchemeOverride(scheme: palette.contentScheme))
     }
 }
 
@@ -92,14 +142,9 @@ struct ChromeBar: View {
             } else if singleRow {
                 ToolbarRow(forceInlineAddress: true).padding(.horizontal, 8).frame(height: 46)
             } else {
-                VStack(spacing: 2) {
-                    if atTop {
-                        if showsCard { AddressCard().padding(.horizontal, 10).padding(.top, 4) }
-                        ToolbarRow(forceInlineAddress: false).padding(.horizontal, 6).frame(height: 44)
-                    } else {
-                        if showsCard { AddressCard().padding(.horizontal, 10).padding(.top, 8) }
-                        ToolbarRow(forceInlineAddress: false).padding(.horizontal, 6).frame(height: 44)
-                    }
+                VStack(spacing: 0) {
+                    if showsCard { AddressCard().padding(.horizontal, 10).padding(.top, atTop ? 4 : 6) }
+                    ToolbarRow(forceInlineAddress: false).padding(.horizontal, 6).frame(height: 42)
                 }
             }
         }
@@ -342,12 +387,16 @@ struct ToolbarRow: View {
     }
 
     var body: some View {
+        // Avec l'adresse en ligne, les boutons gardent une largeur fixe et l'adresse prend l'espace restant.
+        let inline = slots.contains { $0.action == .address }
         HStack(spacing: 0) {
             ForEach(slots) { slot in
                 switch slot.action {
                 case .separator: Spacer().frame(width: 10)
-                case .address: AddressCard(inline: true).padding(.horizontal, 4).layoutPriority(1)
-                default: ToolbarButton(tabManager: store.tabManager, slot: slot).frame(maxWidth: .infinity)
+                case .address: AddressCard(inline: true).padding(.horizontal, 4).frame(maxWidth: .infinity)
+                default:
+                    if inline { ToolbarButton(tabManager: store.tabManager, slot: slot).frame(width: 46) }
+                    else { ToolbarButton(tabManager: store.tabManager, slot: slot).frame(maxWidth: .infinity) }
                 }
             }
         }

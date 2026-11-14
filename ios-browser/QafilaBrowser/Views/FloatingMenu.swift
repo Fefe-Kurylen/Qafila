@@ -5,30 +5,41 @@ import SwiftUI
 struct FloatingMenu: View {
     @EnvironmentObject var store: BrowserStore
     @ObservedObject var tabManager: TabManager
+    /// Même verre que la barre (couleur, transparence, thème des icônes).
+    let palette: ChromePalette
     static let width: CGFloat = 256
 
     var body: some View {
+        let s = store.settings
+        let glass = s.toolbar.style != .classic
         ViewThatFits(in: .vertical) {
             content
             ScrollView(showsIndicators: false) { content }
         }
         .frame(width: Self.width)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.primary.opacity(0.07), lineWidth: 0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.16), radius: 28, y: 10)
+        .modifier(SchemeOverride(scheme: glass ? palette.contentScheme : nil))
+        .background {
+            if glass {
+                GlassSurface(palette: palette, radius: GlassSurface.menuRadius, transparency: s.glassTransparency)
+            } else {
+                RoundedRectangle(cornerRadius: GlassSurface.menuRadius, style: .continuous).fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.15), radius: 24, y: 8)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: GlassSurface.menuRadius, style: .continuous))
     }
 
     private var content: some View {
         VStack(spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 switch row {
-                case .gap: Color.primary.opacity(0.06).frame(height: 6)
+                // Séparateur de section : trait fin pleine largeur.
+                case .gap: Color.primary.opacity(0.14).frame(height: 0.5)
                 case .tiles(let slots): tileRow(slots)
                 case .lines(let slots):
                     VStack(spacing: 0) {
                         ForEach(Array(slots.enumerated()), id: \.element.id) { i, slot in
-                            if i > 0 { Divider().padding(.leading, 16) }
+                            if i > 0 { Color.primary.opacity(0.1).frame(height: 0.5).padding(.leading, 16) }
                             line(slot)
                         }
                     }
@@ -64,7 +75,7 @@ struct FloatingMenu: View {
         let labelled = slots.count <= 3
         return HStack(spacing: 0) {
             ForEach(Array(slots.enumerated()), id: \.element.id) { i, slot in
-                if i > 0 { Divider().frame(height: labelled ? 36 : 24) }
+                if i > 0 { Color.primary.opacity(0.1).frame(width: 0.5, height: labelled ? 36 : 24) }
                 Button { act(slot.action) } label: {
                     VStack(spacing: 5) {
                         ActionGlyph(tabManager: tabManager, action: slot.action, size: labelled ? 19 : 18, tint: slot.action.isDestructive ? .red : nil)

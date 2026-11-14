@@ -7,17 +7,21 @@ struct BarPreview: View {
     let config: ToolbarConfig
 
     var body: some View {
-        let palette = ChromePalette.make(store.settings, scheme: scheme, site: nil)
-        VStack(spacing: 2) {
-            if !config.hasInlineAddress && store.settings.addressStyle != .hidden { AddressCard().padding(.horizontal, 10).padding(.top, 8) }
-            ToolbarRow(forceInlineAddress: false, preview: config.bar).padding(.horizontal, 6).frame(height: 44)
+        let s = store.settings
+        let palette = ChromePalette.make(s, scheme: scheme, site: nil)
+        let floating = s.toolbar.style == .floating
+        // Même rayon que la vraie barre ; le style Classique et Verre gardent un cadre de carte (12).
+        let shape = RoundedRectangle(cornerRadius: floating ? GlassSurface.barRadius : 12, style: .continuous)
+        VStack(spacing: 0) {
+            if !config.hasInlineAddress && s.addressStyle != .hidden { AddressCard().padding(.horizontal, 10).padding(.top, 6) }
+            ToolbarRow(forceInlineAddress: false, preview: config.bar).padding(.horizontal, 6).frame(height: 42)
         }
-        .padding(.bottom, 4)
-        .environment(\.chromeCard, palette.card)
-        .modifier(SchemeOverride(scheme: palette.contentScheme))
-        .background(ChromeBackground(palette: palette, style: store.settings.toolbar.style))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+        .padding(.bottom, floating ? 6 : 4)
+        .modifier(ChromeDressing(palette: palette, settings: s))
+        .background {
+            if floating { ChromeBackground(palette: palette, style: .floating, transparency: s.glassTransparency) }
+            else { ChromeBackground(palette: palette, style: s.toolbar.style, transparency: s.glassTransparency).clipShape(shape).overlay(shape.strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)) }
+        }
         .allowsHitTesting(false)
     }
 }
@@ -99,10 +103,12 @@ struct ToolbarEditorView: View {
                         Picker("Taille", selection: slot.size) { ForEach(ButtonSize.allCases) { Text($0.label).tag($0) } }
                     }
                 } label: {
-                    Text(inMenu ? (slot.wrappedValue.showsLabel ? L("Ligne") : L("Tuile")) : slot.wrappedValue.size.label)
-                        .font(.system(size: 13)).foregroundStyle(.secondary)
-                        .padding(.horizontal, 8).padding(.vertical, 4)
-                        .background(Capsule().fill(Color.primary.opacity(0.06)))
+                    HStack(spacing: 3) {
+                        Text(inMenu ? (slot.wrappedValue.showsLabel ? L("Ligne") : L("Tuile")) : slot.wrappedValue.size.label)
+                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold))
+                    }
+                    .font(.system(size: 13)).foregroundStyle(.secondary)
+                    .padding(.vertical, 4)
                 }
             }
         }

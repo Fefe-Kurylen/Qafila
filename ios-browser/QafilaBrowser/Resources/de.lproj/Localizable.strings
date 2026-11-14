@@ -173,6 +173,8 @@
 "Style" = "Stil";
 "Style de la barre" = "Leistenstil";
 "Classique : couleur pleine. Verre : translucide. Flottante : barre arrondie détachée des bords, la page passe autour." = "Klassisch: volle Farbe. Glas: durchscheinend. Schwebend: abgerundete Leiste mit Abstand zum Rand, die Seite fließt darum herum.";
+"Transparence" = "Transparenz";
+"Ajuste la transparence du verre de la barre." = "Legt fest, wie durchsichtig das Glas der Leiste ist.";
 "Icône de l'app" = "App-Symbol";
 "Merci de soutenir Qafila ♥ L'icône Or est à vous." = "Danke, dass du Qafila unterstützt ♥ Das Gold-Symbol gehört dir.";
 "L'icône Or est offerte aux personnes qui soutiennent Qafila (%@/mois)." = "Das Gold-Symbol gibt es für Unterstützer von Qafila (%@/Monat).";

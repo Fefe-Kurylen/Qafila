@@ -130,7 +130,7 @@ struct SettingsView: View {
 
 // MARK: - Aperçu en direct
 
-/// Mini-page fictive + la vraie barre, rendue avec les réglages courants.
+/// Mini-page fictive + la vraie barre, rendue avec les réglages courants (même habillage que l'écran : verre, pilule, transparence).
 struct ChromePreview: View {
     @EnvironmentObject var store: BrowserStore
     @Environment(\.colorScheme) private var scheme
@@ -140,38 +140,52 @@ struct ChromePreview: View {
         let s = store.settings
         let palette = ChromePalette.make(s, scheme: scheme, site: nil)
         let top = s.toolbar.position == .top
-        VStack(spacing: 0) {
-            if top { bar(palette) }
-            page.frame(height: 92)
-            if !top { bar(palette) }
+        let frame = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        Group {
+            if s.toolbar.style == .floating {
+                // Flottante : la barre se pose sur la page à sa marge réelle ; rien ne rogne son ombre ni son rayon.
+                ZStack(alignment: top ? .top : .bottom) {
+                    page(alignment: top ? .bottomLeading : .topLeading).frame(height: 196)
+                        .background(Color(.systemBackground))
+                        .clipShape(frame)
+                        .overlay(frame.strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+                    bar(palette).padding(BrowserView.floatMargin)
+                }
+            } else {
+                VStack(spacing: 0) {
+                    if top { bar(palette) }
+                    page(alignment: .leading).frame(height: 92)
+                    if !top { bar(palette) }
+                }
+                .background(Color(.systemBackground))
+                .clipShape(frame)
+                .overlay(frame.strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+            }
         }
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
         .padding(.vertical, 6)
         .allowsHitTesting(false)
         .animation(.easeInOut(duration: 0.2), value: s)
     }
 
     private func bar(_ palette: ChromePalette) -> some View {
-        let floating = store.settings.toolbar.style == .floating
-        return ChromeBar(editor: editor, singleRow: false, atTop: store.settings.toolbar.position == .top)
+        let s = store.settings
+        return ChromeBar(editor: editor, singleRow: false, atTop: s.toolbar.position == .top)
             .padding(.bottom, 6)
-            .environment(\.chromeCard, palette.card)
-            .modifier(SchemeOverride(scheme: palette.contentScheme))
-            .background(ChromeBackground(palette: palette, style: store.settings.toolbar.style))
-            .padding(floating ? 8 : 0)
+            .modifier(ChromeDressing(palette: palette, settings: s))
+            .background(ChromeBackground(palette: palette, style: s.toolbar.style, transparency: s.glassTransparency))
     }
 
-    private var page: some View {
+    private func page(alignment: Alignment) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             RoundedRectangle(cornerRadius: 3).fill(Color.primary.opacity(0.75)).frame(width: 170, height: 12)
             RoundedRectangle(cornerRadius: 3).fill(Color.primary.opacity(0.12)).frame(height: 7)
             RoundedRectangle(cornerRadius: 3).fill(Color.primary.opacity(0.12)).frame(height: 7)
             RoundedRectangle(cornerRadius: 3).fill(Color.primary.opacity(0.12)).frame(width: 210, height: 7)
+            RoundedRectangle(cornerRadius: 3).fill(Color.primary.opacity(0.12)).frame(height: 7)
+            RoundedRectangle(cornerRadius: 3).fill(Color.primary.opacity(0.12)).frame(width: 140, height: 7)
         }
-        .padding(.horizontal, 18)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(.horizontal, 18).padding(.vertical, 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
     }
 }
 
@@ -303,6 +317,23 @@ struct AppearanceSettings: View {
                     .pickerStyle(.segmented)
             } header: { Text("Style de la barre") } footer: {
                 Text("Classique : couleur pleine. Verre : translucide. Flottante : barre arrondie détachée des bords, la page passe autour.")
+            }
+            if store.settings.toolbar.style != .classic {
+                Section {
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text("Transparence")
+                            Spacer()
+                            Text("\(Int((store.settings.glassTransparency * 100).rounded())) %").foregroundStyle(.secondary).monospacedDigit()
+                        }
+                        HStack(spacing: 12) {
+                            Image(systemName: "circle.fill").font(.system(size: 11)).foregroundStyle(.secondary)
+                            Slider(value: $store.settings.glassTransparency, in: 0...1, step: 0.05)
+                            Image(systemName: "circle.dotted").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                } footer: { Text("Ajuste la transparence du verre de la barre.") }
             }
             Section {
                 HStack(spacing: 0) {
@@ -602,7 +633,7 @@ struct AboutSettings: View {
                     Text("قافلة").font(.system(size: 17)).foregroundStyle(.secondary)
                     Text("« caravane » en arabe").font(.system(size: 13)).foregroundStyle(.tertiary)
                     if store.support.isSupporter {
-                        Text("Merci pour votre soutien ♥").font(.system(size: 13, weight: .medium)).foregroundStyle(Color(red: 0.93, green: 0.30, blue: 0.45)).padding(.top, 6)
+                        Text("Merci pour votre soutien ♥").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary).padding(.top, 6)
                     }
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -635,7 +666,7 @@ struct SupportSettings: View {
                 VStack(spacing: 10) {
                     Image("PreviewIcon-Gold").resizable().frame(width: 92, height: 92)
                         .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
-                        .shadow(color: Color(red: 0.72, green: 0.53, blue: 0.18).opacity(0.35), radius: 16, y: 6)
+                        .overlay(RoundedRectangle(cornerRadius: 21, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
                     Text("Soutenir Qafila").font(.system(size: 24, weight: .semibold, design: .serif)).padding(.top, 6)
                     Text(L("Qafila est gratuit, sans publicité ni pistage. Pour %@ par mois, vous aidez à le garder ainsi — et débloquez l'icône exclusive « Or ».", support.price))
                         .font(.system(size: 15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
@@ -656,14 +687,14 @@ struct SupportSettings: View {
                     Button { Task { await support.purchase(); if support.isSupporter { store.settings.appIcon = .gold } } } label: {
                         HStack {
                             Spacer()
-                            if support.busy { ProgressView().tint(.white) } else {
+                            if support.busy { ProgressView().tint(Color(.systemBackground)) } else {
                                 Text(L("S'abonner — %@/mois", support.price)).font(.system(size: 17, weight: .semibold))
                             }
                             Spacer()
                         }
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color(.systemBackground))
                         .padding(.vertical, 14)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(pink))
+                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary))
                     }
                     .buttonStyle(.plain)
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))

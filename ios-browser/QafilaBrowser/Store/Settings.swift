@@ -238,6 +238,8 @@ struct Settings: Codable, Equatable {
     var haptics: Bool = true
     // Barre d'outils
     var toolbar: ToolbarConfig = .preset(.complete)
+    /// Transparence du verre (styles Verre et Flottante) : 0 = couleur de barre opaque, 1 = le plus transparent.
+    var glassTransparency: Double = 0.5
     var buttonWeight: ButtonWeight = .thin
     var menuIcon: MenuIconStyle = .dots
     var scrollBehavior: ScrollBehavior = .shrink
@@ -287,7 +289,7 @@ extension Settings {
     enum CodingKeys: String, CodingKey {
         case searchEngine, searchBaseURL, customSearchTemplate, suggestions, hideAIAnswers, newTabPage, newTabCustomURL
         case appearance, accent, barColorLight, barColorDark, appIcon, haptics
-        case toolbar, buttonWeight, menuIcon, scrollBehavior, landscapeTopBar, edgeSwipeNavigation
+        case toolbar, glassTransparency, buttonWeight, menuIcon, scrollBehavior, landscapeTopBar, edgeSwipeNavigation
         case addressStyle, addressShowsFavicon, addressShowsReadingTime, addressTap, addressLongPress
         case tabsLayout, thumbnailSize, tabsSort, groupTabsByDomain, autoCloseTabs, comfortMode
         case blockAds, blockTrackers, blockCookieBanners, blockerDisabledHosts, javascriptEnabled, javascriptDisabledHosts, upgradeToHTTPS, clearDataOnCloseAll
@@ -304,7 +306,7 @@ extension Settings {
         hideAIAnswers = v(.hideAIAnswers, hideAIAnswers); newTabPage = v(.newTabPage, newTabPage); newTabCustomURL = v(.newTabCustomURL, newTabCustomURL)
         appearance = v(.appearance, appearance); accent = v(.accent, accent); barColorLight = v(.barColorLight, barColorLight)
         barColorDark = v(.barColorDark, barColorDark); appIcon = v(.appIcon, appIcon); haptics = v(.haptics, haptics)
-        toolbar = v(.toolbar, toolbar); buttonWeight = v(.buttonWeight, buttonWeight); menuIcon = v(.menuIcon, menuIcon)
+        toolbar = v(.toolbar, toolbar); glassTransparency = min(max(v(.glassTransparency, glassTransparency), 0), 1); buttonWeight = v(.buttonWeight, buttonWeight); menuIcon = v(.menuIcon, menuIcon)
         scrollBehavior = v(.scrollBehavior, scrollBehavior); landscapeTopBar = v(.landscapeTopBar, landscapeTopBar); edgeSwipeNavigation = v(.edgeSwipeNavigation, edgeSwipeNavigation)
         addressStyle = v(.addressStyle, addressStyle); addressShowsFavicon = v(.addressShowsFavicon, addressShowsFavicon)
         addressShowsReadingTime = v(.addressShowsReadingTime, addressShowsReadingTime); addressTap = v(.addressTap, addressTap); addressLongPress = v(.addressLongPress, addressLongPress)

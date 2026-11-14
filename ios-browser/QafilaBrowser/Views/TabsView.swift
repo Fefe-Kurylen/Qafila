@@ -5,6 +5,7 @@ import SwiftUI
 struct TabsView: View {
     @EnvironmentObject var store: BrowserStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
     @State private var snapshots: [UUID: UIImage] = [:]
     @State private var showPrivate = false
     @State private var query = ""
@@ -61,8 +62,8 @@ struct TabsView: View {
                 .font(.system(size: 15)).textInputAutocapitalization(.never).autocorrectionDisabled()
         }
         .padding(.horizontal, 12).frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(Color(.tertiarySystemFill)))
-        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 4)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(.tertiarySystemFill)))
+        .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 4)
     }
 
     private var empty: some View {
@@ -76,12 +77,16 @@ struct TabsView: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// Pied en verre, comme la barre : « + », la pastille du nombre d'onglets (menu), « OK ».
     private var bottomBar: some View {
-        HStack {
+        let palette = ChromePalette.make(s, scheme: scheme, site: nil)
+        let weight = s.buttonWeight.fontWeight
+        return HStack(spacing: 0) {
             Button { store.newTab(isPrivate: showPrivate); dismiss() } label: {
-                Image(systemName: "plus").font(.system(size: 21, weight: store.settings.buttonWeight.fontWeight)).frame(width: 48, height: 44)
+                Image(systemName: "plus").font(.system(size: 21, weight: weight)).frame(width: 56, height: 44).contentShape(Rectangle())
             }
-            Spacer()
+            .buttonStyle(ToolbarPressStyle())
+            Spacer(minLength: 0)
             Menu {
                 Section {
                     Picker("Affichage", selection: $store.settings.tabsLayout) {
@@ -106,22 +111,28 @@ struct TabsView: View {
                 }
             } label: {
                 HStack(spacing: 5) {
-                    if showPrivate { Image(systemName: "hand.raised.fill").font(.system(size: 11)) }
-                    Text(countLabel)
-                        .font(.system(size: 14, weight: .semibold))
-                    Image(systemName: "chevron.up").font(.system(size: 9, weight: .bold))
+                    if showPrivate { Image(systemName: "hand.raised").font(.system(size: 12, weight: weight)) }
+                    Text(countLabel).font(.system(size: 15, weight: .medium))
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
                 }
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 14).frame(height: 34)
-                .background(Capsule().fill(Color(.secondarySystemGroupedBackground)))
-                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5))
+                .padding(.horizontal, 14).frame(height: 44).contentShape(Rectangle())
             }
-            Spacer()
-            Button { dismiss() } label: { Text("OK").font(.system(size: 17, weight: .semibold)).frame(width: 48, height: 44) }
+            Spacer(minLength: 0)
+            Button { dismiss() } label: { Text("OK").font(.system(size: 17, weight: .semibold)).frame(width: 56, height: 44).contentShape(Rectangle()) }
+                .buttonStyle(ToolbarPressStyle())
         }
         .foregroundStyle(.primary)
-        .padding(.horizontal, 10).padding(.top, 8)
-        .background(.bar)
+        .padding(.horizontal, 6)
+        .modifier(SchemeOverride(scheme: s.toolbar.style == .classic ? nil : palette.contentScheme))
+        .background {
+            if s.toolbar.style == .classic {
+                Capsule().fill(Color(.secondarySystemGroupedBackground)).shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+            } else {
+                GlassSurface(palette: palette, radius: GlassSurface.pillRadius, transparency: s.glassTransparency, interactive: true)
+            }
+        }
+        .padding(.horizontal, BrowserView.floatMargin)
+        .padding(.bottom, 6)
     }
 
     private var countLabel: String {
@@ -148,7 +159,7 @@ struct TabsView: View {
                     }
                 }
             }
-            Color.clear.frame(height: 50).listRowBackground(Color.clear)
+            Color.clear.frame(height: 64).listRowBackground(Color.clear)
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -166,7 +177,7 @@ struct TabsView: View {
                 }
                 Spacer(minLength: 6)
                 if s.addressShowsReadingTime, let r = tab.readingLabel { ReadingPill(text: r) }
-                if tab.id == store.selectedTabID { Circle().fill(Color.accentColor).frame(width: 7, height: 7) }
+                if tab.id == store.selectedTabID { Image(systemName: "checkmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary) }
             }
             .padding(.vertical, 4)
             .contentShape(Rectangle())
@@ -213,7 +224,7 @@ struct TabsView: View {
                 }
                 .padding(16)
             }
-            Color.clear.frame(height: 60)
+            Color.clear.frame(height: 72)
         }
         .defaultScrollAnchor(s.comfortMode ? .bottom : .top)
     }

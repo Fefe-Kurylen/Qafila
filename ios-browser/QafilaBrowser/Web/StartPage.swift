@@ -33,7 +33,7 @@ enum StartPage {
     static func error(message: String, url: String) -> String {
         """
         <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,system-ui;text-align:center;padding:24px;color:#17191c}@media(prefers-color-scheme:dark){body{background:#17191c;color:#f2f4f7}}h1{font-size:22px;margin:0 0 8px}p{color:#8395af;font-size:15px;max-width:360px}</style>
+        <style>:root{color-scheme:light dark}body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,system-ui;text-align:center;padding:24px;background:#ffffff;color:#1c1c1e}@media(prefers-color-scheme:dark){body{background:#000000;color:#f2f2f7}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
         </head><body><h1>\(L("Page inaccessible"))</h1><p>\(message)</p><p style="font-size:13px;word-break:break-all">\(url)</p></body></html>
         """
     }

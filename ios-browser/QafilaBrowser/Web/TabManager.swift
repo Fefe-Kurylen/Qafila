@@ -110,6 +110,11 @@ final class TabManager: NSObject, ObservableObject {
             } },
             web.observe(\.canGoBack) { [weak self] w, _ in Task { @MainActor in self?.navState[id] = (w.canGoBack, w.canGoForward) } },
             web.observe(\.canGoForward) { [weak self] w, _ in Task { @MainActor in self?.navState[id] = (w.canGoBack, w.canGoForward) } },
+            // La zone sous la barre d'état (marge haute) prend la couleur de fond de la page : aucun aplat clair ou noir.
+            web.observe(\.underPageBackgroundColor) { w, _ in Task { @MainActor in
+                let c = w.underPageBackgroundColor ?? .systemBackground
+                w.backgroundColor = c; w.scrollView.backgroundColor = c
+            } },
             web.observe(\.themeColor) { [weak self] w, _ in Task { @MainActor in
                 guard let store = self?.store, store.selectedTabID == id else { return }
                 store.siteThemeColor = w.themeColor.map { Color(uiColor: $0) }
