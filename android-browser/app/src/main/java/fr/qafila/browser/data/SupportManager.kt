@@ -57,7 +57,9 @@ class SupportManager(private val app: Application, private val scope: CoroutineS
             client.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(result: BillingResult) {
                     if (result.responseCode == BillingClient.BillingResponseCode.OK) scope.launch { loadDetails(); refreshNow() }
+                    else if (busy.value) message.value = app.getString(R.string.support_unavailable)
                 }
+                /** Google Play s'est déconnecté : nouvelle connexion au prochain besoin (refresh / achat). */
                 override fun onBillingServiceDisconnected() = Unit
             })
         }
@@ -113,7 +115,8 @@ class SupportManager(private val app: Application, private val scope: CoroutineS
                 val params = BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(
                     BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).setOfferToken(offer.offerToken).build(),
                 )).build()
-                client.launchBillingFlow(activity, params)
+                val r = client.launchBillingFlow(activity, params)
+                if (r.responseCode != BillingClient.BillingResponseCode.OK) message.value = app.getString(R.string.support_failed, r.debugMessage.ifBlank { app.getString(R.string.support_error_code, r.responseCode) })
             }
             busy.value = false
         }
@@ -122,10 +125,14 @@ class SupportManager(private val app: Application, private val scope: CoroutineS
     override fun onPurchasesUpdated(result: BillingResult, purchases: MutableList<Purchase>?) {
         when (result.responseCode) {
             BillingClient.BillingResponseCode.OK -> scope.launch {
-                val list = purchases.orEmpty()
-                if (list.any { it.purchaseState == Purchase.PurchaseState.PENDING }) message.value = app.getString(R.string.support_pending)
-                refreshNow()
-                if (isSupporter.value) message.value = app.getString(R.string.support_thanks)
+                // L'achat renvoyé par Google Play fait foi tout de suite (une nouvelle interrogation peut encore l'ignorer).
+                val list = purchases.orEmpty().filter { PRODUCT_ID in it.products }
+                val active = list.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
+                when {
+                    active.isNotEmpty() -> { acknowledge(active); setSupporter(true); message.value = app.getString(R.string.support_thanks) }
+                    list.any { it.purchaseState == Purchase.PurchaseState.PENDING } -> message.value = app.getString(R.string.support_pending)
+                    else -> { refreshNow(); if (isSupporter.value) message.value = app.getString(R.string.support_thanks) }
+                }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> Unit
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> scope.launch { refreshNow(); message.value = app.getString(R.string.support_already) }

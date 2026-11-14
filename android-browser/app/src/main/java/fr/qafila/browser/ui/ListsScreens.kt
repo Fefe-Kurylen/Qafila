@@ -1,5 +1,6 @@
 package fr.qafila.browser.ui
 
+import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
@@ -46,12 +48,12 @@ private fun SearchField(value: String, placeholder: String, onChange: (String) -
     }
 }
 
+/** Ligne favori / historique ; le favicon est fourni par l'écran (un seul collecteur pour toute la liste). */
 @Composable
-private fun SiteRow(store: BrowserStore, title: String, url: String, trailing: String?, onOpen: () -> Unit, onDelete: () -> Unit) {
+private fun SiteRow(store: BrowserStore, title: String, url: String, favicon: Bitmap?, trailing: String?, onOpen: () -> Unit, onDelete: () -> Unit) {
     val q = LocalQ.current
-    val icons by store.tabManager.favicons.icons.collectAsState()
     Row(Modifier.fillMaxWidth().rowClick(onClick = onOpen).padding(start = 14.dp, end = 4.dp, top = 9.dp, bottom = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-        Favicon(icons[store.tabManager.favicons.keyOf(url)], store.hostOf(url), 26.dp, corner = 6.dp)
+        Favicon(favicon, store.hostOf(url), 26.dp, corner = 6.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title.ifBlank { url }, color = q.text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 18.sp)
@@ -65,6 +67,7 @@ private fun SiteRow(store: BrowserStore, title: String, url: String, trailing: S
 @Composable
 fun BookmarksScreen(store: BrowserStore, onDismiss: () -> Unit) {
     val state by store.state.collectAsState()
+    val icons by store.tabManager.favicons.icons.collectAsState()
     val q = LocalQ.current
     var query by remember { mutableStateOf("") }
     val tab = state.tabs.firstOrNull { it.id == state.selectedTabId }
@@ -81,7 +84,7 @@ fun BookmarksScreen(store: BrowserStore, onDismiss: () -> Unit) {
             GroupCard {
                 if (items.isEmpty()) Text(stringResource(R.string.no_bookmarks), Modifier.padding(16.dp), color = q.secondary, fontSize = 14.sp)
                 items.forEachIndexed { i, b ->
-                    SiteRow(store, b.title, b.url, null, { open(b.url) }) { store.removeBookmark(b.id) }
+                    SiteRow(store, b.title, b.url, icons[store.tabManager.favicons.keyOf(b.url)], null, { open(b.url) }) { store.removeBookmark(b.id) }
                     if (i < items.lastIndex) RowDivider(52.dp)
                 }
             }
@@ -92,13 +95,15 @@ fun BookmarksScreen(store: BrowserStore, onDismiss: () -> Unit) {
 @Composable
 fun HistoryScreen(store: BrowserStore, onDismiss: () -> Unit) {
     val state by store.state.collectAsState()
+    val icons by store.tabManager.favicons.icons.collectAsState()
     val q = LocalQ.current
     var query by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf(false) }
-    val items = state.history.filter { query.isBlank() || it.title.contains(query, true) || it.url.contains(query, true) }.take(500)
     val dayFmt = remember { DateFormat.getDateInstance(DateFormat.FULL) }
     val timeFmt = remember { DateFormat.getTimeInstance(DateFormat.SHORT) }
-    val sections = items.groupBy { dayFmt.format(Date(it.visitedAt)) }
+    // Filtrage et regroupement par jour recalculés seulement quand l'historique ou la recherche change.
+    val items = remember(state.history, query) { state.history.filter { query.isBlank() || it.title.contains(query, true) || it.url.contains(query, true) }.take(500) }
+    val sections = remember(items) { items.groupBy { dayFmt.format(Date(it.visitedAt)) } }
     fun open(url: String) { onDismiss(); store.navigate(url) }
     BackHandler(onBack = onDismiss)
     QPage(stringResource(R.string.action_history), onDismiss, backLabel = stringResource(R.string.done),
@@ -106,13 +111,14 @@ fun HistoryScreen(store: BrowserStore, onDismiss: () -> Unit) {
         header = { SearchField(query, stringResource(R.string.search_history)) { query = it } }) {
         if (items.isEmpty()) item { SectionFooter(stringResource(R.string.no_history)) }
         sections.forEach { (day, entries) ->
-            item(day) {
-                SectionHeader(day)
-                GroupCard {
-                    entries.forEachIndexed { i, e ->
-                        SiteRow(store, e.title, e.url, timeFmt.format(Date(e.visitedAt)), { open(e.url) }) { store.removeHistory(e.id) }
-                        if (i < entries.lastIndex) RowDivider(52.dp)
-                    }
+            item("day:$day") { SectionHeader(day) }
+            // Une ligne par élément de liste (composée à la demande) ; la carte du jour est dessinée ligne par ligne.
+            itemsIndexed(entries, key = { _, e -> e.id }) { i, e ->
+                val top = if (i == 0) 12.dp else 0.dp
+                val bottom = if (i == entries.lastIndex) 12.dp else 0.dp
+                Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom)).background(q.card)) {
+                    SiteRow(store, e.title, e.url, icons[store.tabManager.favicons.keyOf(e.url)], timeFmt.format(Date(e.visitedAt)), { open(e.url) }) { store.removeHistory(e.id) }
+                    if (i < entries.lastIndex) RowDivider(52.dp)
                 }
             }
         }

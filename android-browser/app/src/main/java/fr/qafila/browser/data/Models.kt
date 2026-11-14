@@ -17,12 +17,14 @@ data class BrowserTab(
     val readingMinutes: Int = 0,
     val themeColor: String? = null,
 ) {
-    /** Domaine affiché (sans « www. » ni sous-domaine mobile « m. ») : sert aussi à grouper les onglets par site. */
-    val hostOrNull: String? get() = runCatching { java.net.URI(url ?: return null).host?.lowercase()?.removePrefix("www.")?.replace(Regex("(^|\\.)m\\."), "$1") }.getOrNull()
+    /** Domaine affiché (sans « www. » ni sous-domaine mobile « m. ») : sert aussi à grouper les onglets par site. Calculé une fois par onglet (non sérialisé). */
+    val hostOrNull: String? by lazy { runCatching { java.net.URI(url ?: return@lazy null).host?.lowercase()?.removePrefix("www.")?.replace(MOBILE_PREFIX, "$1") }.getOrNull() }
     /** Titre affichable ; vide pour une page de démarrage (l'interface affiche alors « Nouvel onglet » dans la langue de l'appareil). */
     val displayTitle: String get() = title.ifBlank { hostOrNull ?: url ?: "" }
     /** Adresse sans « https:// » ni « www. ». */
     val shortUrl: String get() = (url ?: "").removePrefix("https://").removePrefix("http://").removePrefix("www.").removeSuffix("/")
+
+    private companion object { val MOBILE_PREFIX = Regex("(^|\\.)m\\.") }
 }
 
 @Serializable data class Bookmark(val id: String = UUID.randomUUID().toString(), val title: String, val url: String, val addedAt: Long = System.currentTimeMillis())

@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -160,7 +161,7 @@ fun ToolbarGalleryPage(store: BrowserStore, backLabel: String, onBack: () -> Uni
         item { SectionFooter(stringResource(R.string.gallery_footer)); Spacer(Modifier.height(6.dp)) }
         ToolbarConfig.Preset.entries.forEach { p ->
             item(p.name) {
-                val cfg = ToolbarConfig.preset(p).copy(style = s.toolbar.style, position = s.toolbar.position)
+                val cfg = remember(s.toolbar.style, s.toolbar.position) { ToolbarConfig.preset(p).copy(style = s.toolbar.style, position = s.toolbar.position) }
                 val current = s.toolbar.bar.map { it.action } == cfg.bar.map { it.action }
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 7.dp).fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(q.card)
                     .border(if (current) 1.5.dp else 0.dp, if (current) q.text else Color.Transparent, RoundedCornerShape(16.dp))

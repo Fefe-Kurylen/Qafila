@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -79,17 +80,24 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
     var pillMenu by remember { mutableStateOf(false) }
     BackHandler { if (pillMenu) pillMenu = false else onDismiss() }
 
-    val visible = state.tabs.filter { it.isPrivate == showPrivate }.let { t ->
-        when (s.tabsSort) { TabsSort.DATE -> t.sortedByDescending { it.lastVisited }; TabsSort.READING_TIME -> t.sortedByDescending { it.readingMinutes }; TabsSort.TITLE -> t.sortedBy { it.displayTitle.lowercase() } }
-    }
     val newTabsLabel = stringResource(R.string.new_tabs_group)
     val otherSitesLabel = stringResource(R.string.other_sites)
-    val groups: List<Pair<String, List<BrowserTab>>> = if (!s.groupTabsByDomain) listOf("" to visible) else {
-        val byHost = visible.groupBy { it.hostOrNull ?: newTabsLabel }
-        val multi = byHost.filter { it.value.size > 1 }.map { it.key to it.value }
-        val singles = byHost.filter { it.value.size == 1 }.flatMap { it.value }
-        multi + (if (singles.isEmpty()) emptyList() else listOf((if (multi.isEmpty()) "" else otherSitesLabel) to singles))
+    // Tri et regroupement recalculés seulement quand les onglets ou les réglages changent, pas à chaque recomposition.
+    val visible = remember(state.tabs, showPrivate, s.tabsSort) {
+        state.tabs.filter { it.isPrivate == showPrivate }.let { t ->
+            when (s.tabsSort) { TabsSort.DATE -> t.sortedByDescending { it.lastVisited }; TabsSort.READING_TIME -> t.sortedByDescending { it.readingMinutes }; TabsSort.TITLE -> t.sortedBy { it.displayTitle.lowercase() } }
+        }
     }
+    val groups: List<Pair<String, List<BrowserTab>>> = remember(visible, s.groupTabsByDomain, newTabsLabel, otherSitesLabel) {
+        if (!s.groupTabsByDomain) listOf("" to visible) else {
+            val byHost = visible.groupBy { it.hostOrNull ?: newTabsLabel }
+            val multi = byHost.filter { it.value.size > 1 }.map { it.key to it.value }
+            val singles = byHost.filter { it.value.size == 1 }.flatMap { it.value }
+            multi + (if (singles.isEmpty()) emptyList() else listOf((if (multi.isEmpty()) "" else otherSitesLabel) to singles))
+        }
+    }
+    // Favicons des onglets affichés (onglets restaurés jamais chargés : depuis le site, une seule fois).
+    LaunchedEffect(visible) { visible.forEach { store.tabManager.favicons.request(it.url, persist = !it.isPrivate) } }
     fun open(t: BrowserTab) { store.select(t.id); onDismiss() }
     fun favicon(t: BrowserTab) = icons[store.tabManager.favicons.keyOf(t.url)]
     val count = state.tabs.count { !it.isPrivate }

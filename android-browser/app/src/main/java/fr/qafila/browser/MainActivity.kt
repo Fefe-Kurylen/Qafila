@@ -24,7 +24,8 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
         )
         if (Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
-        if (savedInstanceState == null) {
+        // Relance depuis les applications récentes : l'intent d'origine (lien partagé) n'est pas rouvert.
+        if (savedInstanceState == null && intent?.flags?.and(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
             intent?.getStringExtra("demo")?.let { store.applyDemo(it) } ?: store.handleIntent(intent)
         }
         setContent { QafilaTheme(store) { BrowserScreen(store) } }
@@ -33,4 +34,14 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); store.handleIntent(intent) }
 
     override fun onResume() { super.onResume(); store.support.refresh() }
+
+    /** Application cachée : minuteurs JavaScript en pause (batterie) et état enregistré sans attendre. */
+    override fun onStart() { super.onStart(); store.tabManager.resumeAll() }
+    override fun onStop() { super.onStop(); store.tabManager.pauseAll(); store.flush() }
+
+    /** Mémoire basse (pas le simple passage en arrière-plan) : les onglets non affichés sont mis en veille, vignette et historique conservés. */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_RUNNING_LOW && level != TRIM_MEMORY_UI_HIDDEN) store.tabManager.suspendBackground()
+    }
 }

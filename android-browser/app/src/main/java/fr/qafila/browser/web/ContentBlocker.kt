@@ -38,12 +38,22 @@ object ContentBlocker {
         "#taboola-below-article-thumbnails", ".OUTBRAIN", ".trc_related_container", ".ad-wrapper", "[aria-label='Publicité']", "[aria-label='Advertisement']",
     )
 
-    private fun matches(h: String, list: List<String>) = list.any { h == it || h.endsWith(".$it") }
+    private val adSet = adDomains.toHashSet()
+    private val trackerSet = trackerDomains.toHashSet()
+    private val cookieSet = cookieDomains.toHashSet()
 
-    /** Vrai si l'hôte (ou un de ses domaines parents) appartient à une famille activée. */
+    /** Vrai si l'hôte (ou un de ses domaines parents) appartient à une famille activée. Appelé pour chaque requête : on parcourt les suffixes de l'hôte, sans allouer par domaine. */
     fun isBlocked(host: String?, ads: Boolean, trackers: Boolean, cookies: Boolean): Boolean {
-        val h = host?.lowercase() ?: return false
-        return (ads && matches(h, adDomains)) || (trackers && matches(h, trackerDomains)) || (cookies && matches(h, cookieDomains))
+        if (host == null || (!ads && !trackers && !cookies)) return false
+        val h = host.lowercase()
+        var i = 0
+        while (true) {
+            val d = if (i == 0) h else h.substring(i)
+            if ((ads && d in adSet) || (trackers && d in trackerSet) || (cookies && d in cookieSet)) return true
+            i = h.indexOf('.', i)
+            if (i < 0 || i == h.length - 1) return false
+            i++
+        }
     }
 
     val cookieCss: String get() = cookieSelectors.joinToString(", ") + " { display: none !important; visibility: hidden !important; }\nhtml, body { overflow: auto !important; position: static !important; }"

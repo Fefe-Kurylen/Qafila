@@ -13,7 +13,7 @@ object Scripts {
           c = norm(c);
           if (empty(c) && document.body) { c = getComputedStyle(document.body).backgroundColor; if (empty(c)) c = getComputedStyle(document.documentElement).backgroundColor; }
           if (empty(c)) c = '';
-          window.Qafila.pageInfo(Math.max(0, Math.round(words / 200)), c);
+          window.Qafila.pageInfo(Math.max(0, Math.round(words / 200)), c, location.href);
         } catch (e) {} })();
     """.trimIndent()
 

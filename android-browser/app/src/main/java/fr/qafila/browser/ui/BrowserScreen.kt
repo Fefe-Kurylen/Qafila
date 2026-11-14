@@ -52,6 +52,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
@@ -147,6 +148,8 @@ fun BrowserScreen(store: BrowserStore) {
         suggestions = (local + remote.map { Suggestion(it, it, SuggestionKind.SEARCH) }).distinctBy { it.url }.take(7)
     }
 
+    // Retour système au premier niveau : l'application passe en arrière-plan sans être détruite (les onglets restent chargés).
+    BackHandler(enabled = !editing && !showMenu && !showFind) { context.findActivity()?.moveTaskToBack(true) }
     // Retour système : saisie → menu → page précédente.
     BackHandler(enabled = tab != null && navStates[tab.id]?.canBack == true && !editing && !showMenu) { tab?.let { store.tabManager.goBack(it.id) } }
     BackHandler(enabled = showFind && !editing && !showMenu) { showFind = false; tab?.let { store.tabManager.clearFind(it.id) } }
@@ -196,31 +199,36 @@ fun BrowserScreen(store: BrowserStore) {
         loading = n?.loading == true, progress = n?.progress ?: 1f, active = active,
     )
     fun startEdit() { store.expandBar(); store.showMenu.value = false; store.isEditingAddress.value = true }
-    val cb = ChromeCallbacks(
-        onAction = { a -> store.perform(a) },
-        onLongAction = { a ->
-            store.haptic()
-            when (a) {
-                ToolbarAction.TABS -> store.newTab(isPrivate = tab?.isPrivate == true)
-                ToolbarAction.NEW_TAB -> store.newTab(isPrivate = true)
-                ToolbarAction.BACK, ToolbarAction.FORWARD -> store.showHistory.value = true
-                ToolbarAction.CLOSE_TAB -> store.reopenClosedTab()
-                else -> store.openSettings(SettingsPage.EDITOR, standalone = true)
-            }
-        },
-        onAddressTap = { if (s.addressTap == AddressTapAction.EDIT) startEdit() else store.showMenu.value = true },
-        onAddressLongPress = {
-            store.haptic()
-            if (s.addressTap == AddressTapAction.MENU) startEdit() else when (s.addressLongPress) {
-                AddressLongPressAction.MENU -> store.showMenu.value = true
-                AddressLongPressAction.COPY -> tab?.url?.let { store.copyToClipboard(it) }
-                AddressLongPressAction.NONE -> Unit
-            }
-        },
-        onExpand = { store.expandBar() },
-        onSwipe = { d -> tab?.let { store.haptic(); if (d < 0) store.tabManager.goBack(it.id) else store.tabManager.goForward(it.id) } },
-        onMenuAnchor = { menuAnchorX = it },
-    )
+    // Rappels créés une seule fois (sinon la barre entière est recomposée à chaque changement d'état) ; ils lisent l'onglet et les réglages du moment.
+    val currentTab = rememberUpdatedState(tab)
+    val currentSettings = rememberUpdatedState(s)
+    val cb = remember(store) {
+        ChromeCallbacks(
+            onAction = { a -> store.perform(a) },
+            onLongAction = { a ->
+                store.haptic()
+                when (a) {
+                    ToolbarAction.TABS -> store.newTab(isPrivate = currentTab.value?.isPrivate == true)
+                    ToolbarAction.NEW_TAB -> store.newTab(isPrivate = true)
+                    ToolbarAction.BACK, ToolbarAction.FORWARD -> store.showHistory.value = true
+                    ToolbarAction.CLOSE_TAB -> store.reopenClosedTab()
+                    else -> store.openSettings(SettingsPage.EDITOR, standalone = true)
+                }
+            },
+            onAddressTap = { if (currentSettings.value.addressTap == AddressTapAction.EDIT) startEdit() else store.showMenu.value = true },
+            onAddressLongPress = {
+                store.haptic()
+                if (currentSettings.value.addressTap == AddressTapAction.MENU) startEdit() else when (currentSettings.value.addressLongPress) {
+                    AddressLongPressAction.MENU -> store.showMenu.value = true
+                    AddressLongPressAction.COPY -> currentTab.value?.url?.let { store.copyToClipboard(it) }
+                    AddressLongPressAction.NONE -> Unit
+                }
+            },
+            onExpand = { store.expandBar() },
+            onSwipe = { d -> currentTab.value?.let { store.haptic(); if (d < 0) store.tabManager.goBack(it.id) else store.tabManager.goForward(it.id) } },
+            onMenuAnchor = { menuAnchorX = it },
+        )
+    }
 
     Box(Modifier.fillMaxSize().background(statusColor).onSizeChanged { rootSize = it }) {
         val statusInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -247,6 +255,7 @@ fun BrowserScreen(store: BrowserStore) {
                         if (web.parent !== container) {
                             (web.parent as? ViewGroup)?.removeView(web)
                             container.removeAllViews()
+                            store.tabManager.attach(tab.id, container.context)
                             container.addView(web)
                             web.setOnScrollChangeListener { _, _, y, _, oldY -> store.onWebScroll(y, oldY) }
                             store.tabManager.onSelected(tab.id)

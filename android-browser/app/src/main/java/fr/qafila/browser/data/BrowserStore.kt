@@ -24,12 +24,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import fr.qafila.browser.R
 import fr.qafila.browser.web.TabManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -46,6 +48,10 @@ enum class SettingsPage(@StringRes val titleRes: Int) {
 class BrowserStore(app: Application) : AndroidViewModel(app) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true; coerceInputValues = true }
     private val file = File(app.filesDir, "state.json")
+    private val tempFile = File(app.filesDir, "state.json.tmp")
+    /** Numéro de la dernière modification et de la dernière écriture réussie : tout est enregistré quand ils sont égaux. */
+    private var version = 0
+    private var savedVersion = 0
 
     private val _state = MutableStateFlow(load())
     val state: StateFlow<PersistedState> = _state
@@ -85,11 +91,13 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         if (_state.value.selectedTabId == null || _state.value.tabs.none { it.id == _state.value.selectedTabId }) _state.update { it.copy(selectedTabId = it.tabs.lastOrNull()?.id) }
         powerSave.value = powerManager?.isPowerSaveMode == true
         runCatching { ContextCompat.registerReceiver(app, powerReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED) }
-        _state.value.tabs.forEach { tabManager.favicons.request(it.url, persist = !it.isPrivate) }
+        // Favicons des onglets restaurés : depuis le cache disque seulement (le réseau n'est sollicité qu'à l'affichage de l'onglet).
+        _state.value.tabs.forEach { tabManager.favicons.request(it.url, persist = !it.isPrivate, network = false) }
     }
 
     override fun onCleared() {
         runCatching { getApplication<Application>().unregisterReceiver(powerReceiver) }
+        flush()
         tabManager.destroyAll()
     }
 
@@ -342,14 +350,15 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         runCatching { v?.vibrate(effect) }
     }
 
-    /** Icône alternative : un seul activity-alias de lancement activé à la fois. */
+    /** Icône alternative : un seul activity-alias de lancement activé à la fois (le nouveau est activé avant de désactiver l'ancien : l'icône ne disparaît jamais). */
     private fun applyAppIcon(icon: AppIcon) {
         val app = getApplication<Application>()
         val pm = app.packageManager
-        AppIcon.entries.forEach { i ->
-            val state = if (i == icon) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            runCatching { pm.setComponentEnabledSetting(ComponentName(app.packageName, i.alias), state, PackageManager.DONT_KILL_APP) }
+        fun set(i: AppIcon, enabled: Boolean) = runCatching {
+            pm.setComponentEnabledSetting(ComponentName(app.packageName, i.alias), if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
         }
+        set(icon, true)
+        AppIcon.entries.filter { it != icon }.forEach { set(it, false) }
     }
 
     fun applyPreset(p: ToolbarConfig.Preset) {
@@ -408,11 +417,33 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
     }
 
     // ----- Persistance -----
-    private fun load(): PersistedState = runCatching { json.decodeFromString<PersistedState>(file.readText()) }
-        .map { it.copy(tabs = it.tabs.filterNot { t -> t.isPrivate }) }   // les onglets privés ne survivent pas au redémarrage
-        .getOrDefault(PersistedState())
+    private fun load(): PersistedState {
+        if (!file.exists()) return PersistedState()
+        return runCatching { json.decodeFromString<PersistedState>(file.readText()) }
+            .map { it.copy(tabs = it.tabs.filterNot { t -> t.isPrivate }) }   // les onglets privés ne survivent pas au redémarrage
+            .getOrElse {
+                // Fichier illisible : il est mis de côté (jamais écrasé par un état vide) et l'on repart d'un état neuf.
+                runCatching { file.copyTo(File(file.path + ".bak"), overwrite = true) }
+                PersistedState()
+            }
+    }
     private fun scheduleSave() {
+        version++
         saveJob?.cancel()
-        saveJob = viewModelScope.launch { delay(400); runCatching { file.writeText(json.encodeToString(_state.value)) } }
+        saveJob = viewModelScope.launch { delay(400); val v = version; val text = json.encodeToString(_state.value); withContext(Dispatchers.IO) { write(text, v) } }
+    }
+    /** Écriture atomique : fichier temporaire puis renommage, le fichier précédent reste intact en cas d'interruption. */
+    private fun write(text: String, v: Int) {
+        runCatching {
+            tempFile.writeText(text)
+            if (!tempFile.renameTo(file)) { file.writeText(text); tempFile.delete() }
+            if (v > savedVersion) savedVersion = v
+        }
+    }
+    /** Écrit tout de suite les modifications en attente (passage en arrière-plan, fermeture). */
+    fun flush() {
+        if (savedVersion == version) return
+        saveJob?.cancel()
+        write(json.encodeToString(_state.value), version)
     }
 }

@@ -8,6 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URI
@@ -21,6 +23,9 @@ class Favicons(context: Context, private val scope: CoroutineScope) {
     val icons = MutableStateFlow<Map<String, Bitmap>>(emptyMap())
     private val dir = File(context.cacheDir, "favicons").apply { mkdirs() }
     private val requested = HashSet<String>()
+    private val diskChecked = HashSet<String>()
+    /** Au plus quatre téléchargements à la fois. */
+    private val netLimit = Semaphore(4)
 
     fun keyOf(url: String?): String? = runCatching { URI(url ?: return null).host?.lowercase()?.removePrefix("www.") }.getOrNull()
 
@@ -32,17 +37,18 @@ class Favicons(context: Context, private val scope: CoroutineScope) {
         if (persist) scope.launch(Dispatchers.IO) { runCatching { File(dir, "$key.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } } }
     }
 
-    /** Charge le favicon d'une adresse si on ne l'a pas encore (disque, puis réseau). */
-    fun request(url: String?, persist: Boolean) {
+    /** Charge le favicon d'une adresse si on ne l'a pas encore (disque, puis réseau sauf si [network] est faux). */
+    fun request(url: String?, persist: Boolean, network: Boolean = true) {
         val key = keyOf(url) ?: return
-        if (!url!!.startsWith("http")) return
-        if (icons.value.containsKey(key) || !requested.add(key)) return
+        if (!url!!.startsWith("http") || icons.value.containsKey(key)) return
+        if (!(if (network) requested else diskChecked).add(key)) return
         scope.launch(Dispatchers.IO) {
             val cached = File(dir, "$key.png")
             val bmp = if (cached.exists()) runCatching { BitmapFactory.decodeFile(cached.path) }.getOrNull() else null
             if (bmp != null) { icons.update { if (it.containsKey(key)) it else it + (key to bmp) }; return@launch }
+            if (!network) return@launch
             val origin = runCatching { URI(url).let { "${it.scheme}://${it.host}" } }.getOrNull() ?: return@launch
-            val fetched = listOf("/apple-touch-icon.png", "/favicon.ico").firstNotNullOfOrNull { fetch(origin + it) } ?: return@launch
+            val fetched = netLimit.withPermit { listOf("/apple-touch-icon.png", "/favicon.ico").firstNotNullOfOrNull { fetch(origin + it) } } ?: return@launch
             put(url, fetched, persist)
         }
     }
@@ -60,5 +66,5 @@ class Favicons(context: Context, private val scope: CoroutineScope) {
         } finally { c.disconnect() }
     }.getOrNull()
 
-    fun clear() { icons.value = emptyMap(); requested.clear(); dir.listFiles()?.forEach { it.delete() } }
+    fun clear() { icons.value = emptyMap(); requested.clear(); diskChecked.clear(); dir.listFiles()?.forEach { it.delete() } }
 }
