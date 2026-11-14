@@ -60,10 +60,22 @@ fun qColors(dark: Boolean, accent: AccentColor): QColors {
 @Immutable
 data class BarColors(val bg: Color, val card: Color, val capsule: Color, val text: Color, val secondary: Color, val pill: Color, val light: Boolean, val hairline: Color, val glass: Boolean = false)
 
-/** Barre flottante « verre » : l'adresse devient une pastille translucide (blanc 60 % en clair, 10 % en sombre). */
-fun BarColors.glassy(): BarColors {
-    val tint = if (light) Color.White.copy(alpha = 0.60f) else Color.White.copy(alpha = 0.10f)
-    return copy(card = tint, capsule = tint, glass = true)
+/** Transparence réglée (0…1) sous forme de nombre à virgule flottante borné. */
+val Settings.glassT: Float get() = glassTransparency.toFloat().coerceIn(0f, 1f)
+
+/** Le verre peut-il être flouté (capture de la page derrière la barre) ? Sinon, simple couleur translucide. */
+val canBlurGlass: Boolean = android.os.Build.VERSION.SDK_INT >= 31
+
+/**
+ * Opacité du fond de verre selon la transparence [t] : avec flou, de 1 à 0,4 ; sans flou (ou pour le menu et les pastilles,
+ * qui ne floutent pas), de 1 à 0,7 pour rester lisible.
+ */
+fun glassAlpha(t: Float, blurred: Boolean = canBlurGlass): Float = if (blurred) 1f - 0.6f * t else 1f - 0.3f * t
+
+/** Barre « verre » : l'adresse devient une pastille translucide, plus ou moins laiteuse selon la transparence [t] (blanc 12–16 % en sombre). */
+fun BarColors.glassy(t: Float, floating: Boolean = true): BarColors {
+    val tint = if (light) Color.White.copy(alpha = 0.95f - 0.45f * t) else Color.White.copy(alpha = 0.16f - 0.04f * t)
+    return copy(card = tint, capsule = tint, glass = floating)
 }
 
 fun barColorsFor(bg: Color): BarColors {

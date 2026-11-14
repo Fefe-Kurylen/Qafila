@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -41,6 +43,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.Canvas
@@ -80,6 +84,7 @@ import fr.qafila.browser.data.ToolbarPosition
 import fr.qafila.browser.data.ToolbarStyle
 import fr.qafila.browser.data.TranslateLanguage
 import fr.qafila.browser.web.ContentBlocker
+import kotlin.math.roundToInt
 
 /** Réglages : navigation à sous-pages, style réglages iOS sobre (DESIGN.md §6). */
 @Composable
@@ -119,26 +124,26 @@ private fun RootPage(store: BrowserStore, onDismiss: () -> Unit, open: (Settings
             Spacer(Modifier.height(12.dp))
             val supporter by store.support.isSupporter.collectAsState()
             val price by store.support.price.collectAsState()
-            // Pas d'aperçu en tête : la galerie de barres d'abord (les aperçus restent dans les sous-pages).
-            GroupCard { NavRow(stringResource(R.string.page_gallery), icon = QIcon.GRID) { open(SettingsPage.GALLERY) } }
-            Spacer(Modifier.height(24.dp))
+            // Pas d'aperçu en tête : la galerie de barres d'abord (les aperçus restent dans les sous-pages), puis le soutien (seul le cœur est en couleur).
             GroupCard {
-                // Rangée « premium » mais sobre : seul le cœur est en couleur.
+                NavRow(stringResource(R.string.page_gallery), icon = QIcon.GRID) { open(SettingsPage.GALLERY) }; RowDivider(50.dp)
                 NavRow(stringResource(R.string.page_support), value = if (supporter) stringResource(R.string.support_thanks_short) else stringResource(R.string.price_per_month, price ?: stringResource(R.string.support_fallback_price)),
                     icon = QIcon.HEART, iconTint = SupportPink) { open(SettingsPage.SUPPORT) }
             }
             Spacer(Modifier.height(24.dp))
+            // Valeur courante à droite de chaque page, comme sur iPhone.
+            val s = state.settings
             GroupCard {
-                NavRow(stringResource(R.string.page_appearance), icon = QIcon.CONTRAST) { open(SettingsPage.APPEARANCE) }; RowDivider(50.dp)
-                NavRow(stringResource(R.string.page_toolbar), icon = QIcon.BAR) { open(SettingsPage.TOOLBAR) }; RowDivider(50.dp)
-                NavRow(stringResource(R.string.page_address), value = state.settings.addressStyle.label, icon = QIcon.ADDRESS) { open(SettingsPage.ADDRESS) }; RowDivider(50.dp)
-                NavRow(stringResource(R.string.action_tabs), icon = QIcon.TABS) { open(SettingsPage.TABS) }
+                NavRow(stringResource(R.string.page_appearance), value = s.appearance.label, icon = QIcon.CONTRAST) { open(SettingsPage.APPEARANCE) }; RowDivider(50.dp)
+                NavRow(stringResource(R.string.page_toolbar), value = s.toolbar.position.label, icon = QIcon.BAR) { open(SettingsPage.TOOLBAR) }; RowDivider(50.dp)
+                NavRow(stringResource(R.string.page_address), value = s.addressStyle.label, icon = QIcon.ADDRESS) { open(SettingsPage.ADDRESS) }; RowDivider(50.dp)
+                NavRow(stringResource(R.string.action_tabs), value = s.tabsLayout.label, icon = QIcon.TABS) { open(SettingsPage.TABS) }
             }
             Spacer(Modifier.height(24.dp))
             GroupCard {
-                NavRow(stringResource(R.string.page_search), value = state.settings.searchEngine.label.substringBefore(" ("), icon = QIcon.SEARCH) { open(SettingsPage.SEARCH) }; RowDivider(50.dp)
+                NavRow(stringResource(R.string.page_search), value = s.searchEngine.label.substringBefore(" ("), icon = QIcon.SEARCH) { open(SettingsPage.SEARCH) }; RowDivider(50.dp)
                 NavRow(stringResource(R.string.page_privacy_security), icon = QIcon.SHIELD) { open(SettingsPage.PRIVACY) }; RowDivider(50.dp)
-                NavRow(stringResource(R.string.page_reading), icon = QIcon.READER) { open(SettingsPage.READING) }; RowDivider(50.dp)
+                NavRow(stringResource(R.string.page_reading), value = stringResource(R.string.percent, s.textZoom), icon = QIcon.READER) { open(SettingsPage.READING) }; RowDivider(50.dp)
                 NavRow(stringResource(R.string.page_energy), icon = QIcon.BATTERY) { open(SettingsPage.ENERGY) }
             }
             Spacer(Modifier.height(24.dp))
@@ -212,6 +217,7 @@ private fun AppearancePage(store: BrowserStore, open: (SettingsPage) -> Unit) {
         BarColorSection(stringResource(R.string.bar_color_dark), s.barColorDark, dark = true) { c -> up { it.copy(barColorDark = c) } }
 
         SegmentedSection(stringResource(R.string.bar_style), ToolbarStyle.entries.map { it.label }, s.toolbar.style.ordinal, stringResource(R.string.bar_style_footer)) { i -> up { it.copy(toolbar = it.toolbar.copy(style = ToolbarStyle.entries[i])) } }
+        if (s.toolbar.style != ToolbarStyle.CLASSIC) TransparencySection(s.glassT) { v -> up { it.copy(glassTransparency = v) } }
 
         SectionHeader(stringResource(R.string.app_icon))
         GroupCard {
@@ -231,6 +237,38 @@ private fun AppearancePage(store: BrowserStore, open: (SettingsPage) -> Unit) {
         SectionHeader(stringResource(R.string.haptic_feedback))
         GroupCard { ToggleRow(stringResource(R.string.vibrations), s.haptics) { v -> up { it.copy(haptics = v) } } }
     }
+}
+
+/** Transparence du verre : curseur 0…1 (pas de 0,05), disque plein à gauche, disque en pointillé à droite, pourcentage. */
+@Composable
+private fun TransparencySection(t: Float, onChange: (Double) -> Unit) {
+    val q = LocalQ.current
+    Spacer(Modifier.height(10.dp))
+    GroupCard {
+        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.transparency), Modifier.weight(1f), color = q.text, fontSize = 15.sp)
+                Text(stringResource(R.string.percent, (t * 100).roundToInt()), color = q.secondary, fontSize = 15.sp)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                GlassDot(q.text, dashed = false)
+                Slider(
+                    value = t, onValueChange = { v -> onChange(((v * 20f).roundToInt() / 20.0).coerceIn(0.0, 1.0)) }, valueRange = 0f..1f,
+                    modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+                    colors = SliderDefaults.colors(thumbColor = q.accent, activeTrackColor = q.accent, inactiveTrackColor = q.fill),
+                )
+                GlassDot(q.text, dashed = true)
+            }
+        }
+    }
+    SectionFooter(stringResource(R.string.transparency_footer))
+}
+
+/** Petit disque : plein (opaque) ou en pointillé (transparent). */
+@Composable
+private fun GlassDot(color: Color, dashed: Boolean) = Canvas(Modifier.size(14.dp)) {
+    if (dashed) drawCircle(color.copy(alpha = 0.7f), radius = size.minDimension / 2f - 1.dp.toPx(), style = Stroke(width = 1.2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.5.dp.toPx(), 2.dp.toPx()))))
+    else drawCircle(color)
 }
 
 @Composable
@@ -402,7 +440,7 @@ private fun AddressPage(store: BrowserStore) {
     val q = LocalQ.current
     fun up(c: (Settings) -> Settings) = store.updateSettings(c)
     val bar = barColorsFor(resolveBarColor(s, q.dark, if (q.dark) Color(0xFF1E1D1B) else Color(0xFFF6F3EE), private = false, darkened = false))
-        .let { if (s.toolbar.style == ToolbarStyle.FLOATING) it.glassy() else it }
+        .let { if (s.toolbar.style != ToolbarStyle.CLASSIC) it.glassy(s.glassT, s.toolbar.style == ToolbarStyle.FLOATING) else it }
     Column {
         LivePreview(s)
         SectionHeader(stringResource(R.string.style))

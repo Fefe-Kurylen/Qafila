@@ -235,6 +235,8 @@
     <string name="bar_color_dark">Couleur de la barre — mode sombre</string>
     <string name="bar_style">Style de la barre</string>
     <string name="bar_style_footer">Classique : couleur pleine. Verre : barre translucide. Flottante : barre arrondie détachée des bords, la page passe autour.</string>
+    <string name="transparency">Transparence</string>
+    <string name="transparency_footer">Ajuste la transparence du verre de la barre.</string>
     <string name="app_icon">Icône de l\'application</string>
     <string name="app_icon_footer_supporter">Merci de soutenir Qafila ♥ L\'icône Or est à vous. L\'icône change sur l\'écran d\'accueil après quelques secondes.</string>
     <string name="app_icon_footer">L\'icône Or est offerte aux personnes qui soutiennent Qafila. L\'icône change sur l\'écran d\'accueil après quelques secondes.</string>
@@ -340,6 +342,7 @@
     <string name="add_named">Ajouter « %1$s »</string>
     <string name="no_bookmarks">Aucun favori pour l\'instant.</string>
     <string name="search_history">Rechercher dans l\'historique</string>
+    <string name="search_tabs">Rechercher dans les onglets</string>
     <string name="no_history">Aucun historique. Les onglets privés n\'y sont jamais enregistrés.</string>
     <string name="private_browsing_note">Navigation privée : ni historique, ni cache, ni onglet conservé.</string>
     <string name="tap_address_to_start">Touchez l\'adresse pour commencer.</string>

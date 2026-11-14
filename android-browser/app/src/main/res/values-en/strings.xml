@@ -221,6 +221,8 @@
     <string name="bar_color_dark">Bar color — dark mode</string>
     <string name="bar_style">Bar style</string>
     <string name="bar_style_footer">Classic: solid color. Glass: translucent bar. Floating: a rounded bar away from the edges, with the page flowing around it.</string>
+    <string name="transparency">Transparency</string>
+    <string name="transparency_footer">Adjusts how see-through the toolbar glass is.</string>
     <string name="app_icon">App icon</string>
     <string name="app_icon_footer_supporter">Thank you for supporting Qafila ♥ The Gold icon is yours. The icon changes on the home screen after a few seconds.</string>
     <string name="app_icon_footer">The Gold icon is a gift for people who support Qafila. The icon changes on the home screen after a few seconds.</string>
@@ -326,6 +328,7 @@
     <string name="add_named">Add “%1$s”</string>
     <string name="no_bookmarks">No bookmarks yet.</string>
     <string name="search_history">Search history</string>
+    <string name="search_tabs">Search tabs</string>
     <string name="no_history">No history. Private tabs are never saved here.</string>
     <string name="private_browsing_note">Private browsing: no history, no cache, no tabs kept.</string>
     <string name="tap_address_to_start">Tap the address to get started.</string>

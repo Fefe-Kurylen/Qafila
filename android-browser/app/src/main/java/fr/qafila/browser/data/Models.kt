@@ -249,6 +249,8 @@ data class Settings(
     val barColorLight: BarColor = BarColor.AUTO,
     val barColorDark: BarColor = BarColor.AUTO,
     val appIcon: AppIcon = AppIcon.CLASSIC,
+    /** Transparence du verre (styles Verre et Flottante) : 0 = couleur pleine, 1 = le plus transparent. */
+    val glassTransparency: Double = 0.5,
     val haptics: Boolean = true,
     // Barre d'outils
     val toolbar: ToolbarConfig = ToolbarConfig.preset(ToolbarConfig.Preset.COMPLETE),

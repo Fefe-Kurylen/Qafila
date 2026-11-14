@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -52,6 +53,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.AbsoluteAlignment
@@ -62,8 +64,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -73,12 +79,16 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import fr.qafila.browser.R
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import fr.qafila.browser.data.AddressLongPressAction
 import fr.qafila.browser.data.AddressTapAction
 import fr.qafila.browser.data.BrowserStore
@@ -91,6 +101,7 @@ import fr.qafila.browser.data.ToolbarStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URL
@@ -163,14 +174,28 @@ fun BrowserScreen(store: BrowserStore) {
     val bar = barColorsFor(barBg)
     val glass = s.toolbar.style == ToolbarStyle.GLASS
     val floating = s.toolbar.style == ToolbarStyle.FLOATING
-    // Couleurs du contenu de la barre (adresse en pastille translucide sur la barre flottante).
-    val chromeColors = if (floating) bar.glassy() else bar
+    val t = s.glassT
+    // Couleurs du contenu de la barre (adresse en pastille translucide sur le verre).
+    val chromeColors = if (floating || glass) bar.glassy(t, floating) else bar
     val statusColor = when {
         tab?.url == null -> q.page
         siteColor != null && !darkened && (!q.dark || siteColor.luminance() < 0.5f) -> siteColor
         else -> if (q.dark || darkened) Color.Black else Color.White
     }
     val anyOverlay = showTabs || showSettings || showBookmarks || showHistory
+    // ----- Faux verre : capture floutée de la page derrière la barre (API 31+), arrêtée dès que la barre est cachée ou l'application en arrière-plan -----
+    val glassScope = rememberCoroutineScope()
+    val backdrop = remember(store) { GlassBackdrop(glassScope) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var foreground by remember { mutableStateOf(true) }
+    DisposableEffect(lifecycleOwner) {
+        val obs = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) foreground = true else if (e == Lifecycle.Event.ON_PAUSE) foreground = false }
+        lifecycleOwner.lifecycle.addObserver(obs)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
+    }
+    val captureOn = (floating || glass) && canBlurGlass && !hidden && foreground && !anyOverlay && tab?.url != null
+    SideEffect { backdrop.pageColor = statusColor.toArgb() }
+    LaunchedEffect(captureOn, tab?.id) { backdrop.active = captureOn }
     val view = LocalView.current
     SideEffect {
         val window = view.context.findActivity()?.window ?: return@SideEffect
@@ -182,6 +207,7 @@ fun BrowserScreen(store: BrowserStore) {
 
     // ----- Barre -----
     val n = tab?.let { navStates[it.id] }
+    LaunchedEffect(n?.loading) { if (n?.loading == false) backdrop.refresh(250) }
     val active = buildSet {
         if (tab != null) {
             if (store.isBookmarked(tab)) add(ToolbarAction.ADD_BOOKMARK)
@@ -252,13 +278,15 @@ fun BrowserScreen(store: BrowserStore) {
                     factory = { ctx -> FrameLayout(ctx) },
                     update = { container ->
                         val web = store.tabManager.webView(tab.id)
+                        backdrop.web = web
                         if (web.parent !== container) {
                             (web.parent as? ViewGroup)?.removeView(web)
                             container.removeAllViews()
                             store.tabManager.attach(tab.id, container.context)
                             container.addView(web)
-                            web.setOnScrollChangeListener { _, _, y, _, oldY -> store.onWebScroll(y, oldY) }
+                            web.setOnScrollChangeListener { _, _, y, _, oldY -> store.onWebScroll(y, oldY); backdrop.onScroll() }
                             store.tabManager.onSelected(tab.id)
+                            backdrop.refresh(120)
                         }
                     },
                 )
@@ -297,22 +325,29 @@ fun BrowserScreen(store: BrowserStore) {
             // Clavier ouvert : posée au-dessus du clavier.
             val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val floatGap = when { imeBottom > 0.dp -> imeBottom + 8.dp; navInset > 32.dp -> navInset + 8.dp; else -> 12.dp }
-            Column(
-                if (floating) {
-                    Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }
-                        .then(if (top) Modifier.statusBarsPadding().padding(top = 6.dp) else Modifier.padding(bottom = floatGap))
-                        .padding(horizontal = 12.dp)
-                        .floatingGlass(chromeColors)
-                        .padding(bottom = if (top) 6.dp else 8.dp, top = if (top) 2.dp else 0.dp)
-                } else Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }.background(if (glass) bar.bg.copy(alpha = 0.80f) else bar.bg)
-                    .then(if (top) Modifier.statusBarsPadding() else Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom))),
-            ) {
+            val barContent: @Composable () -> Unit = {
                 if (showFind && tab != null && !top) FindBar(store, tab.id, chromeColors) { showFind = false; store.tabManager.clearFind(tab.id) }
                 ChromeContent(
                     data, s, s.toolbar, bar, collapsed = collapsed && !editing, cb = cb, background = false,
                     editing = if (editing) ({ AddressEditor(query, chromeColors, { query = it }, { store.navigate(query.text) }, { store.isEditingAddress.value = false }) }) else null,
                 )
                 if (showFind && tab != null && top) FindBar(store, tab.id, chromeColors) { showFind = false; store.tabManager.clearFind(tab.id) }
+            }
+            val systemInsets = if (top) Modifier.statusBarsPadding() else Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime).only(WindowInsetsSides.Bottom))
+            // Zone du verre dans la fenêtre : la capture de la page suit la barre.
+            val placed = Modifier.onGloballyPositioned { c -> c.boundsInWindow().let { r -> backdrop.place(IntRect(r.left.roundToInt(), r.top.roundToInt(), r.right.roundToInt(), r.bottom.roundToInt())) } }
+            when {
+                floating -> GlassSurface(
+                    chromeColors, t, backdrop.image, RoundedCornerShape(FLOATING_RADIUS), elevation = 14.dp,
+                    modifier = Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }
+                        .then(if (top) Modifier.statusBarsPadding().padding(top = 6.dp) else Modifier.padding(bottom = floatGap))
+                        .padding(horizontal = 12.dp).then(placed),
+                ) { Column(Modifier.fillMaxWidth().padding(bottom = 6.dp, top = if (top) 2.dp else 0.dp)) { barContent() } }
+                glass -> GlassSurface(
+                    chromeColors, t, backdrop.image, RectangleShape, rim = false,
+                    modifier = Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }.then(placed),
+                ) { Column(Modifier.fillMaxWidth().then(systemInsets)) { barContent() } }
+                else -> Column(Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }.background(bar.bg).then(systemInsets)) { barContent() }
             }
         }
 

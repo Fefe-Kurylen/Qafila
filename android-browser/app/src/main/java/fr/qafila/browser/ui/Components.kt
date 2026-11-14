@@ -289,13 +289,13 @@ fun TabsSquare(count: Int, size: Dp, tint: Color, stroke: Float) {
     }
 }
 
-/** Petite carte flottante (menus contextuels de l'écran Onglets…). */
+/** Carte flottante (menu, menus contextuels de l'écran Onglets) : rayon 18, ombre douce, sans bordure ; [alpha] suit la transparence du verre. */
 @Composable
-fun FloatingCard(modifier: Modifier = Modifier, width: Dp = 250.dp, content: @Composable ColumnScope.() -> Unit) {
+fun FloatingCard(modifier: Modifier = Modifier, width: Dp = 250.dp, alpha: Float = 1f, content: @Composable ColumnScope.() -> Unit) {
     val q = LocalQ.current
     Column(
-        modifier.width(width).shadow(18.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.15f), spotColor = Color.Black.copy(alpha = 0.15f))
-            .clip(RoundedCornerShape(18.dp)).background(q.menuBg.copy(alpha = 0.96f)).border(0.5.dp, q.separator.copy(alpha = 0.6f), RoundedCornerShape(18.dp)).blockTouches(),
+        modifier.width(width).shadow(24.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.15f), spotColor = Color.Black.copy(alpha = 0.15f))
+            .clip(RoundedCornerShape(18.dp)).background(q.menuBg.copy(alpha = alpha)).blockTouches(),
         verticalArrangement = Arrangement.Top, content = content,
     )
 }

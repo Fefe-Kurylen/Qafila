@@ -221,6 +221,8 @@
     <string name="bar_color_dark">لون الشريط — الوضع الداكن</string>
     <string name="bar_style">نمط الشريط</string>
     <string name="bar_style_footer">كلاسيكي: لون مصمت. زجاجي: شريط شفاف. عائم: شريط مستدير بعيد عن الحواف تمرّ الصفحة حوله.</string>
+    <string name="transparency">الشفافية</string>
+    <string name="transparency_footer">يضبط مدى شفافية زجاج الشريط.</string>
     <string name="app_icon">أيقونة التطبيق</string>
     <string name="app_icon_footer_supporter">شكرًا لدعمك Qafila ♥ الأيقونة الذهبية لك. تتغيّر الأيقونة على الشاشة الرئيسية بعد بضع ثوانٍ.</string>
     <string name="app_icon_footer">الأيقونة الذهبية هدية لمن يدعمون Qafila. تتغيّر الأيقونة على الشاشة الرئيسية بعد بضع ثوانٍ.</string>
@@ -326,6 +328,7 @@
     <string name="add_named">إضافة «%1$s»</string>
     <string name="no_bookmarks">لا توجد إشارات مرجعية بعد.</string>
     <string name="search_history">البحث في السجل</string>
+    <string name="search_tabs">البحث في علامات التبويب</string>
     <string name="no_history">لا يوجد سجل. لا تُحفظ علامات التبويب الخاصة فيه أبدًا.</string>
     <string name="private_browsing_note">تصفّح خاص: لا سجل ولا ذاكرة تخزين مؤقت ولا علامات تبويب محفوظة.</string>
     <string name="tap_address_to_start">المس العنوان للبدء.</string>

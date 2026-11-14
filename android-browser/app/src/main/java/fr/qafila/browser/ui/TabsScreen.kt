@@ -67,6 +67,7 @@ import fr.qafila.browser.data.BrowserTab
 import fr.qafila.browser.data.SettingsPage
 import fr.qafila.browser.data.TabsLayout
 import fr.qafila.browser.data.TabsSort
+import fr.qafila.browser.data.ToolbarStyle
 
 /** Onglets (DESIGN.md §4) : liste groupée / grille 2 ou 3 colonnes / carrousels par site ; barre « + · N onglets ⌃ · réglages ». */
 @Composable
@@ -78,13 +79,14 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
     val s = state.settings
     var showPrivate by rememberSaveable { mutableStateOf(state.tabs.firstOrNull { it.id == state.selectedTabId }?.isPrivate == true) }
     var pillMenu by remember { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
     BackHandler { if (pillMenu) pillMenu = false else onDismiss() }
 
     val newTabsLabel = stringResource(R.string.new_tabs_group)
     val otherSitesLabel = stringResource(R.string.other_sites)
     // Tri et regroupement recalculés seulement quand les onglets ou les réglages changent, pas à chaque recomposition.
-    val visible = remember(state.tabs, showPrivate, s.tabsSort) {
-        state.tabs.filter { it.isPrivate == showPrivate }.let { t ->
+    val visible = remember(state.tabs, showPrivate, s.tabsSort, query) {
+        state.tabs.filter { it.isPrivate == showPrivate && (query.isBlank() || it.displayTitle.contains(query, true) || (it.url ?: "").contains(query, true)) }.let { t ->
             when (s.tabsSort) { TabsSort.DATE -> t.sortedByDescending { it.lastVisited }; TabsSort.READING_TIME -> t.sortedByDescending { it.readingMinutes }; TabsSort.TITLE -> t.sortedBy { it.displayTitle.lowercase() } }
         }
     }
@@ -102,16 +104,20 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
     fun favicon(t: BrowserTab) = icons[store.tabManager.favicons.keyOf(t.url)]
     val count = state.tabs.count { !it.isPrivate }
     val privateCount = state.tabs.count { it.isPrivate }
+    // Pastille et menu : même opacité réglable que le verre de la barre.
+    val cardAlpha = if (s.toolbar.style == ToolbarStyle.CLASSIC) 1f else glassAlpha(s.glassT, blurred = false)
 
     Box(Modifier.fillMaxSize().background(q.groupedBg).blockTouches()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            Spacer(Modifier.height(4.dp))
+            SearchField(query, stringResource(R.string.search_tabs)) { query = it }
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                if (visible.isEmpty()) Text(stringResource(if (showPrivate) R.string.no_private_tabs else R.string.no_tabs), Modifier.align(Alignment.Center).padding(horizontal = 32.dp), color = q.secondary, fontSize = 15.sp, lineHeight = 21.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                if (visible.isEmpty()) Text(stringResource(if (query.isNotBlank()) R.string.no_tabs else if (showPrivate) R.string.no_private_tabs else R.string.no_tabs), Modifier.align(Alignment.Center).padding(horizontal = 32.dp), color = q.secondary, fontSize = 15.sp, lineHeight = 21.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 else if (s.tabsLayout == TabsLayout.LIST) {
-                    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp), reverseLayout = s.comfortMode) {
+                    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp), reverseLayout = s.comfortMode) {
                         items(groups, key = { it.first.ifEmpty { "_" } }) { (host, tabs) ->
                             Column {
-                                if (host.isNotEmpty()) GroupHeader(host)
+                                if (host.isNotEmpty()) GroupHeader(host, tabs.size)
                                 else Spacer(Modifier.height(8.dp))
                                 GroupCard {
                                     tabs.forEachIndexed { i, t ->
@@ -129,7 +135,7 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
                         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp), reverseLayout = s.comfortMode) {
                             items(groups, key = { it.first.ifEmpty { "_" } }) { (host, tabs) ->
                                 Column {
-                                    GroupHeader(host.ifEmpty { stringResource(R.string.action_tabs) })
+                                    GroupHeader(host.ifEmpty { stringResource(R.string.action_tabs) }, tabs.size)
                                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         items(tabs, key = { it.id }) { t ->
                                             TabThumb(t, favicon(t), snapshots[t.id], t.id == state.selectedTabId, Modifier.width(if (cols == 2) 150.dp else 104.dp), { open(t) }) { store.close(t.id) }
@@ -141,24 +147,24 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
                     } else {
                         LazyVerticalGrid(GridCells.Fixed(cols), Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), reverseLayout = s.comfortMode,
                             horizontalArrangement = Arrangement.spacedBy(if (cols == 2) 14.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            if (s.groupTabsByDomain && groups.firstOrNull()?.first?.isNotEmpty() == true) item(span = { GridItemSpan(maxLineSpan) }) { GroupHeader(groups.first().first) }
+                            if (s.groupTabsByDomain && groups.firstOrNull()?.first?.isNotEmpty() == true) item(span = { GridItemSpan(maxLineSpan) }) { GroupHeader(groups.first().first, visible.size) }
                             items(visible, key = { it.id }) { t -> TabThumb(t, favicon(t), snapshots[t.id], t.id == state.selectedTabId, Modifier, { open(t) }) { store.close(t.id) } }
                         }
                     }
                 }
             }
-            // Barre du bas : +   « N onglets ⌃ »   réglages
+            // Barre du bas, comme sur iPhone : +   « N onglets ⌃ »   OK (les réglages d'onglets sont dans le menu de la pastille)
             Row(Modifier.fillMaxWidth().background(q.groupedBg).navigationBarsPadding().height(54.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(44.dp).pressFade { store.newTab(isPrivate = showPrivate); onDismiss() }, contentAlignment = Alignment.Center) { QIconView(QIcon.PLUS, stringResource(R.string.new_tab), q.text, 22.dp) }
                 Spacer(Modifier.weight(1f))
-                Row(Modifier.clip(RoundedCornerShape(50)).background(q.fill).pressFade { pillMenu = !pillMenu }.padding(start = 14.dp, end = 10.dp, top = 7.dp, bottom = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.clip(RoundedCornerShape(50)).background(if (cardAlpha < 1f) q.card.copy(alpha = cardAlpha) else q.fill).pressFade { pillMenu = !pillMenu }.padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     val n = if (showPrivate) privateCount else count
                     Text(pluralStringResource(if (showPrivate) R.plurals.private_count else R.plurals.tabs_count, n, n), color = q.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                    Spacer(Modifier.width(4.dp))
-                    QIconView(QIcon.CHEVRON_UPDOWN, null, q.text, 13.dp)
+                    Spacer(Modifier.width(5.dp))
+                    QIconView(if (pillMenu) QIcon.CHEVRON_DOWN else QIcon.CHEVRON_UP, null, q.text, 12.dp)
                 }
                 Spacer(Modifier.weight(1f))
-                Box(Modifier.size(44.dp).pressFade { store.openSettings(SettingsPage.TABS, standalone = true) }, contentAlignment = Alignment.Center) { QIconView(QIcon.SLIDERS, stringResource(R.string.tab_settings), q.text, 22.dp) }
+                TextAction(stringResource(R.string.done), onClick = onDismiss)
             }
         }
 
@@ -167,16 +173,20 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
             pillMenu, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 60.dp),
             enter = scaleIn(initialScale = 0.92f, transformOrigin = TransformOrigin(0.5f, 1f)) + fadeIn(), exit = scaleOut(targetScale = 0.92f, transformOrigin = TransformOrigin(0.5f, 1f)) + fadeOut(),
         ) {
-            FloatingCard(width = 240.dp) {
+            FloatingCard(width = 240.dp, alpha = cardAlpha) {
                 MenuLine(stringResource(R.string.action_tabs), QIcon.TABS, checked = !showPrivate) { showPrivate = false; pillMenu = false }
+                RowDivider()
                 MenuLine(stringResource(R.string.private_tabs) + if (privateCount > 0) " ($privateCount)" else "", QIcon.PRIVATE, checked = showPrivate) { showPrivate = true; pillMenu = false }
                 Hairline()
                 MenuLine(stringResource(R.string.sort_by_value, s.tabsSort.label), QIcon.LIST) {
                     store.updateSettings { it.copy(tabsSort = TabsSort.entries[(it.tabsSort.ordinal + 1) % TabsSort.entries.size]) }
                 }
+                RowDivider()
                 MenuLine(stringResource(if (s.tabsLayout == TabsLayout.LIST) R.string.show_as_grid else R.string.show_as_list), if (s.tabsLayout == TabsLayout.LIST) QIcon.GRID else QIcon.LIST) {
                     store.updateSettings { it.copy(tabsLayout = if (it.tabsLayout == TabsLayout.LIST) TabsLayout.GRID else TabsLayout.LIST) }; pillMenu = false
                 }
+                RowDivider()
+                MenuLine(stringResource(R.string.tab_settings), QIcon.SLIDERS) { pillMenu = false; store.openSettings(SettingsPage.TABS, standalone = true) }
                 Hairline()
                 val n = if (showPrivate) privateCount else count
                 MenuLine(if (n > 1) pluralStringResource(R.plurals.close_n_tabs, n, n) else stringResource(R.string.action_close_tab), QIcon.CLOSE, q.destructive) {
@@ -187,9 +197,15 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
     }
 }
 
+/** En-tête de site : DOMAINE en capitales gris, nombre d'onglets à droite (comme sur iPhone). */
 @Composable
-private fun GroupHeader(host: String) =
-    Text(host.uppercase(), Modifier.padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 7.dp), color = LocalQ.current.secondary, fontSize = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+private fun GroupHeader(host: String, count: Int? = null) {
+    val q = LocalQ.current
+    Row(Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(host.uppercase(), Modifier.weight(1f), color = q.secondary, fontSize = 11.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (count != null) Text("$count", color = q.secondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,20 +215,23 @@ private fun TabListRow(store: BrowserStore, t: BrowserTab, fav: android.graphics
     SwipeToDismissBox(
         state = dismiss, enableDismissFromStartToEnd = false,
         backgroundContent = {
-            Box(Modifier.fillMaxSize().background(q.destructive).padding(end = 20.dp), contentAlignment = Alignment.CenterEnd) { Text(stringResource(R.string.action_close_tab_short), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+            // Fond rouge seulement pendant le balayage : au repos, rien ne dépasse autour de la carte.
+            if (dismiss.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                Box(Modifier.fillMaxSize().background(q.destructive).padding(end = 20.dp), contentAlignment = Alignment.CenterEnd) { Text(stringResource(R.string.action_close_tab_short), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+            }
         },
     ) {
-        Row(Modifier.fillMaxWidth().background(q.card).rowClick(onClick = onOpen).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().background(q.card).rowClick(onClick = onOpen).padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Favicon(fav, t.hostOrNull, 26.dp, corner = 6.dp, private = t.isPrivate)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(t.uiTitle(), color = q.text, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(t.uiTitle(), color = q.text, fontSize = 15.sp, lineHeight = 19.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(2.dp))
                 Text(t.hostOrNull?.uppercase() ?: stringResource(R.string.newtab_start).uppercase(), color = q.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = if (t.hostOrNull != null) LtrText else androidx.compose.ui.text.TextStyle.Default)
             }
             if (current) { Spacer(Modifier.width(8.dp)); QIconView(QIcon.CHECK, stringResource(R.string.current_tab), q.secondary, 14.dp) }
             val read = readingLabel(t.readingMinutes)
-            if (showRead && read != null) { Spacer(Modifier.width(8.dp)); Pill(read, q.fill, q.text) }
+            if (showRead && read != null) { Spacer(Modifier.width(8.dp)); Pill(read, q.fill, q.secondary, fontSize = 11f) }
         }
     }
 }

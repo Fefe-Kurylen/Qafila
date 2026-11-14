@@ -221,6 +221,8 @@
     <string name="bar_color_dark">Color de la barra — modo oscuro</string>
     <string name="bar_style">Estilo de la barra</string>
     <string name="bar_style_footer">Clásica: color sólido. Cristal: barra translúcida. Flotante: barra redondeada separada de los bordes, con la página alrededor.</string>
+    <string name="transparency">Transparencia</string>
+    <string name="transparency_footer">Ajusta la transparencia del cristal de la barra.</string>
     <string name="app_icon">Icono de la app</string>
     <string name="app_icon_footer_supporter">Gracias por apoyar Qafila ♥ El icono Oro es tuyo. El icono cambia en la pantalla de inicio tras unos segundos.</string>
     <string name="app_icon_footer">El icono Oro es un regalo para quienes apoyan Qafila. El icono cambia en la pantalla de inicio tras unos segundos.</string>
@@ -326,6 +328,7 @@
     <string name="add_named">Añadir «%1$s»</string>
     <string name="no_bookmarks">Aún no hay marcadores.</string>
     <string name="search_history">Buscar en el historial</string>
+    <string name="search_tabs">Buscar en las pestañas</string>
     <string name="no_history">Sin historial. Las pestañas privadas nunca se guardan aquí.</string>
     <string name="private_browsing_note">Navegación privada: sin historial, sin caché, sin pestañas guardadas.</string>
     <string name="tap_address_to_start">Toca la dirección para empezar.</string>

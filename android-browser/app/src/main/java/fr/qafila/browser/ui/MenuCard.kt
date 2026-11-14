@@ -33,6 +33,7 @@ import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import fr.qafila.browser.data.ToolbarAction
 import fr.qafila.browser.data.ToolbarSlot
+import fr.qafila.browser.data.ToolbarStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -116,19 +117,23 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
     fun icon(a: ToolbarAction) = if (a == ToolbarAction.RELOAD && n?.loading == true) QIcon.CLOSE else a.qicon(active(a), state.settings.menuIcon)
 
     val blocks = menuBlocks(state.settings.toolbar.menu)
-    FloatingCard(modifier) {
+    val s = state.settings
+    val tabCount = state.tabs.count { it.isPrivate == (tab?.isPrivate == true) }
+    // Carte de verre : même opacité réglable que la barre (sans flou) ; carte pleine en style Classique.
+    FloatingCard(modifier, alpha = if (s.toolbar.style == ToolbarStyle.CLASSIC) 1f else glassAlpha(s.glassT, blurred = false)) {
         Column(Modifier.heightIn(max = maxHeight).verticalScroll(rememberScrollState())) {
             // Adresse masquée sans bouton Rechercher : la saisie reste accessible depuis le menu.
-            val s = state.settings
             if (s.addressStyle == fr.qafila.browser.data.AddressStyle.HIDDEN && s.toolbar.bar.none { it.action == ToolbarAction.ADDRESS || it.action == ToolbarAction.SEARCH }) {
                 MenuLine(stringResource(R.string.search_or_enter_address), QIcon.SEARCH) { act(ToolbarAction.SEARCH) }
                 if (blocks.isNotEmpty()) Hairline()
             }
             if (blocks.isEmpty()) Text(stringResource(R.string.menu_empty), Modifier.padding(16.dp), color = q.secondary, fontSize = 13.sp)
-            blocks.forEach { b ->
+            blocks.forEachIndexed { bi, b ->
                 when (b) {
                     MenuBlock.Separator -> Hairline()
                     is MenuBlock.Line -> {
+                        // Comme sur iPhone : lignes consécutives séparées par un trait fin en retrait.
+                        if (bi > 0 && blocks[bi - 1] is MenuBlock.Line) RowDivider()
                         val a = b.slot.action
                         val color = if (a.destructive) q.destructive else q.text
                         Box(Modifier.alpha(if (enabled(a)) 1f else 0.3f)) {
@@ -139,15 +144,17 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
                         // Comme Quiche : jusqu'à 3 tuiles, un petit intitulé sous l'icône ; au-delà, icônes seules.
                         val withLabels = b.slots.size <= 3
                         Row(Modifier.fillMaxWidth().height(if (withLabels) 60.dp else 46.dp), verticalAlignment = Alignment.CenterVertically) {
-                            b.slots.forEachIndexed { i, s ->
-                                if (i > 0) Box(Modifier.width(0.5.dp).fillMaxHeight().background(q.separator))
-                                val a = s.action
+                            b.slots.forEachIndexed { i, slot ->
+                                // Trait court entre les tuiles (jamais sur toute la hauteur).
+                                if (i > 0) Box(Modifier.width(0.5.dp).height(if (withLabels) 30.dp else 22.dp).background(q.separator))
+                                val a = slot.action
                                 val color = if (a.destructive) q.destructive else q.text
                                 Column(
                                     Modifier.weight(1f).fillMaxHeight().alpha(if (enabled(a)) 1f else 0.3f).rowClick(enabled = enabled(a)) { act(a) },
                                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
                                 ) {
-                                    QIconView(icon(a), label(a), color, if (withLabels) 20.dp else 18.dp)
+                                    if (a == ToolbarAction.TABS) TabsSquare(tabCount, if (withLabels) 21.dp else 19.dp, color, s.iconWeight.stroke)
+                                    else QIconView(icon(a), label(a), color, if (withLabels) 20.dp else 18.dp)
                                     if (withLabels) {
                                         Spacer(Modifier.height(5.dp))
                                         Text(tileLabel(a), color = color, fontSize = 11.5.sp, lineHeight = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 5.dp))

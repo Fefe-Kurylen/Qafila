@@ -95,20 +95,22 @@ fun sampleChromeData() = ChromeData(
 val FLOATING_RADIUS = 32.dp
 private val GLASS_INNER_RADIUS = 22.dp
 
+/** Liseré dégradé clair du verre (plus marqué en haut). */
+fun glassRim(colors: BarColors): List<Color> =
+    if (colors.light) listOf(Color.White.copy(alpha = 0.85f), Color.White.copy(alpha = 0.25f))
+    else listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.04f))
+
 /**
- * Matériau « Liquid Glass » de la barre flottante (comme Quiche) : couleur de la barre légèrement transparente
- * (Compose ne peut pas flouter la WebView dessous), liseré dégradé clair en haut, ombre douce.
+ * Matériau « Liquid Glass » de la barre flottante (comme Quiche), version sans capture (aperçus) : couleur de la barre
+ * à l'opacité réglée par la transparence [t], liseré dégradé clair en haut, ombre douce. La vraie barre passe par [GlassSurface].
  */
-fun Modifier.floatingGlass(colors: BarColors, elevation: Dp = 14.dp): Modifier {
+fun Modifier.floatingGlass(colors: BarColors, t: Float, elevation: Dp = 14.dp): Modifier {
     val shape = RoundedCornerShape(FLOATING_RADIUS)
-    val rim = if (colors.light) listOf(Color.White.copy(alpha = 0.85f), Color.White.copy(alpha = 0.25f))
-        else listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.04f))
     return this
         .shadow(elevation, shape, ambientColor = Color.Black.copy(alpha = 0.10f), spotColor = Color.Black.copy(alpha = 0.16f))
         .clip(shape)
-        // Compose ne peut pas flouter la page derrière la barre : verre presque opaque pour rester lisible.
-        .background(colors.bg.copy(alpha = if (colors.light) 0.95f else 0.96f))
-        .border(0.8.dp, Brush.verticalGradient(rim), shape)
+        .background(colors.bg.copy(alpha = glassAlpha(t)))
+        .border(0.8.dp, Brush.verticalGradient(glassRim(colors)), shape)
 }
 
 /**
@@ -131,11 +133,11 @@ fun ChromeContent(
     val glass = toolbar.style == ToolbarStyle.GLASS
     val q = LocalQ.current
     val floating = toolbar.style == ToolbarStyle.FLOATING
-    val colors = if (floating) barColors.glassy() else barColors
+    val colors = if (floating || glass) barColors.glassy(s.glassT, floating) else barColors
     val bgMod = when {
         !background -> Modifier
-        floating -> Modifier.padding(horizontal = 12.dp, vertical = 8.dp).floatingGlass(colors, elevation = 10.dp).padding(bottom = 8.dp)
-        else -> Modifier.background(if (glass) colors.bg.copy(alpha = 0.80f) else colors.bg)
+        floating -> Modifier.padding(horizontal = 12.dp, vertical = 8.dp).floatingGlass(colors, s.glassT, elevation = 10.dp).padding(bottom = 6.dp)
+        else -> Modifier.background(if (glass) colors.bg.copy(alpha = glassAlpha(s.glassT)) else colors.bg)
     }
     Box(modifier.fillMaxWidth().animateContentSize(tween(180)).then(bgMod)) {
         Column(Modifier.fillMaxWidth()) {
@@ -146,9 +148,9 @@ fun ChromeContent(
                 else -> {
                     val inline = toolbar.hasInlineAddress
                     if (!inline && s.addressStyle != AddressStyle.HIDDEN) {
-                        Box(Modifier.padding(start = 10.dp, end = 10.dp, top = 8.dp)) { AddressView(data, s, colors, inline = false, interactive = interactive, cb = cb) }
+                        Box(Modifier.padding(start = 10.dp, end = 10.dp, top = 7.dp)) { AddressView(data, s, colors, inline = false, interactive = interactive, cb = cb) }
                     }
-                    IconRow(data, s, toolbar.bar, colors, inline, interactive, cb, topPad = if (inline || s.addressStyle == AddressStyle.HIDDEN) 6.dp else 2.dp)
+                    IconRow(data, s, toolbar.bar, colors, inline, interactive, cb, topPad = if (inline || s.addressStyle == AddressStyle.HIDDEN) 6.dp else 1.dp)
                 }
             }
         }
@@ -161,7 +163,7 @@ fun ChromeContent(
 
 @Composable
 private fun IconRow(data: ChromeData, s: Settings, bar: List<ToolbarSlot>, colors: BarColors, inline: Boolean, interactive: Boolean, cb: ChromeCallbacks, topPad: Dp) {
-    Row(Modifier.fillMaxWidth().padding(top = topPad, start = 6.dp, end = 6.dp).height(if (inline) 50.dp else 44.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(top = topPad, start = 6.dp, end = 6.dp).height(if (inline) 50.dp else 42.dp), verticalAlignment = Alignment.CenterVertically) {
         if (bar.isEmpty()) Spacer(Modifier.weight(1f))
         bar.forEach { slot ->
             when (slot.action) {
@@ -235,7 +237,7 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
     val card = Modifier.fillMaxWidth().clip(cardShape).background(colors.card)
 
     when (style) {
-        AddressStyle.CARD -> Row(card.heightIn(min = if (inline) 40.dp else 44.dp).then(gestures).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        AddressStyle.CARD -> Row(card.heightIn(min = if (inline) 40.dp else 42.dp).then(gestures).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showFav) { fav(22.dp); Spacer(Modifier.width(9.dp)) }
             Column(Modifier.weight(1f)) {
                 if (empty) Text(placeholder, color = colors.secondary, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -327,7 +329,7 @@ fun ChromePreview(s: Settings, modifier: Modifier = Modifier, toolbar: ToolbarCo
         ChromeContent(sampleChromeData(), settings, toolbar, bar, interactive = false)
         // Barre de gestes du système : sous une barre flottante, c'est la page qui se voit.
         val floating = toolbar.style == ToolbarStyle.FLOATING
-        val homeBg = when { floating -> pageBg; toolbar.style == ToolbarStyle.GLASS -> bar.bg.copy(alpha = 0.8f); else -> bar.bg }
+        val homeBg = when { floating -> pageBg; toolbar.style == ToolbarStyle.GLASS -> bar.bg.copy(alpha = glassAlpha(s.glassT)); else -> bar.bg }
         Box(Modifier.fillMaxWidth().background(homeBg).padding(top = if (floating) 0.dp else 6.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
             Box(Modifier.width(110.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background((if (floating) q.text else bar.text).copy(alpha = 0.85f)))
         }

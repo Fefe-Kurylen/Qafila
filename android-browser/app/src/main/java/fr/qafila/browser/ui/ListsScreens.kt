@@ -37,8 +37,9 @@ import fr.qafila.browser.data.BrowserStore
 import java.text.DateFormat
 import java.util.Date
 
+/** Champ de recherche d'une liste (favoris, historique, onglets). */
 @Composable
-private fun SearchField(value: String, placeholder: String, onChange: (String) -> Unit) {
+fun SearchField(value: String, placeholder: String, onChange: (String) -> Unit) {
     val q = LocalQ.current
     Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp).fillMaxWidth().height(38.dp).clip(RoundedCornerShape(10.dp)).background(q.fill).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         QIconView(QIcon.SEARCH, null, q.secondary, 16.dp)
