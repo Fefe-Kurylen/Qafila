@@ -142,3 +142,11 @@ Navigation à sous-pages, style réglages iOS sobre (icônes au trait, monochrom
 
 ## 7. Galerie de barres (presets)
 Complète `‹ › ⇪ + ▢ ⋯` · Navigation `‹ › ▢ + ✕` · Outils `‹ ↶ 🖥 📖 ▢ ✕ ⋯` · Lecteur `文A ▣ JS ⌃ + ▢ ✕` · Minimal `[adresse] ▢ ≡` · Zen `+ [adresse] ▢ ✕`
+
+## 8. Verre et transparence
+
+- **Trois styles de barre** : Classique (couleur pleine), Verre (pleine largeur, translucide), Flottante (par défaut : capsule de rayon 32 à 12 pt des bords, pilule d'adresse concentrique de rayon 22).
+- **Réglage « Transparence »** (Apparence, sous le style de barre, masqué en Classique) : curseur 0–100 %, 50 % par défaut, aperçu en direct. 100 % = verre le plus transparent, 0 % = couleur de barre opaque. Il pilote la barre, la pilule d'adresse, la carte du menu et la pilule de l'écran des onglets.
+- **iOS 26** : vrai Liquid Glass (`glassEffect` teinté de la couleur de barre à (1 − t) × 0,7, interactif sur la barre). **iOS 17/18** : matériau ultra-fin + couleur de barre à 0,05 + (1 − t) × 0,95, liseré clair en haut, ombre adoucie avec la transparence.
+- **Android 12+** : faux verre — capture 1/6 de la page derrière la barre, floutée (BlurEffect 24), sous la couleur de barre à 1 − 0,6 t. Sans flou (Android < 12, menu, pilules) : 1 − 0,12 t pour rester lisible.
+- **Mode sombre** : verre profond (#1C1C1E), jamais gris moyen ; pilule d'adresse blanc 12–16 % sur verre sombre, 55–65 % sur verre clair. La page passe sous la barre d'état, sans bandeau opaque.
