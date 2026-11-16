@@ -1,0 +1,17 @@
+{
+  "name": "qafila-shared",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Qafila — contrat partagé entre iPhone, Android et PC : spécifications, schémas, vecteurs de test, fixtures d'import, script de formulaires",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/",
+    "vectors": "node vectors/gen.mjs"
+  },
+  "devDependencies": {
+    "hash-wasm": "^4.12.0",
+    "jsdom": "^26.0.0"
+  },
+  "license": "MIT"
+}

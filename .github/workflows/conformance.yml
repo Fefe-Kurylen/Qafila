@@ -1,0 +1,31 @@
+# Contrat partagé (shared/) : vecteurs cryptographiques, analyseurs d'import, script de formulaires, parité iOS/Android.
+name: Qafila contrat partagé
+
+on:
+  push:
+    branches: [main]
+    paths: ["shared/**", ".github/workflows/conformance.yml"]
+  pull_request:
+    paths: ["shared/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: qafila-conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests du contrat
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: shared
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: shared/package-lock.json
+      - run: npm ci
+      - run: npm test
