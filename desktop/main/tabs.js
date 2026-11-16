@@ -15,7 +15,10 @@ const PAGE_PRELOAD = path.join(__dirname, '..', 'preload', 'page.js');
 function copyText(text) { return clipboard.writeText(String(text)).then(() => true, () => false); }
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-const INTERNAL_SCHEMES = new Set(['http:', 'https:', 'about:', 'file:', 'data:', 'blob:', 'chrome:', 'devtools:', 'chrome-error:']);
+// file: n'en fait pas partie : une page locale aurait accès aux autres fichiers de l'ordinateur (le chrome, chargé en
+// file://, a besoin du fusible grantFileProtocolExtraPrivileges). Les fichiers ne s'ouvrent jamais dans un onglet.
+const INTERNAL_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:', 'chrome:', 'devtools:', 'chrome-error:']);
+const isFileURL = (url) => /^\s*file:/i.test(String(url || ''));
 // Applications externes : courriel et téléphone seulement, après un geste récent de l'utilisateur et sa confirmation.
 const EXTERNAL_SCHEMES = new Set(['mailto:', 'tel:']);
 const GESTURE_WINDOW_MS = 3000;
@@ -95,6 +98,9 @@ class TabManager extends EventEmitter {
     ses.setPermissionCheckHandler((_wc, permission) => GRANTED_PERMISSIONS.has(permission));
     // Périphériques (USB, HID, série, Bluetooth) : jamais.
     ses.setDevicePermissionHandler(() => false);
+    // Fichiers locaux : aucune requête file: ne sort des sessions des onglets (dernier rempart derrière les gardes de
+    // navigation). Le chrome, dans la session par défaut, n'est pas concerné.
+    try { ses.protocol.handle('file', () => new Response('', { status: 403, headers: { 'content-type': 'text/plain' } })); } catch { /* déjà intercepté */ }
     // Un seul gestionnaire onBeforeRequest par session (un second appel remplacerait le premier) :
     // 1) HTTPS forcé : les navigations principales en http partent en https ; en cas d'échec, retour en http (did-fail-load) ;
     // 2) bloqueur : requêtes tierces vers les domaines publicitaires / traqueurs / bandeaux annulées.
@@ -185,6 +191,8 @@ class TabManager extends EventEmitter {
       },
     });
     view.setBackgroundColor(this.isDark() ? '#000000' : '#ffffff');
+    // WebRTC : jamais l'adresse IP locale ni celle cachée par un VPN ; en privé, rien hors du proxy.
+    view.webContents.setWebRTCIPHandlingPolicy(tab.isPrivate ? 'disable_non_proxied_udp' : 'default_public_interface_only');
     this.views.set(tabId, view);
     this.live.set(tabId, { loading: false, progress: 0, canGoBack: false, canGoForward: false, blocked: 0 });
     this.wire(view.webContents, tabId);
@@ -205,6 +213,7 @@ class TabManager extends EventEmitter {
       return;
     }
     this.readerActive.delete(tabId);
+    if (isFileURL(url)) { this.showError(wc, this.t()('file_blocked'), url); return; }
     if (url && url !== 'about:blank' && !url.startsWith('about:')) {
       if (this.offline && /^https?:/.test(url)) {
         // Mode démo hors ligne : page d'article locale, l'adresse affichée reste celle de l'onglet.
@@ -288,8 +297,13 @@ class TabManager extends EventEmitter {
     wc.on('did-start-loading', () => update({ loading: true, progress: 0.1 }));
     wc.on('did-stop-loading', () => { update({ loading: false, progress: 1 }); navState(); this.emit('glass', tabId); });
     wc.on('did-start-navigation', (e) => {
-      const { isMainFrame, isSameDocument, initiator } = e;
+      const { isMainFrame, isSameDocument, initiator, url } = e;
       if (!isMainFrame || isSameDocument) return;
+      // Fichier déposé sur la page ou toute autre navigation vers file: : arrêtée, page d'erreur à la place.
+      if (isFileURL(url)) {
+        setImmediate(() => { if (!wc.isDestroyed()) { wc.stop(); this.showError(wc, this.t()('file_blocked'), url); } });
+        return;
+      }
       this.blocker.resetCount(wc.id);
       // Navigation du navigateur (adresse, favori, Précédent : sans cadre initiateur) ou suivant un geste récent :
       // seule une telle page, une fois affichée (did-navigate), remet à zéro le compteur de téléchargements. Une page
@@ -371,6 +385,7 @@ class TabManager extends EventEmitter {
     wc.on('will-navigate', (e, url) => {
       let scheme = '';
       try { scheme = new URL(url).protocol; } catch { return; }
+      if (scheme === 'file:') { e.preventDefault(); setImmediate(() => { if (!wc.isDestroyed()) this.showError(wc, this.t()('file_blocked'), url); }); return; }
       if (!INTERNAL_SCHEMES.has(scheme)) { e.preventDefault(); this.openExternal(url, wc); }
     });
     wc.setWindowOpenHandler(({ url }) => {

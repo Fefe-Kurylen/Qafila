@@ -3,7 +3,7 @@
 // transparente (desktop/renderer) qui occupe une bande en haut ou en bas, ou toute la fenêtre quand un menu, les
 // suggestions ou un écran (onglets, réglages…) sont ouverts. Lancer avec --demo pour les onglets de démonstration,
 // --smoke=<dossier> pour les captures d'écran de test (quitte avec le code 0).
-const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, net, Menu, dialog, screen } = require('electron');
+const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, session, Menu, dialog, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { Store } = require('./store');
@@ -16,6 +16,7 @@ const ipc = require('./ipc');
 const demo = require('./demo');
 const { FaviconCache } = require('./favicon');
 const shortcuts = require('./shortcuts');
+const { APP_ID } = require('./app-id');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -25,14 +26,17 @@ const DEMO_DARK = String(arg('demo')).endsWith('-dark');
 const OFFLINE = DEMO && arg('online') === null;
 
 const BAR_MARGIN = 12;          // marge de la capsule flottante (DESIGN.md §8)
-const MIN_SIZE = { width: 1024, height: 680 };
+// Taille minimale modeste : la moitié d'un écran 1920 × 1080 à 100 % (960 px, Ancrage de Windows) ou d'un portable
+// 1366 × 768 à 125 % doit tenir, sans que la fenêtre déborde sur sa voisine ni sous la barre des tâches.
+const MIN_SIZE = { width: 560, height: 480 };
 const DEFAULT_SIZE = { width: 1280, height: 820 };
 
 // Fenêtre unique, nom d'application, pas de clés Google ni de rapporteur de plantage.
 app.setName('Qafila');
-// Windows : identifiant identique à build.appId, porté par les raccourcis NSIS (menu Démarrer, bureau). Sans lui, une
-// icône épinglée ouvre un second bouton dans la barre des tâches au lieu de s'allumer.
-if (process.platform === 'win32') app.setAppUserModelId(require('../package.json').build?.appId || 'fr.qafila.desktop');
+// Windows : identifiant porté par les raccourcis NSIS (menu Démarrer, bureau). Sans lui, une icône épinglée ouvre un
+// second bouton dans la barre des tâches au lieu de s'allumer. Constante (main/app-id.js) : electron-builder retire
+// « build » du package.json empaqueté ; un test vérifie qu'elle reste égale à build.appId.
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 // User agent « Chrome ordinaire » partout (sans Electron/… ni Qafila/…) : la connexion Google l'exige.
 app.userAgentFallback = desktopUserAgent(app.userAgentFallback);
 if (SMOKE_DIR) {
@@ -374,7 +378,16 @@ function zoom(delta) {
 
 async function clearData() {
   await Q.tabs.clearData();
+  // Session par défaut (anciennes suggestions envoyées avec cookies et cache disque) : vidée aussi. Le chrome n'y
+  // garde rien (aucun stockage local).
+  await Promise.all([session.defaultSession.clearStorageData(), session.defaultSession.clearCache()].map((p) => p.catch(() => {})));
   Q.store.clearHistory();
+  // Rien ne doit permettre de retrouver les sites effacés : onglets fermés (Ctrl+Maj+T), icônes en mémoire, sites
+  // restés en http, décisions de téléchargement.
+  Q.store.closedTabs = [];
+  Q.favicons?.entries.clear();
+  Q.tabs.httpOnlyHosts.clear();
+  downloadSites.clear();
   broadcast();
   return true;
 }
@@ -391,6 +404,14 @@ function onSettingChanged(key) {
   if (['desktopByDefault', 'desktopHosts', 'customUserAgent'].includes(key)) Q.tabs.applyUserAgentToOpenTabs();
   if (['blockAds', 'blockTrackers', 'blockCookieBanners', 'blockerDisabledHosts'].includes(key)) { /* pris en compte à la prochaine requête */ }
   broadcast();
+}
+
+// Suggestions du moteur : session en mémoire, sans cookies ni cache. La frappe (onglets privés compris) ne laisse
+// aucune trace sur le disque et le moteur ne peut pas la relier à un identifiant persistant (NID, MUID…).
+let suggestSes = null;
+function suggestFetch(url, signal) {
+  suggestSes ||= session.fromPartition('qafila-suggest');
+  return suggestSes.fetch(url, { signal, credentials: 'omit', cache: 'no-store', headers: { accept: 'application/json' } });
 }
 
 /** Suggestions : favoris et historique locaux, puis le moteur (sauf réglage « Jamais » / onglet privé). */
@@ -411,7 +432,7 @@ async function suggest(query) {
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 1500);
-        const res = await net.fetch(base + search.encodeQuery(query), { signal: ctrl.signal, headers: { accept: 'application/json' } });
+        const res = await suggestFetch(base + search.encodeQuery(query), ctrl.signal);
         clearTimeout(timer);
         const json = await res.json();
         const list = Array.isArray(json) ? (Array.isArray(json[1]) ? json[1] : json) : (json.suggestions || []);
@@ -509,6 +530,20 @@ function allowMultipleDownloads(host) {
   return asked.then((ok) => { downloadSites.set(host, ok); return ok; });
 }
 
+// Fichiers capables d'exécuter du code ou d'ouvrir autre chose (Windows d'abord, puis macOS et Linux). Sans geste
+// récent de l'utilisateur dans la page, même le premier téléchargement automatique attend sa confirmation.
+const RISKY_EXTENSIONS = new Set(`exe msi msix msixbundle appx appxbundle appinstaller appref-ms application bat cmd com
+  scr pif cpl dll sys drv ocx hta js jse vbs vbe wsf wsh wsc ps1 psm1 psd1 ps1xml psc1 msc msp mst lnk url scf inf reg
+  library-ms search-ms searchconnector-ms settingcontent-ms website gadget chm hlp iso img vhd vhdx jar jnlp xll xlam
+  docm dotm xlsm xltm pptm potm ppam html htm xhtml xht shtml mht mhtml svg app command tool pkg mpkg dmg terminal
+  workflow scpt sh bash zsh csh ksh run deb rpm appimage desktop py pyw pl rb`.split(/\s+/).filter(Boolean));
+
+function pageHost(wc) {
+  let u = '';
+  try { u = wc && !wc.isDestroyed() ? wc.getURL() : ''; } catch { u = ''; }
+  try { return new URL(u).host || u.slice(0, 80); } catch { return u.slice(0, 80); }
+}
+
 function onDownload(item, wc) {
   const t = translator();
   const dir = downloadFolder();
@@ -532,6 +567,20 @@ function onDownload(item, wc) {
     lastDownload = state === 'completed' ? file : lastDownload;
     broadcast();
   });
+  // Fichier exécutable sans geste récent : confirmation explicite, Annuler par défaut.
+  const risky = RISKY_EXTENSIONS.has(path.extname(name).slice(1).toLowerCase()) && !(wc && !wc.isDestroyed() && Q.tabs.recentGesture(wc));
+  if (risky) {
+    const host = pageHost(wc);
+    item.pause();
+    dialog.showMessageBox(Q.win, {
+      type: 'warning', buttons: [t('download_keep'), t('cancel')], defaultId: 1, cancelId: 1, noLink: true,
+      message: t('download_risky', host, name),
+    }).then((r) => r.response === 0, () => false).then((ok) => {
+      if (item.getState() !== 'progressing') return;
+      if (ok) { start(); item.resume(); } else { item.cancel(); command('toast', { text: t('download_canceled', name) }); }
+    });
+    return;
+  }
   // Un geste (clic, touche) = un téléchargement ; le premier téléchargement automatique d'une page passe aussi.
   // Au-delà, le fichier attend en pause la réponse (une fois par site) ; refusé, il est annulé avec un message.
   const verdict = Q.tabs.downloadVerdict(wc);
@@ -748,6 +797,10 @@ app.on('second-instance', (_e, otherArgv) => {
 });
 app.on('window-all-closed', () => { Q.store?.saveNow(); app.quit(); });
 app.on('before-quit', () => { Q.store?.saveNow(); });
+// Certificat client demandé par un site (TLS) : Electron enverrait sans rien demander le premier certificat du
+// système (certificats d'entreprise, eID…), qui révèle le nom ou l'adresse de l'utilisateur et le suit d'un site à
+// l'autre, même en navigation privée. Qafila n'envoie jamais de certificat : la connexion continue sans.
+app.on('select-client-certificate', (e, _wc, _url, _list, cb) => { e.preventDefault(); cb(); });
 app.on('web-contents-created', (_e, wc) => {
   // Aucune vue n'ouvre de fenêtre native ni ne charge de code distant dans le chrome.
   wc.on('will-attach-webview', (e) => e.preventDefault());
@@ -950,6 +1003,8 @@ async function hostileChecks(report, wait, set) {
   const server = http.createServer((q, r) => {
     const u = new URL(q.url, 'http://x');
     if (u.pathname === '/redir') { r.writeHead(302, { location: `http://localhost:${server.address().port}/js` }); r.end(); return; }
+    if (u.pathname === '/suggest') { r.writeHead(200, { 'content-type': 'application/json', 'set-cookie': 'NID=pistage; Max-Age=999999', 'cache-control': 'no-cache' }); r.end(JSON.stringify(['x', [String(q.headers.cookie || '')]])); return; }
+    if (u.pathname === '/setup.exe') { r.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': 'attachment; filename="setup.exe"' }); r.end('MZ'); return; }
     if (u.pathname === '/file') { r.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="f${u.searchParams.get('n')}.bin"` }); r.end('x'); return; }
     r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); r.end(pages[u.pathname] || '<!doctype html><title>Vide</title>');
   });
@@ -1015,6 +1070,35 @@ async function hostileChecks(report, wait, set) {
     twc.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
     await wait(1500);
     if (Q.isFullscreenPage) fail('plein écran : Échap n\'en sort pas');
+    // 6) Fichiers locaux : jamais rendus dans un onglet (adresse saisie, chargement direct), aucun fichier lu.
+    const secret = path.join(SMOKE_DIR, 'secret.txt');
+    const trapFile = path.join(SMOKE_DIR, 'piege.html');
+    fs.writeFileSync(secret, 'SECRET-LOCAL');
+    fs.writeFileSync(trapFile, `<!doctype html><title>Piège</title><script>fetch(${JSON.stringify(require('node:url').pathToFileURL(secret).href)}).then((r) => r.text()).then((t) => { document.title = 'LU:' + t; }, () => { document.title = 'REFUS'; });</script>`);
+    const trapURL = require('node:url').pathToFileURL(trapFile).href;
+    navigate(trapURL, tab.id); await wait(1200);
+    if (!twc.getURL().startsWith('data:') || twc.getTitle().startsWith('LU:')) fail(`fichiers locaux (adresse) : ${twc.getURL().slice(0, 60)} « ${twc.getTitle()} »`);
+    await twc.loadURL(trapURL).catch(() => {}); await wait(1200);
+    if (twc.getTitle().startsWith('LU:') || twc.getURL().startsWith('file:')) fail(`fichiers locaux (chargement direct) : ${twc.getURL().slice(0, 60)} « ${twc.getTitle()} »`);
+    // 7) Suggestions : aucun cookie renvoyé au moteur (session en mémoire, credentials « omit »).
+    const sugg = async () => { try { return (await (await suggestFetch(`${base}/suggest`)).json())[1][0]; } catch (e) { return 'ERREUR ' + e.message; } };
+    await sugg();
+    const sent = await sugg();
+    if (sent !== '') fail(`suggestions : cookie renvoyé au moteur (« ${sent} »)`);
+    // 8) Exécutable sans geste : confirmation demandée ; refusé, rien n'est enregistré.
+    const asked = [];
+    const showBox = dialog.showMessageBox;
+    dialog.showMessageBox = (...a) => { asked.push(a[a.length - 1]?.message || ''); return Promise.resolve({ response: 1 }); };
+    try {
+      await twc.loadURL(`${base}/js`).catch(() => {});
+      await wait(500);
+      Q.tabs.lastGesture.delete(twc.id);
+      Q.tabs.downloadState.delete(twc.id);
+      await twc.executeJavaScript(`location.href = '/setup.exe'; 1`, true).catch(() => {});
+      await wait(1500);
+    } finally { dialog.showMessageBox = showBox; }
+    if (asked.length !== 1 || !asked[0].includes('setup.exe')) fail(`exécutable sans geste : ${asked.length} question(s)`);
+    if (fs.existsSync(path.join(SMOKE_DIR, 'downloads', 'setup.exe'))) fail('exécutable sans geste : fichier enregistré malgré le refus');
   } finally {
     set('javascriptEnabled', saved.js);
     set('javascriptDisabledHosts', saved.hosts);
@@ -1138,6 +1222,14 @@ async function runSmoke() {
   await hostileChecks(report, wait, set);
   await layoutChecks(report, wait, set, shot);
   await crashChecks(report, wait);
+  // Fenêtre à la taille minimale (Ancrage de Windows sur une demi-largeur) : barre, menu et écran des onglets tiennent.
+  const size = Q.win.getContentSize();
+  Q.win.setContentSize(MIN_SIZE.width, MIN_SIZE.height); await wait(1200);
+  Q.glass.refresh(0); await wait(400); await shot('31-min-size');
+  demoScreen('menu'); await wait(900); await shot('32-min-menu');
+  demoScreen('tabs'); await wait(1200); await shot('33-min-tabs');
+  demoScreen('none'); await wait(500);
+  Q.win.setContentSize(size[0], size[1]); await wait(1000);
   demoScreen('toolbar'); await wait(900); demoScreen('scroll', { top: 'end' }); await wait(500); await shot('29-toolbar-settings');
   demoScreen('none'); await wait(600);
   // La vue du chrome doit être revenue à la bande (barre + 2 × 12 px) une fois les surcouches fermées.

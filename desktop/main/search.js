@@ -45,7 +45,8 @@ function suggestURL(settings) {
 function urlFromInput(raw, settings) {
   const t = String(raw || '').trim();
   if (!t) return null;
-  if (/^(https?|about|file|data|qafila):/i.test(t)) return t;
+  // file: est rendu tel quel pour que l'onglet affiche « fichiers locaux refusés » (TabManager.open), jamais chargé.
+  if (/^(https?|about|data|qafila):/i.test(t) || /^file:/i.test(t)) return t;
   const looksLikeHost = !/\s/.test(t) && t.includes('.') && !t.endsWith('.') && !/^[.]/.test(t);
   if (looksLikeHost || /^localhost(:\d+)?(\/|$)/.test(t)) return (settings.upgradeToHTTPS ? 'https://' : 'http://') + t;
   return searchURL(t, settings);

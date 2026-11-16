@@ -67,6 +67,11 @@ test('Stripe : lien vide = « Bientôt disponible » (désactivé)', () => {
   assert.equal(link(undefined).configured, false);
 });
 
+test('Stripe : un hôte hors de Stripe ajouté à allowedHosts reste refusé', () => {
+  assert.equal(link('https://evil.example/abc', ['buy.stripe.com', 'evil.example']).configured, false);
+  assert.equal(link('https://donate.stripe.com/abc', ['donate.stripe.com']).configured, true);
+});
+
 test('Stripe : https://buy.stripe.com accepté', () => {
   const l = link('https://buy.stripe.com/abc123');
   assert.equal(l.configured, true);
@@ -161,6 +166,32 @@ test('raccourcis : macOS — ⌥←/→ laissé au système, ⌘[ ⌘] , ⌘Y hi
   assert.equal(shortcuts.resolve(key('I', { code: 'KeyI', control: true, shift: true }), 'win32'), 'devtools');
   assert.equal(shortcuts.resolve(key('t', { control: true }), 'darwin'), null);
   assert.equal(shortcuts.resolve({ ...key('t', { control: true }), type: 'keyUp' }, 'win32'), null);
+});
+
+test('raccourcis : Alt+D et F6 (champ d\'adresse), pavé numérique sans Verr. Num., onglets sous macOS', () => {
+  assert.equal(shortcuts.resolve(key('d', { code: 'KeyD', alt: true }), 'win32'), 'focusAddress');
+  assert.equal(shortcuts.resolve(key('d', { code: 'KeyD', alt: true }), 'linux'), 'focusAddress');
+  assert.equal(shortcuts.resolve(key('∂', { code: 'KeyD', alt: true }), 'darwin'), null);
+  assert.equal(shortcuts.resolve(key('F6'), 'win32'), 'focusAddress');
+  assert.equal(shortcuts.resolve(key('F6'), 'darwin'), 'focusAddress');
+  assert.equal(shortcuts.resolve(key('End', { code: 'Numpad1', control: true }), 'win32'), null);
+  assert.equal(shortcuts.resolve(key('Insert', { code: 'Numpad0', control: true }), 'win32'), null);
+  assert.equal(shortcuts.resolve(key('Home', { code: 'Numpad7', control: true }), 'win32'), null);
+  assert.equal(shortcuts.resolve(key('1', { code: 'Numpad1', control: true }), 'win32'), 'tab:1');
+  assert.equal(shortcuts.resolve(key('&', { code: 'Digit1', control: true }), 'win32'), 'tab:1');
+  assert.equal(shortcuts.resolve(key('Tab', { code: 'Tab', control: true }), 'darwin'), 'nextTab');
+  assert.equal(shortcuts.resolve(key('Tab', { code: 'Tab', control: true, shift: true }), 'darwin'), 'prevTab');
+  assert.equal(shortcuts.resolve(key('}', { code: 'BracketRight', meta: true, shift: true }), 'darwin'), 'nextTab');
+  assert.equal(shortcuts.resolve(key('{', { code: 'BracketLeft', meta: true, shift: true }), 'darwin'), 'prevTab');
+  assert.equal(shortcuts.resolve(key('ArrowRight', { meta: true, alt: true }), 'darwin'), 'nextTab');
+  assert.equal(shortcuts.resolve(key('ArrowLeft', { meta: true, alt: true }), 'darwin'), 'prevTab');
+  assert.equal(shortcuts.resolve(key('Tab', { code: 'Tab', control: true }), 'win32'), 'nextTab');
+});
+
+// ----- Identifiant de l'application : égal à build.appId (raccourcis NSIS, épinglage Windows) -----
+test('APP_ID = build.appId de package.json', () => {
+  const pkg = require('../package.json');
+  assert.equal(require('../main/app-id.js').APP_ID, pkg.build.appId);
 });
 
 // ----- Réglages : clés héritées du prototype refusées sans exception -----

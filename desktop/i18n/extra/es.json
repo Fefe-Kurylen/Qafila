@@ -49,5 +49,11 @@
   "fullscreen_notice": "%1$s está en pantalla completa · Pulsa Esc para salir",
   "fullscreen_notice_page": "Pantalla completa · Pulsa Esc para salir",
   "engine_label": "Motor",
-  "kbd_ctrl": "Ctrl"
+  "kbd_ctrl": "Ctrl",
+  "file_blocked": "Los archivos del ordenador no se abren en Qafila: una página local podría leer tus otros documentos.",
+  "gallery_footer": "Haz clic en una barra para adoptarla; luego podrás ajustarla en Personalizar.",
+  "bar_style_footer": "Clásica: color sólido. Cristal: barra translúcida. Flotante: barra redondeada separada de los bordes de la ventana.",
+  "download_risky": "«%1$s» quiere descargar «%2$s» sin que lo hayas pedido. Este tipo de archivo puede ejecutar código en el ordenador.",
+  "download_keep": "Descargar de todos modos",
+  "download_canceled": "Descarga cancelada: %1$s"
 }

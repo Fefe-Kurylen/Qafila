@@ -20,7 +20,9 @@ function keyOf(input) {
  * 'newTab', 'reopenTab', 'newPrivateTab', 'closeTab', 'nextTab', 'prevTab', 'focusAddress', 'find',
  * 'bookmark', 'history', 'bookmarks', 'tabs', 'settings', 'zoomIn', 'zoomOut', 'zoomReset', 'tab:<n>' (1…9).
  * macOS : ⌘ remplace Ctrl ; ⌥←/→ reste le saut de mot du système (Précédent / Suivant = ⌘[ / ⌘]) ; ⌘H reste
- * « Masquer Qafila » (Historique = ⌘Y) ; outils de développement = ⌘⌥I.
+ * « Masquer Qafila » (Historique = ⌘Y) ; outils de développement = ⌘⌥I ; onglet suivant / précédent = Ctrl+Tab,
+ * ⇧⌘] / ⇧⌘[ ou ⌥⌘→ / ⌥⌘← (⌘Tab appartient au sélecteur d'applications).
+ * Windows / Linux : champ d'adresse aussi par Alt+D et F6, comme Chrome, Edge et Firefox.
  */
 function resolve(input, platform = process.platform) {
   if (!input || input.type !== 'keyDown') return null;
@@ -29,12 +31,15 @@ function resolve(input, platform = process.platform) {
   const key = keyOf(input);
   const shift = !!input.shift;
   const alt = !!input.alt;
+  if (key === 'F6' && !mod && !alt && !shift && !input.meta && !input.control) return 'focusAddress';
   if (alt && !mod) {
     if (mac) return null;
     if (key === 'ArrowLeft') return 'back';
     if (key === 'ArrowRight') return 'forward';
+    if (key === 'd' && !shift) return 'focusAddress';
     return null;
   }
+  if (mac && input.control && !input.meta && !alt && key === 'Tab') return shift ? 'prevTab' : 'nextTab';
   if (key === 'F5') return 'reload';
   if (key === 'F11') return 'fullscreen';
   if (key === 'Escape') return 'escape';
@@ -42,8 +47,13 @@ function resolve(input, platform = process.platform) {
   if (mod && key === 'i' && (mac ? alt : shift)) return 'devtools';
   if (!mod) return null;
   // Chiffres par position physique (Ctrl+1…9, Ctrl+0) : indépendants de la disposition (AZERTY : « & », « é »…).
+  // Pavé numérique : seulement s'il donne un chiffre (Verr. Num. éteint, Ctrl+Fin ou Ctrl+Inser restent à la page).
   const digit = /^(Digit|Numpad)([0-9])$/.exec(input.code || '');
-  if (digit && !shift && !alt) return digit[2] === '0' ? 'zoomReset' : `tab:${digit[2]}`;
+  if (digit && !shift && !alt && (digit[1] === 'Digit' || /^[0-9]$/.test(String(input.key || '')))) return digit[2] === '0' ? 'zoomReset' : `tab:${digit[2]}`;
+  if (mac && alt && !shift && (key === 'ArrowLeft' || key === 'ArrowRight')) return key === 'ArrowLeft' ? 'prevTab' : 'nextTab';
+  if (mac && shift && !alt && (key === '{' || key === '}' || input.code === 'BracketLeft' || input.code === 'BracketRight')) {
+    return key === '{' || (key !== '}' && input.code === 'BracketLeft') ? 'prevTab' : 'nextTab';
+  }
   if (alt) return null;
   switch (key) {
     case 't': return shift ? 'reopenTab' : 'newTab';

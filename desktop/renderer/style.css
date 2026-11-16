@@ -214,7 +214,7 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .sg .fill { color: var(--bfg2); display: grid; padding: 6px; border-radius: 8px; }
 .sg .fill svg { width: 15px; height: 15px; }
 [dir=rtl] .sg .fill svg { transform: scaleX(-1); }
-.suggest .sep { height: .5px; background: var(--bsep); margin: 4px 0 4px 49px; }
+.suggest .sep { height: .5px; background: var(--bsep); margin-block: 4px; margin-inline: 49px 0; }
 
 /* ===== Écran des onglets ===== */
 .tabs-screen { position: fixed; inset: 0; background: var(--grouped); z-index: 6; animation: fade .2s ease-out; }
@@ -225,9 +225,9 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .t-search input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 16px; color: var(--text); height: 38px; }
 .t-search input::placeholder { color: var(--secondary); }
 .t-search input::-webkit-search-cancel-button { filter: grayscale(1); }
-/* Champ de recherche actif : liseré discret autour de la pastille plutôt qu'un contour sur le seul champ. */
+/* Champ de recherche actif (il reçoit le focus à l'ouverture) : liseré gris très discret, comme la pastille iOS. */
 .t-search input:focus-visible { outline: none; }
-.t-search:focus-within { box-shadow: inset 0 0 0 1.5px var(--accent-ui); }
+.t-search:focus-within { box-shadow: inset 0 0 0 1px var(--sep); }
 .t-head { display: flex; justify-content: space-between; padding: 22px 20px 9px; font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--secondary); }
 .t-group { background: var(--cell); border-radius: 22px; overflow: hidden; }
 .t-head + .t-group, .t-head + .g-grid { margin-top: 0; }
@@ -241,8 +241,11 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .t-dom { font-size: 10px; font-weight: 500; letter-spacing: .9px; text-transform: uppercase; color: var(--secondary); }
 .t-row .pill { font-size: 12.5px; padding: 4px 9px; }
 .t-check { color: var(--secondary); display: grid; }
-.t-close { width: 24px; height: 24px; border-radius: 12px; display: grid; place-items: center; background: var(--fill); color: var(--secondary); opacity: 0; transition: opacity .15s; flex: none; }
-.t-row:hover .t-close { opacity: 1; }
+/* Fermer : posé par-dessus la coche / la durée au survol (hors flux), pour que la pastille reste au bord comme sur iOS. */
+.t-close { position: absolute; top: 50%; margin-top: -12px; inset-inline-end: 20px; width: 24px; height: 24px; border-radius: 12px; display: grid; place-items: center; background: var(--fill); color: var(--secondary); opacity: 0; transition: opacity .15s; }
+.t-row:is(:hover, :focus-within) .t-close { opacity: 1; }
+.t-row:is(:hover, :focus-within) :is(.pill, .t-check) { visibility: hidden; }
+.t-row:not(:has(.pill, .t-check)) .t-txt { padding-inline-end: 28px; }
 .t-close svg { stroke-width: 2; }
 .t-empty { text-align: center; color: var(--secondary); padding: 90px 20px; white-space: pre-line; font-size: 15px; }
 .g-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px 18px; padding: 4px 0 8px; }
@@ -363,8 +366,10 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .pv-classic .pv-bar, .pv-glass .pv-bar { left: 0; right: 0; bottom: 0; border-radius: 0; box-shadow: 0 -.5px 0 var(--bsep); }
 .preview.top.pv-classic .pv-bar, .preview.top.pv-glass .pv-bar { top: 0; box-shadow: 0 .5px 0 var(--bsep); }
 .pv-classic .pv-tint { background: rgb(var(--bar-rgb)); }
-.pv-menu { position: absolute; width: 256px; right: 24px; top: 92px; border-radius: 18px; overflow: hidden; pointer-events: none; transform: scale(.94); transform-origin: top right; }
+.pv-menu { position: absolute; width: 256px; inset-inline-end: 24px; top: 92px; border-radius: 18px; overflow: hidden; pointer-events: none; transform: scale(.94); transform-origin: top right; }
 .preview.bottom .pv-menu { top: auto; bottom: 92px; transform-origin: bottom right; }
+[dir=rtl] .pv-menu { transform-origin: top left; }
+[dir=rtl] .preview.bottom .pv-menu { transform-origin: bottom left; }
 .preview .btn, .preset-bar .btn { pointer-events: none; }
 .addr-pv { width: 300px; flex: none; padding: 8px; border-radius: 30px; background: rgb(var(--bar-rgb)); display: flex; color: var(--bfg); }
 .addr-pv:empty { height: 60px; background: rgba(var(--bar-rgb), .5); }

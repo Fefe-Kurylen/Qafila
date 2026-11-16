@@ -33,7 +33,8 @@
       "enableNodeCliInspectArguments": false,
       "enableEmbeddedAsarIntegrityValidation": true,
       "onlyLoadAppFromAsar": true,
-      "grantFileProtocolExtraPrivileges": true
+      "grantFileProtocolExtraPrivileges": true,
+      "enableCookieEncryption": true
     },
     "directories": {
       "output": "dist",
@@ -95,7 +96,7 @@
       "syncDesktopName": true
     },
     "mac": {
-      "icon": "build/icon.png",
+      "icon": "build/icon-mac.png",
       "category": "public.app-category.productivity",
       "artifactName": "Qafila-${version}-${os}-${arch}.${ext}",
       "target": [

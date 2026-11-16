@@ -49,5 +49,11 @@
   "fullscreen_notice": "%1$s ist jetzt im Vollbildmodus · Esc zum Beenden",
   "fullscreen_notice_page": "Vollbild · Esc zum Beenden",
   "engine_label": "Engine",
-  "kbd_ctrl": "Strg"
+  "kbd_ctrl": "Strg",
+  "file_blocked": "Dateien von diesem Computer werden in Qafila nicht geöffnet: Eine lokale Seite könnte Ihre anderen Dokumente lesen.",
+  "gallery_footer": "Klicken Sie auf eine Leiste, um sie zu übernehmen; danach können Sie sie unter „Anpassen“ feinjustieren.",
+  "bar_style_footer": "Klassisch: volle Farbe. Glas: durchscheinende Leiste. Schwebend: abgerundete Leiste mit Abstand zum Fensterrand.",
+  "download_risky": "„%1$s“ möchte „%2$s“ herunterladen, ohne dass Sie es angefordert haben. Dieser Dateityp kann Code auf dem Computer ausführen.",
+  "download_keep": "Trotzdem herunterladen",
+  "download_canceled": "Download abgebrochen: %1$s"
 }

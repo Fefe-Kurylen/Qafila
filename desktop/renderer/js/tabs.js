@@ -113,8 +113,9 @@ function renderTabs() {
     ${view.popup ? popupHTML() : ''}`;
   const sc = $('#tabs-scroll');
   if (sc) sc.scrollTop = scroll;
-  if (active) { const i = $('#tabs-search'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
-  else if (focusedTab) el.querySelector(`[data-tab="${CSS.escape(focusedTab)}"]`)?.focus();
+  // Focus rendu sans défiler : la position restaurée ci-dessus (onglet courant centré à l'ouverture) est gardée.
+  if (active) { const i = $('#tabs-search'); i.focus({ preventScroll: true }); i.setSelectionRange(i.value.length, i.value.length); }
+  else if (focusedTab) el.querySelector(`[data-tab="${CSS.escape(focusedTab)}"]`)?.focus({ preventScroll: true });
 }
 onRender(renderTabs);
 
@@ -135,7 +136,13 @@ export function openTabs({ privateMode } = {}) {
   if (privateMode !== undefined) view.private = privateMode;
   else view.private = !!S.state.tabs.find((x) => x.id === S.state.selected)?.isPrivate;
   // Clavier : la frappe va au champ de recherche ; Tab / flèches parcourent ensuite les onglets.
-  Promise.resolve(setOverlay('tabs')).then(() => $('#tabs-search')?.focus());
+  // L'onglet courant est toujours visible à l'ouverture (centré), même en bas d'une longue liste.
+  Promise.resolve(setOverlay('tabs')).then(() => {
+    const sc = $('#tabs-scroll');
+    if (sc) sc.scrollTop = 0;
+    $('#tabs [data-tab].sel')?.scrollIntoView({ block: 'center' });
+    $('#tabs-search')?.focus({ preventScroll: true });
+  });
   refreshSnapshots();
 }
 

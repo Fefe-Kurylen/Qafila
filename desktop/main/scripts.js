@@ -154,7 +154,8 @@ body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex
 .head { margin-top: 26vh; text-align: center; }
 h1 { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", serif; font-weight: 500; font-size: 40px; letter-spacing: -.02em; margin: 0; }
 .ar { font-family: "Geeza Pro", "Damascus", "Noto Naskh Arabic", serif; font-size: 19px; color: #8e8e93; margin-top: 2px; }
-.grid { display: grid; grid-template-columns: repeat(6, 72px); gap: 18px 14px; margin-top: 44px; }
+/* Au plus 6 colonnes, autant que de favoris en dessous : la grille reste centrée avec 1 à 5 favoris. */
+.grid { display: grid; grid-template-columns: repeat(${Math.max(1, Math.min(6, bookmarks.slice(0, 12).length))}, 72px); gap: 18px 14px; margin-top: 44px; }
 .tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
 .ic { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font: 500 22px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
 .t { font-size: 11px; color: #8e8e93; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

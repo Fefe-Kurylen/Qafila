@@ -50,5 +50,11 @@
   "fullscreen_notice": "%1$s est en plein écran · Échap pour quitter",
   "fullscreen_notice_page": "Plein écran · Échap pour quitter",
   "engine_label": "Moteur",
-  "kbd_ctrl": "Ctrl"
+  "kbd_ctrl": "Ctrl",
+  "file_blocked": "Les fichiers de l'ordinateur ne s'ouvrent pas dans Qafila : une page locale pourrait lire vos autres documents.",
+  "gallery_footer": "Cliquez sur une barre pour l'adopter ; vous pourrez ensuite l'ajuster dans Personnaliser.",
+  "bar_style_footer": "Classique : couleur pleine. Verre : barre translucide. Flottante : barre arrondie détachée des bords de la fenêtre.",
+  "download_risky": "« %1$s » veut télécharger « %2$s » sans que vous l'ayez demandé. Ce type de fichier peut exécuter du code sur l'ordinateur.",
+  "download_keep": "Télécharger quand même",
+  "download_canceled": "Téléchargement annulé : %1$s"
 }

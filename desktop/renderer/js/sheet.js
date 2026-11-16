@@ -246,10 +246,11 @@ P.language = () => ({
 /**
  * Raccourcis affichés : mêmes touches que main/shortcuts.js. « M » = touche de commande : ⌘ sous macOS (⇧⌘N…,
  * ⌘Y pour l'historique, ⌘[ / ⌘] pour Précédent / Suivant), sinon Ctrl dans la langue du clavier (« Strg » en allemand).
+ * Onglet suivant / précédent (Ctrl+Tab, ⇧⌘] / ⇧⌘[) : pas d'action correspondante dans le contrat, non listés.
  */
 function shortcutList(mac) {
   const list = [
-    ['M+T', 'newTab'], ['M+Shift+N', 'newPrivateTab'], ['M+W', 'closeTab'], ['M+Shift+T', 'reopenTab'], ['M+L', 'search'],
+    ['M+T', 'newTab'], ['M+Shift+N', 'newPrivateTab'], ['M+W', 'closeTab'], ['M+Shift+T', 'reopenTab'], [mac ? 'M+L' : 'M+L · Alt+D · F6', 'search'],
     ['M+R · F5', 'reload'], ['M+F', 'find'], ['M+D', 'addBookmark'], [mac ? 'M+Y' : 'M+H', 'history'], ['M+Shift+B', 'bookmarks'],
     ['M+Shift+A', 'tabs'], ['M+,', 'settings'], [mac ? 'M+[' : 'Alt+←', 'back'], [mac ? 'M+]' : 'Alt+→', 'forward'],
   ];

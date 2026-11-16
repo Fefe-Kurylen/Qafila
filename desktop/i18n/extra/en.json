@@ -49,5 +49,11 @@
   "fullscreen_notice": "%1$s is now full screen · Press Esc to exit",
   "fullscreen_notice_page": "Full screen · Press Esc to exit",
   "engine_label": "Engine",
-  "kbd_ctrl": "Ctrl"
+  "kbd_ctrl": "Ctrl",
+  "file_blocked": "Files from this computer don't open in Qafila: a local page could read your other documents.",
+  "gallery_footer": "Click a bar to use it; you can then fine-tune it in Customize.",
+  "bar_style_footer": "Classic: solid color. Glass: translucent bar. Floating: a rounded bar away from the window edges.",
+  "download_risky": "“%1$s” wants to download “%2$s” without you asking. This type of file can run code on your computer.",
+  "download_keep": "Download anyway",
+  "download_canceled": "Download canceled: %1$s"
 }

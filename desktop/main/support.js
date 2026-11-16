@@ -5,13 +5,17 @@
 const { shell } = require('electron');
 const contract = require('./contract');
 
+const STRIPE_HOSTS = new Set(['buy.stripe.com', 'donate.stripe.com', 'checkout.stripe.com']);
+
 /** Lit et valide le lien : https et hôte présent dans allowedHosts ; sinon null (lien vide = pas encore ouvert). */
 function paymentLink() {
   let cfg;
   try { cfg = contract.readJSONFresh('support.json'); } catch { return { configured: false, url: null, reason: 'missing' }; }
   const raw = typeof cfg?.stripePaymentLink === 'string' ? cfg.stripePaymentLink.trim() : '';
   if (!raw) return { configured: false, url: null, reason: 'empty' };
-  const allowed = new Set((Array.isArray(cfg.allowedHosts) ? cfg.allowedHosts : []).map((h) => String(h).toLowerCase()));
+  // Hôtes acceptés : ceux de Stripe inscrits dans le code ET dans le fichier. support.json est hors de l'archive
+  // vérifiée (resources/shared) : qui peut changer le lien ne peut pas élargir la liste pour autant.
+  const allowed = new Set((Array.isArray(cfg.allowedHosts) ? cfg.allowedHosts : []).map((h) => String(h).toLowerCase()).filter((h) => STRIPE_HOSTS.has(h)));
   let u;
   try { u = new URL(raw); } catch { return { configured: false, url: null, reason: 'invalid' }; }
   if (u.protocol !== 'https:' || u.username || u.password || u.port || !allowed.has(u.hostname.toLowerCase())) {
