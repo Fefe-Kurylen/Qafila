@@ -3,7 +3,7 @@
 // transparente (desktop/renderer) qui occupe une bande en haut ou en bas, ou toute la fenêtre quand un menu, les
 // suggestions ou un écran (onglets, réglages…) sont ouverts. Lancer avec --demo pour les onglets de démonstration,
 // --smoke=<dossier> pour les captures d'écran de test (quitte avec le code 0).
-const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, net, Menu, dialog } = require('electron');
+const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, net, Menu, dialog, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { Store } = require('./store');
@@ -15,6 +15,7 @@ const i18n = require('./i18n');
 const ipc = require('./ipc');
 const demo = require('./demo');
 const { FaviconCache } = require('./favicon');
+const shortcuts = require('./shortcuts');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -29,6 +30,9 @@ const DEFAULT_SIZE = { width: 1280, height: 820 };
 
 // Fenêtre unique, nom d'application, pas de clés Google ni de rapporteur de plantage.
 app.setName('Qafila');
+// Windows : identifiant identique à build.appId, porté par les raccourcis NSIS (menu Démarrer, bureau). Sans lui, une
+// icône épinglée ouvre un second bouton dans la barre des tâches au lieu de s'allumer.
+if (process.platform === 'win32') app.setAppUserModelId(require('../package.json').build?.appId || 'fr.qafila.desktop');
 // User agent « Chrome ordinaire » partout (sans Electron/… ni Qafila/…) : la connexion Google l'exige.
 app.userAgentFallback = desktopUserAgent(app.userAgentFallback);
 if (SMOKE_DIR) {
@@ -45,7 +49,8 @@ if (!GOT_LOCK) app.exit(0);
 /** L'application : services et actions partagés par l'IPC et les raccourcis. */
 const Q = {
   win: null, chrome: null, store: null, tabs: null, blocker: null, glass: null,
-  chromeMode: 'strip', barHeight: 92, t: null, demo: DEMO, isFullscreenPage: false,
+  chromeMode: 'strip', barHeight: 92, t: null, demo: DEMO, isFullscreenPage: false, fullscreenNotice: null,
+  collapse: 'none', scrollAcc: 0, collapseQuiet: 0, // Au défilement : 'none' | 'mini' (Réduire) | 'hidden' (Masquer)
   pending: new Map(), broadcastTimer: null, favicons: null,
 };
 
@@ -57,46 +62,94 @@ function translator() {
   return Q.t;
 }
 
-// ----- Géométrie : bande du chrome, page à côté de la bande (Fixe) ou dessous (Réduire / Masquer) -----
+// ----- Géométrie : bande du chrome, page toujours posée à côté (jamais dessous : rien d'un site n'est caché) -----
+const MINI_STRIP = 28;          // Réduire : mini-adresse (domaine seul, 11 px)
+const COLLAPSE_AFTER = 48;      // défilement cumulé (px) qui réduit / masque la barre, ou la rouvre en remontant
+const COLLAPSE_QUIET_MS = 300;  // après un changement, la page se redimensionne : défilements ignorés (pas d'oscillation)
+
 function stripRect() {
   if (!Q.win || Q.win.isDestroyed()) return null;
   const [w, h] = Q.win.getContentSize();
-  const strip = Q.barHeight + 2 * BAR_MARGIN;
+  let strip = Q.barHeight + 2 * BAR_MARGIN;
+  if (Q.chromeMode === 'strip' && Q.collapse === 'mini') strip = MINI_STRIP;
+  else if (Q.chromeMode === 'strip' && Q.collapse === 'hidden') strip = 0;
   const top = (Q.store.settings.toolbar?.position || 'top') === 'top';
   return { x: 0, y: top ? 0 : Math.max(0, h - strip), width: w, height: Math.min(h, strip) };
 }
 
-/**
- * La page laisse-t-elle la place de la bande ? Toujours en Classique ; sinon selon « Au défilement » : Fixe (défaut
- * du PC) pose la page sous la bande (au-dessus si la barre est en bas), si bien qu'aucune partie d'un site n'est
- * cachée ni inaccessible au clic ; Réduire / Masquer gardent la page sous la barre (verre au-dessus du contenu).
- */
-function reservesStrip() {
-  const s = Q.store.settings;
-  return (s.toolbar?.style || 'floating') === 'classic' || (s.scrollBehavior || 'fixed') === 'fixed';
-}
-
-/** Rectangle de la page dans la fenêtre. */
+/** Rectangle de la page dans la fenêtre : à côté de la bande (sous elle si la barre est en haut, au-dessus sinon). */
 function pageRect() {
   const [w, h] = Q.win.getContentSize();
-  const full = { x: 0, y: 0, width: w, height: h };
-  if (Q.isFullscreenPage || !reservesStrip()) return full;
+  if (Q.isFullscreenPage) return { x: 0, y: 0, width: w, height: h };
   const strip = stripRect();
   const height = Math.max(0, h - strip.height);
   return strip.y === 0 ? { x: 0, y: strip.height, width: w, height } : { x: 0, y: 0, width: w, height };
 }
 
-/**
- * Zone de la page capturée pour le faux verre, en coordonnées de la page : la page sous la bande (Réduire / Masquer),
- * ou ses premières lignes (dernières si la barre est en bas) quand la page est posée à côté de la bande (Fixe).
- */
+/** Zone de la page capturée pour le faux verre, en coordonnées de la page : ses premières lignes (dernières si la barre est en bas). */
 function glassRect() {
   const s = stripRect();
   const p = Q.tabs?.pageBounds;
-  if (!s || !p || p.width < 2 || p.height < 2) return null;
-  if (!reservesStrip()) return { x: s.x - p.x, y: s.y - p.y, width: s.width, height: s.height };
+  if (!s || !p || p.width < 2 || p.height < 2 || s.height < 2) return null;
   const h = Math.min(s.height, p.height);
   return { x: 0, y: s.y === 0 ? 0 : p.height - h, width: p.width, height: h };
+}
+
+/**
+ * Au défilement (réglage « scrollBehavior ») : Fixe = barre toujours entière ; Réduire = en descendant, il ne reste
+ * qu'une mini-adresse (un clic ou une remontée rouvre la barre) ; Masquer = la barre disparaît en descendant et revient
+ * en remontant ou quand la souris touche le bord de la fenêtre côté barre. La page grandit d'autant.
+ */
+function setCollapse(c) {
+  if (Q.collapse === c) return;
+  Q.collapse = c;
+  Q.scrollAcc = 0;
+  Q.collapseQuiet = Date.now() + COLLAPSE_QUIET_MS;
+  layout();
+  broadcast();
+}
+
+function onPageScroll(id, { y = 0, dy = 0 } = {}) {
+  const mode = Q.store.settings.scrollBehavior || 'fixed';
+  if (id !== Q.store.selected || mode === 'fixed' || Q.chromeMode !== 'strip' || Q.isFullscreenPage) return;
+  if (Date.now() < Q.collapseQuiet) return;
+  if (y <= 8) { setCollapse('none'); return; }
+  Q.scrollAcc = Math.sign(dy) === Math.sign(Q.scrollAcc) ? Q.scrollAcc + dy : dy;
+  if (Q.scrollAcc > COLLAPSE_AFTER) setCollapse(mode === 'hide' ? 'hidden' : 'mini');
+  else if (Q.scrollAcc < -COLLAPSE_AFTER) setCollapse('none');
+}
+
+/** Masquer : la souris touche le bord de la fenêtre côté barre (signal de la page) → la barre revient. */
+function onPageEdge(id, edge) {
+  if (id !== Q.store.selected || Q.collapse !== 'hidden') return;
+  if (edge === (Q.store.settings.toolbar?.position || 'top')) setCollapse('none');
+}
+
+/**
+ * Plein écran demandé par une page : le chrome disparaît, sauf un avis bref en haut (« site en plein écran, Échap pour
+ * quitter »), comme Chrome : une page ne peut pas se faire passer pour Qafila sans que l'utilisateur le voie.
+ */
+const FULLSCREEN_NOTICE_MS = 4000;
+function fullscreenNoticeRect(w, h) {
+  if (Q.fullscreenNotice === null) return { x: 0, y: h, width: w, height: 0 };
+  const width = Math.max(200, Math.min(620, w - 32));
+  return { x: Math.round((w - width) / 2), y: 24, width, height: 64 };
+}
+
+function onPageFullscreen(on, host) {
+  Q.isFullscreenPage = on;
+  clearTimeout(Q.fullscreenTimer);
+  Q.fullscreenNotice = on ? String(host || '') : null;
+  if (on) Q.fullscreenTimer = setTimeout(() => { Q.fullscreenNotice = null; layout(); broadcast(); }, FULLSCREEN_NOTICE_MS);
+  layout();
+  broadcast();
+}
+
+/** Quitte le plein écran de la page (monde isolé : la page ne peut pas remplacer document.exitFullscreen). */
+function exitPageFullscreen() {
+  const wc = Q.store.selected && Q.tabs.contents(Q.store.selected);
+  if (!wc || wc.isDestroyed()) return;
+  wc.executeJavaScriptInIsolatedWorld(1002, [{ code: 'document.fullscreenElement ? document.exitFullscreen().then(() => true, () => false) : false' }], true).catch(() => {});
 }
 
 function layout() {
@@ -105,12 +158,8 @@ function layout() {
   const full = { x: 0, y: 0, width: w, height: h };
   const strip = stripRect();
   const style = Q.store.settings.toolbar?.style || 'floating';
-  const page = pageRect();
-  Q.tabs.setPageBounds(page);
-  // Pages locales (démarrage, lecteur, erreur) : marge de la hauteur de la bande quand la page passe sous la barre.
-  const under = !Q.isFullscreenPage && !reservesStrip();
-  Q.tabs.setLocalInsets({ top: under && strip.y === 0 ? strip.height : 0, bottom: under && strip.y > 0 ? strip.height : 0 });
-  if (Q.isFullscreenPage) { Q.chrome.setBounds({ x: 0, y: h, width: w, height: 0 }); return; }
+  Q.tabs.setPageBounds(pageRect());
+  if (Q.isFullscreenPage) { Q.chrome.setBounds(fullscreenNoticeRect(w, h)); return; }
   Q.chrome.setBounds(Q.chromeMode === 'full' ? full : strip);
   Q.glass.setActive(style !== 'classic');
   Q.glass.refresh(30);
@@ -126,6 +175,7 @@ function setChrome(mode, height, { find = false } = {}) {
   if (height) Q.barHeight = height;
   const was = Q.chromeMode;
   Q.chromeMode = mode;
+  if (mode === 'full' && Q.collapse !== 'none') { Q.collapse = 'none'; Q.scrollAcc = 0; broadcast(); }
   layout();
   if (mode === 'full') focusChrome();
   else if (was === 'full' && !find) Q.tabs.focus();
@@ -164,7 +214,8 @@ function describeState() {
   return {
     tabs: describeTabs(), selected: Q.store.selected, bookmarks: Q.store.bookmarks, historyCount: Q.store.history.length,
     settings: Q.store.settings, dark: isDark(), lang: t.lang, rtl: t.rtl, closedTabs: Q.store.closedTabs.length,
-    downloads: describeDownloads(),
+    downloads: describeDownloads(), collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
+    fullscreenNotice: Q.isFullscreenPage && Q.fullscreenNotice !== null ? { host: Q.fullscreenNotice } : null,
     window: { fullscreen: Q.win?.isFullScreen() || false, maximized: Q.win?.isMaximized() || false, focused: Q.win?.isFocused() || false },
   };
 }
@@ -180,6 +231,8 @@ function command(name, data) {
   if (!Q.chrome || Q.chrome.webContents.isDestroyed()) return;
   // Ctrl+L / Ctrl+F depuis une page : le champ d'adresse ou de recherche doit recevoir la frappe, pas la page.
   if (name === 'focusAddress' || name === 'find' || name === 'screen') focusChrome();
+  // La recherche dans la page loge dans la barre : une barre réduite ou masquée revient d'abord.
+  if (name === 'find') setCollapse('none');
   Q.chrome.webContents.send('qafila:command', { name, ...data });
 }
 
@@ -306,12 +359,9 @@ function toggleBlocker() {
 function toggleJavascript() {
   const tab = Q.store.selectedTab;
   const h = hostOf(tab?.url || '');
-  if (!h) { Q.store.setSetting('javascriptEnabled', !Q.store.settings.javascriptEnabled); return; }
+  if (!h) { Q.store.setSetting('javascriptEnabled', !Q.store.settings.javascriptEnabled); onSettingChanged('javascriptEnabled'); return; }
   Q.store.toggleHost('javascriptDisabledHosts', h);
-  // Le réglage JavaScript d'une vue est fixé à sa création : la vue est recréée.
-  Q.tabs.discard(tab.id);
-  showSelected();
-  broadcast();
+  onSettingChanged('javascriptDisabledHosts');
 }
 
 function zoom(delta) {
@@ -332,7 +382,9 @@ async function clearData() {
 function onSettingChanged(key) {
   const s = Q.store.settings;
   if (key === 'appearance') nativeTheme.themeSource = s.appearance;
-  if (key === 'toolbar' || key === 'scrollBehavior') layout();
+  if (key === 'toolbar' || key === 'scrollBehavior') { Q.collapse = 'none'; Q.scrollAcc = 0; layout(); }
+  // JavaScript : appliqué à chaque navigation (en-tête CSP) ; les pages ouvertes sont rechargées pour le prendre en compte.
+  if (key === 'javascriptEnabled' || key === 'javascriptDisabledHosts') Q.tabs.reloadForJavaScript();
   if (key === 'textZoom') Q.tabs.applyZoom();
   if (key === 'language') { Q.t = null; translator(); Q.tabs.refreshStartPages(); }
   if (['darkenSites', 'darkenOnlyInDarkMode', 'darkenHosts'].includes(key)) Q.tabs.refreshDarken();
@@ -370,77 +422,50 @@ async function suggest(query) {
   return { local, remote };
 }
 
-// ----- Raccourcis clavier (depuis une page ou depuis le chrome) -----
+// ----- Raccourcis clavier (depuis une page ou depuis le chrome) : table dans main/shortcuts.js -----
 function shortcut(event, input) {
-  if (input.type !== 'keyDown') return false;
-  const mod = process.platform === 'darwin' ? input.meta : input.control;
-  const key = input.key.length === 1 ? input.key.toLowerCase() : input.key;
-  const shift = input.shift;
+  const cmd = shortcuts.resolve(input, process.platform);
+  if (!cmd) return false;
   const sel = Q.store.selected;
   const run = (fn) => { event.preventDefault(); fn(); return true; };
-  if (input.alt && !mod) {
-    if (key === 'ArrowLeft') return run(() => Q.tabs.back(sel));
-    if (key === 'ArrowRight') return run(() => Q.tabs.forward(sel));
-    return false;
-  }
-  if (key === 'F5') return run(() => Q.tabs.reload(sel));
-  if (key === 'F11') return run(() => Q.win.setFullScreen(!Q.win.isFullScreen()));
-  if (key === 'Escape') {
+  if (cmd === 'escape') {
+    // Plein écran demandé par la page : Échap en sort toujours (la page ne peut pas l'intercepter, ce gestionnaire
+    // passe avant elle).
+    if (Q.isFullscreenPage) return run(() => exitPageFullscreen());
     if (Q.chromeMode === 'full') return run(() => command('escape'));
     command('escape'); // ferme la recherche dans la page si elle est ouverte (sans retirer Échap à la page)
     if (Q.tabs.isLoading(sel)) return run(() => Q.tabs.stop(sel));
     return false;
   }
-  // Outils de développement de la page (comme « Inspecter » du menu contextuel).
-  if (key === 'F12' || (mod && shift && key === 'i')) return run(() => { const wc = Q.tabs.contents(sel); if (wc) wc.toggleDevTools(); });
-  if (!mod) return false;
-  // Chiffres par position physique (Ctrl+1…9, Ctrl+0) : indépendants de la disposition (AZERTY : « & », « é »…).
-  const digit = /^(Digit|Numpad)([0-9])$/.exec(input.code || '');
-  if (digit && !shift && !input.alt) {
-    const n = Number(digit[2]);
-    if (n === 0) return run(() => zoom(0));
+  if (cmd.startsWith('tab:')) {
+    const n = Number(cmd.slice(4));
     return run(() => { const i = n === 9 ? Q.store.tabs.length - 1 : n - 1; const tab = Q.store.tabs[i]; if (tab) selectTab(tab.id); });
   }
-  switch (key) {
-    case 't': return run(() => (shift ? reopenTab() : newTab({ isPrivate: false, focus: true })));
-    case 'n': return run(() => newTab({ isPrivate: shift, focus: true }));
-    case 'w': return run(() => closeTab(sel));
-    case 'Tab': return run(() => cycleTab(shift ? -1 : 1));
-    case 'PageDown': return run(() => cycleTab(1));
-    case 'PageUp': return run(() => cycleTab(-1));
-    case 'l': return run(() => command('focusAddress'));
-    case 'r': return run(() => Q.tabs.reload(sel));
-    case 'f': return run(() => command('find'));
-    case 'd': return run(() => command('bookmark'));
-    case 'h': return run(() => command('screen', { screen: 'history' }));
-    case 'b': if (shift) return run(() => command('screen', { screen: 'bookmarks' })); return false;
-    case 'a': if (shift) return run(() => command('screen', { screen: 'tabs' })); return false;
-    case ',': return run(() => command('screen', { screen: 'settings' }));
-    case '+': case '=': return run(() => zoom(10));
-    case '-': return run(() => zoom(-10));
-    case '0': return run(() => zoom(0));
-    default:
-      if (/^[1-9]$/.test(key)) return run(() => { const i = key === '9' ? Q.store.tabs.length - 1 : Number(key) - 1; const t = Q.store.tabs[i]; if (t) selectTab(t.id); });
-      return false;
+  switch (cmd) {
+    case 'back': return run(() => Q.tabs.back(sel));
+    case 'forward': return run(() => Q.tabs.forward(sel));
+    case 'reload': return run(() => Q.tabs.reload(sel));
+    case 'fullscreen': return run(() => Q.win.setFullScreen(!Q.win.isFullScreen()));
+    // Outils de développement de la page (comme « Inspecter » du menu contextuel).
+    case 'devtools': return run(() => { const wc = Q.tabs.contents(sel); if (wc) wc.toggleDevTools(); });
+    case 'newTab': return run(() => newTab({ isPrivate: false, focus: true }));
+    case 'newPrivateTab': return run(() => newTab({ isPrivate: true, focus: true }));
+    case 'reopenTab': return run(() => reopenTab());
+    case 'closeTab': return run(() => closeTab(sel));
+    case 'nextTab': return run(() => cycleTab(1));
+    case 'prevTab': return run(() => cycleTab(-1));
+    case 'focusAddress': return run(() => command('focusAddress'));
+    case 'find': return run(() => command('find'));
+    case 'bookmark': return run(() => command('bookmark'));
+    case 'history': return run(() => command('screen', { screen: 'history' }));
+    case 'bookmarks': return run(() => command('screen', { screen: 'bookmarks' }));
+    case 'tabs': return run(() => command('screen', { screen: 'tabs' }));
+    case 'settings': return run(() => command('screen', { screen: 'settings' }));
+    case 'zoomIn': return run(() => zoom(10));
+    case 'zoomOut': return run(() => zoom(-10));
+    case 'zoomReset': return run(() => zoom(0));
+    default: return false;
   }
-}
-
-/**
- * Molette au-dessus de la bande quand la page passe sous la barre (Réduire / Masquer) : la vue du chrome reçoit
- * l'événement (une vue ne laisse rien passer, même transparente) ; il est renvoyé à la page sous le curseur.
- */
-function forwardWheel({ x, y, deltaX, deltaY }) {
-  if (reservesStrip() || Q.chromeMode !== 'strip' || Q.isFullscreenPage) return false;
-  const wc = Q.store.selected && Q.tabs.contents(Q.store.selected);
-  if (!wc || wc.isDestroyed()) return false;
-  const cb = Q.chrome.getBounds();
-  const pb = Q.tabs.pageBounds;
-  const px = Math.round(x + cb.x - pb.x);
-  const py = Math.round(y + cb.y - pb.y);
-  if (px < 0 || py < 0 || px >= pb.width || py >= pb.height) return false;
-  // Sens Chromium : deltaY positif = vers le haut (l'inverse de WheelEvent.deltaY).
-  wc.sendInputEvent({ type: 'mouseWheel', x: px, y: py, deltaX: -deltaX, deltaY: -deltaY, canScroll: true });
-  return true;
 }
 
 function cycleTab(dir) {
@@ -577,16 +602,44 @@ function applicationMenu() {
   ]);
 }
 
+// Taille, position et état agrandi de la fenêtre : ${userData}/window.json (jamais en démo ni en test).
+const windowFile = () => path.join(app.getPath('userData'), 'window.json');
+
+function loadWindowState() {
+  if (DEMO) return null;
+  try {
+    const w = JSON.parse(fs.readFileSync(windowFile(), 'utf8'));
+    const b = { x: Math.round(w.x), y: Math.round(w.y), width: Math.round(w.width), height: Math.round(w.height) };
+    if (!Object.values(b).every(Number.isFinite)) return null;
+    b.width = Math.max(MIN_SIZE.width, b.width);
+    b.height = Math.max(MIN_SIZE.height, b.height);
+    // Écran débranché ou changé depuis : la fenêtre doit recouper nettement la zone utile d'un écran visible, sinon
+    // seule sa taille est gardée (position par défaut du système).
+    const area = screen.getDisplayMatching(b).workArea;
+    const visible = b.x < area.x + area.width - 80 && b.x + b.width > area.x + 80 && b.y >= area.y - 16 && b.y < area.y + area.height - 80;
+    const bounds = visible ? b : { width: Math.min(b.width, area.width), height: Math.min(b.height, area.height) };
+    return { bounds, maximized: w.maximized === true };
+  } catch { return null; }
+}
+
+function saveWindowState() {
+  if (DEMO || !Q.win || Q.win.isDestroyed()) return;
+  try { fs.writeFileSync(windowFile(), JSON.stringify({ ...Q.win.getNormalBounds(), maximized: Q.win.isMaximized() })); } catch { /* disque plein : ignoré */ }
+}
+
 function createWindow() {
   const dark = isDark();
+  const saved = loadWindowState();
   Q.win = new BrowserWindow({
-    ...DEFAULT_SIZE, minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height, title: 'Qafila', show: false,
+    ...DEFAULT_SIZE, ...(saved?.bounds || {}), minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height, title: 'Qafila', show: false,
     backgroundColor: dark ? '#000000' : '#ffffff', autoHideMenuBar: true, icon: path.join(__dirname, '..', 'build', 'icon.png'),
     // Barre de titre native partout : sous macOS, les feux tricolores restent dans la barre de titre (jamais sur la
     // capsule) et la fenêtre se déplace par elle, quelle que soit la position de la barre (haut ou bas).
     titleBarStyle: 'default',
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
+  // Première apparition : agrandie si elle l'était à la fermeture.
+  const reveal = () => { if (Q.win.isVisible()) return; if (saved?.maximized) Q.win.maximize(); Q.win.show(); };
   Menu.setApplicationMenu(applicationMenu());
 
   Q.favicons = new FaviconCache(() => broadcast());
@@ -614,23 +667,26 @@ function createWindow() {
   });
 
   Q.tabs.on('change', broadcast);
-  Q.tabs.on('shown', () => broadcast());
+  Q.tabs.on('shown', () => { setCollapse('none'); broadcast(); });
   Q.tabs.on('glass', (id) => { if (id === Q.store.selected) Q.glass.refresh(50); });
-  Q.tabs.on('scroll', (id, final) => { if (id === Q.store.selected) Q.glass.onScroll(final); });
+  Q.tabs.on('scroll', (id, d) => { if (id === Q.store.selected) { Q.glass.onScroll(!!d.final); onPageScroll(id, d); } });
   Q.tabs.on('open-tab', (o) => newTab(o));
   Q.tabs.on('found', (id, result) => { if (id === Q.store.selected) Q.chrome.webContents.send('qafila:found', result); });
   Q.tabs.on('status', (id, url) => { if (id === Q.store.selected) Q.chrome.webContents.send('qafila:status', url); });
   Q.tabs.on('input', shortcut);
-  Q.tabs.on('fullscreen', (on) => { Q.isFullscreenPage = on; layout(); });
+  Q.tabs.on('fullscreen', (on, host) => onPageFullscreen(on, host));
+  Q.tabs.on('popup-blocked', (id) => { if (id === Q.store.selected) command('toast', { text: translator()('popup_blocked') }); });
+  Q.tabs.on('edge', onPageEdge);
+  Q.tabs.on('navigated', (id) => { if (id === Q.store.selected) setCollapse('none'); });
   Q.tabs.on('zoom', (dir) => zoom(dir === 'in' ? 10 : -10));
 
   Q.store.on('change', broadcast);
   Q.win.on('resize', () => { layout(); broadcast(); });
   Q.win.on('maximize', broadcast); Q.win.on('unmaximize', broadcast); Q.win.on('focus', broadcast); Q.win.on('blur', broadcast);
   Q.win.on('enter-full-screen', () => { layout(); broadcast(); }); Q.win.on('leave-full-screen', () => { layout(); broadcast(); });
-  // Boutons latéraux de la souris : Précédent / Suivant.
+  // Boutons latéraux de la souris : Précédent / Suivant (Windows et Linux ; macOS n'émet pas « app-command »).
   Q.win.on('app-command', (_e, cmd) => { if (cmd === 'browser-backward') Q.tabs.back(Q.store.selected); if (cmd === 'browser-forward') Q.tabs.forward(Q.store.selected); });
-  Q.win.on('close', () => { Q.store.saveNow(); });
+  Q.win.on('close', () => { saveWindowState(); Q.store.saveNow(); });
   Q.win.on('closed', () => { Q.win = null; });
 
   nativeTheme.on('updated', () => {
@@ -648,10 +704,10 @@ function createWindow() {
   Q.chrome.webContents.once('did-finish-load', () => {
     layout();
     showSelected();
-    Q.win.show();
+    reveal();
     broadcast();
   });
-  Q.win.once('ready-to-show', () => Q.win.show());
+  Q.win.once('ready-to-show', reveal);
   layout();
 }
 
@@ -674,7 +730,7 @@ if (GOT_LOCK) app.whenReady().then(async () => {
     get win() { return Q.win; }, get chrome() { return Q.chrome; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
     toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, focusUI, screenshot,
-    downloadFolder, forwardWheel,
+    downloadFolder, expandBar: () => setCollapse('none'),
   });
 
   createWindow();
@@ -807,9 +863,9 @@ async function focusChecks(report, wait) {
 }
 
 /**
- * Mise en page : en Fixe (défaut du PC), la page ne croise jamais la bande du chrome, barre en haut comme en bas et
- * pour les trois styles. En Réduire, la page passe sous la barre, la molette au-dessus de la bande la fait défiler et
- * les pages locales laissent la place de la barre.
+ * Mise en page : la page ne croise jamais la bande du chrome, barre en haut comme en bas et pour les trois styles.
+ * Au défilement : Réduire replie la barre en mini-adresse en descendant et la rouvre en remontant ; Masquer la retire
+ * (page plein cadre) et la rend quand la souris touche le bord côté barre.
  */
 async function layoutChecks(report, wait, set, shot) {
   const fail = (m) => { report.errors.push(m); console.error('mise en page :', m); };
@@ -818,55 +874,157 @@ async function layoutChecks(report, wait, set, shot) {
   const sel = Q.store.selected;
   const meets = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
   const fmt = (r) => `${r.x},${r.y} ${r.width}×${r.height}`;
-  set('scrollBehavior', 'fixed');
-  for (const position of ['top', 'bottom']) {
-    for (const style of ['floating', 'glass', 'classic']) {
-      set('toolbar', { ...tb, position, style }); await wait(900);
-      const [, h] = Q.win.getContentSize();
-      const strip = stripRect();
-      const view = Q.tabs.view(Q.store.selected)?.getBounds() || Q.tabs.pageBounds;
-      const chrome = Q.chrome.getBounds();
-      const label = `Fixe, barre ${position}, ${style}`;
-      if (Q.chromeMode !== 'strip') fail(`${label} : chrome en mode ${Q.chromeMode}`);
-      if (meets(view, strip)) fail(`${label} : la page (${fmt(view)}) croise la bande (${fmt(strip)})`);
-      if (meets(view, chrome)) fail(`${label} : la page (${fmt(view)}) croise la vue du chrome (${fmt(chrome)})`);
-      if (view.height + strip.height !== h) fail(`${label} : page ${view.height} + bande ${strip.height} ≠ fenêtre ${h}`);
-      if (position === 'bottom' && style === 'floating') { Q.glass.refresh(0); await wait(500); await shot('27-bottom-fixed'); }
+  const separate = (label) => {
+    const [, h] = Q.win.getContentSize();
+    const strip = stripRect();
+    const view = Q.tabs.view(Q.store.selected)?.getBounds() || Q.tabs.pageBounds;
+    const chrome = Q.chrome.getBounds();
+    if (Q.chromeMode !== 'strip') fail(`${label} : chrome en mode ${Q.chromeMode}`);
+    if (strip.height && meets(view, strip)) fail(`${label} : la page (${fmt(view)}) croise la bande (${fmt(strip)})`);
+    if (chrome.height && meets(view, chrome)) fail(`${label} : la page (${fmt(view)}) croise la vue du chrome (${fmt(chrome)})`);
+    if (view.height + strip.height !== h) fail(`${label} : page ${view.height} + bande ${strip.height} ≠ fenêtre ${h}`);
+    return strip;
+  };
+  for (const behavior of ['fixed', 'shrink']) {
+    set('scrollBehavior', behavior);
+    for (const position of ['top', 'bottom']) {
+      for (const style of ['floating', 'glass', 'classic']) {
+        set('toolbar', { ...tb, position, style }); await wait(behavior === 'fixed' ? 900 : 500);
+        separate(`${behavior}, barre ${position}, ${style}`);
+        if (behavior === 'fixed' && position === 'bottom' && style === 'floating') { Q.glass.refresh(0); await wait(500); await shot('27-bottom-fixed'); }
+      }
     }
   }
-  // Réduire : page plein cadre sous la barre (comportement d'origine), molette transmise depuis la bande.
+  // Réduire : en descendant, mini-adresse ; en remontant, barre entière (article long : 14 paragraphes).
   set('toolbar', { ...tb, position: 'top', style: 'floating' });
-  set('scrollBehavior', 'shrink'); await wait(1000);
-  const [w, h] = Q.win.getContentSize();
-  const full = Q.tabs.view(Q.store.selected)?.getBounds() || {};
-  if (full.y !== 0 || full.height !== h || full.width !== w) fail(`Réduire : page ${fmt(full)} au lieu de la fenêtre entière`);
-  Q.glass.refresh(0); await wait(500); await shot('28-shrink');
-  const wc = Q.tabs.contents(Q.store.selected);
+  const articleURL = 'https://fr.wikipedia.org/wiki/Caravane_(convoi)';
+  const article = newTab({ url: articleURL });
+  Q.store.updateTab(article.id, { title: 'Caravane (convoi) — Wikipédia', readingMinutes: 14 });
+  Q.tabs.open(article.id, articleURL, { initial: true });
+  set('scrollBehavior', 'shrink'); await wait(1500);
+  const wc = Q.tabs.contents(article.id);
+  const full = Q.barHeight + 2 * BAR_MARGIN;
   await wc.executeJavaScript('window.scrollTo(0, 0)', true).catch(() => {});
-  await wait(300);
-  const cwc = Q.chrome.webContents;
-  cwc.sendInputEvent({ type: 'mouseMove', x: 400, y: 6 });
-  cwc.sendInputEvent({ type: 'mouseWheel', x: 400, y: 6, deltaX: 0, deltaY: -240, canScroll: true });
-  await wait(1200);
-  const y = await wc.executeJavaScript('window.scrollY', true).catch(() => -1);
-  if (!(y > 0)) fail(`Réduire : la molette au-dessus de la bande n'a pas fait défiler la page (scrollY = ${y})`);
-  await wc.executeJavaScript('window.scrollTo(0, 0)', true).catch(() => {});
-  // Pages locales : marge de la bande en Réduire, aucune en Fixe (la page est déjà sous la bande).
-  const start = newTab();
-  await wait(1500);
-  const swc = Q.tabs.contents(start.id);
-  const pad = () => swc.executeJavaScript('getComputedStyle(document.body).paddingTop', true).catch(() => '?');
-  const want = `${stripRect().height}px`;
-  const p1 = await pad();
-  if (p1 !== want) fail(`page de démarrage en Réduire : marge ${p1} au lieu de ${want}`);
-  set('scrollBehavior', 'fixed'); await wait(800);
-  const p2 = await pad();
-  if (p2 !== '0px') fail(`page de démarrage en Fixe : marge ${p2} au lieu de 0px`);
-  closeTab(start.id);
+  await wait(500);
+  await wc.executeJavaScript('window.scrollTo(0, 700)', true).catch(() => {});
+  await wait(900);
+  const mini = separate('Réduire, après défilement');
+  if (Q.collapse !== 'mini' || mini.height !== MINI_STRIP) fail(`Réduire : bande ${mini.height} (${Q.collapse}) au lieu de la mini-adresse ${MINI_STRIP}`);
+  const label = await Q.chrome.webContents.executeJavaScript("(() => { const m = document.getElementById('mini'); return m && !m.hidden ? m.textContent : ''; })()", true).catch(() => '');
+  if (!label) fail('Réduire : mini-adresse absente du chrome');
+  Q.glass.refresh(0); await wait(400); await shot('28-shrink');
+  await wc.executeJavaScript('window.scrollTo(0, 300)', true).catch(() => {});
+  await wait(900);
+  if (stripRect().height !== full) fail(`Réduire : la barre ne revient pas en remontant (bande ${stripRect().height})`);
+  // Masquer : bande nulle en descendant, retour quand la souris touche le bord haut de la page.
+  set('scrollBehavior', 'hide'); await wait(600);
+  await wc.executeJavaScript('window.scrollTo(0, 900)', true).catch(() => {});
+  await wait(900);
+  const hidden = separate('Masquer, après défilement');
+  if (Q.collapse !== 'hidden' || hidden.height !== 0) fail(`Masquer : bande ${hidden.height} (${Q.collapse}) au lieu de 0`);
+  wc.sendInputEvent({ type: 'mouseMove', x: 400, y: 200 });
+  await wait(100);
+  wc.sendInputEvent({ type: 'mouseMove', x: 400, y: 1 });
+  await wait(900);
+  if (stripRect().height !== full) fail(`Masquer : la barre ne revient pas au bord de la fenêtre (bande ${stripRect().height})`);
+  closeTab(article.id);
   set('scrollBehavior', scroll);
   set('toolbar', tb);
   if (Q.store.tabs.some((x) => x.id === sel)) selectTab(sel);
   await wait(1000);
+}
+
+/**
+ * Pages hostiles servies en local : fenêtres surgissantes sans geste (bloquées, un onglet par geste), téléchargements
+ * automatiques en boucle (location.href vers un fichier : le deuxième demande), JavaScript désactivé par site après
+ * une redirection et réglage global coupé après l'ouverture (en-tête CSP par navigation).
+ */
+async function hostileChecks(report, wait, set) {
+  const fail = (m) => { report.errors.push(m); console.error('pages hostiles :', m); };
+  const http = require('node:http');
+  const pages = {
+    '/popup': '<!doctype html><title>Pop</title><script>for (let i = 0; i < 4; i++) window.open("https://example.org/p" + i);</script>',
+    '/js': '<!doctype html><title>Statique</title><script>document.title = "JSRAN";</script>',
+    '/dl-loop': '<!doctype html><title>Boucle</title><script>let n = 0; const go = () => { if (n < 4) { location.href = "/file?n=" + (n++); setTimeout(go, 350); } }; go();</script>',
+  };
+  const server = http.createServer((q, r) => {
+    const u = new URL(q.url, 'http://x');
+    if (u.pathname === '/redir') { r.writeHead(302, { location: `http://localhost:${server.address().port}/js` }); r.end(); return; }
+    if (u.pathname === '/file') { r.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="f${u.searchParams.get('n')}.bin"` }); r.end('x'); return; }
+    r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); r.end(pages[u.pathname] || '<!doctype html><title>Vide</title>');
+  });
+  await new Promise((resolve) => server.listen(0, resolve)); // toutes les interfaces : 127.0.0.1 et localhost (::1)
+  const port = server.address().port;
+  const base = `http://127.0.0.1:${port}`;
+  const before = Q.store.selected;
+  const saved = { js: Q.store.settings.javascriptEnabled, hosts: Q.store.settings.javascriptDisabledHosts, dl: Q.store.settings.downloadFolder };
+  const tab = newTab();
+  await wait(700);
+  const twc = Q.tabs.contents(tab.id);
+  try {
+    // 1) Fenêtres surgissantes : aucune sans geste ; avec un geste, une seule.
+    let count = Q.store.tabs.length;
+    Q.tabs.lastGesture.delete(twc.id);
+    await twc.loadURL(`${base}/popup`).catch(() => {});
+    await wait(900);
+    if (Q.store.tabs.length !== count) fail(`fenêtres surgissantes : ${Q.store.tabs.length - count} onglet(s) ouvert(s) sans geste`);
+    Q.tabs.lastGesture.set(twc.id, Date.now());
+    await twc.executeJavaScript('window.open("https://example.org/a"); window.open("https://example.org/b"); 1', true).catch(() => {});
+    await wait(900);
+    const opened = Q.store.tabs.length - count;
+    if (opened !== 1) fail(`fenêtres surgissantes : ${opened} onglet(s) pour un geste au lieu de 1`);
+    for (const extra of Q.store.tabs.filter((x) => x.id !== tab.id && /^https:\/\/example\.org\/[ab]$/.test(x.url || ''))) closeTab(extra.id);
+    selectTab(tab.id); await wait(500);
+    // 2) Téléchargements en boucle sans geste : le premier passe, les suivants demandent (refusés ici sans dialogue).
+    Q.store.setSetting('downloadFolder', path.join(SMOKE_DIR, 'downloads'));
+    fs.mkdirSync(path.join(SMOKE_DIR, 'downloads'), { recursive: true });
+    downloadSites.set(`127.0.0.1:${port}`, false);
+    const verdicts = [];
+    const original = Q.tabs.downloadVerdict.bind(Q.tabs);
+    Q.tabs.downloadVerdict = (w) => { const v = original(w); verdicts.push(v.ask ? 'demande' : 'libre'); return v; };
+    try {
+      Q.tabs.lastGesture.delete(twc.id);
+      await twc.loadURL(`${base}/dl-loop`).catch(() => {});
+      await wait(2600);
+    } finally { Q.tabs.downloadVerdict = original; }
+    if (verdicts.length < 3 || verdicts[0] !== 'libre' || verdicts.slice(1).some((v) => v !== 'demande')) fail(`téléchargements en boucle : verdicts [${verdicts.join(', ')}]`);
+    // 3) JavaScript coupé pour localhost : la redirection 127.0.0.1 → localhost n'exécute pas le script.
+    await twc.loadURL('about:blank').catch(() => {});
+    set('javascriptDisabledHosts', ['localhost']);
+    await twc.loadURL(`${base}/redir`).catch(() => {});
+    await wait(900);
+    if (twc.getTitle() !== 'Statique') fail(`JavaScript par site : « ${twc.getTitle()} » (le script a tourné après redirection)`);
+    if (describeTabs().find((x) => x.id === tab.id)?.javascript !== false) fail('JavaScript par site : l\'onglet ne l\'indique pas désactivé');
+    set('javascriptDisabledHosts', saved.hosts);
+    // 4) Réglage global coupé après l'ouverture : la page rechargée n'exécute plus de script.
+    await twc.loadURL(`${base}/js`).catch(() => {});
+    await wait(700);
+    if (twc.getTitle() !== 'JSRAN') fail(`JavaScript actif : « ${twc.getTitle()} » au lieu de JSRAN`);
+    set('javascriptEnabled', false); await wait(1200);
+    if (twc.getTitle() !== 'Statique') fail(`JavaScript coupé globalement : « ${twc.getTitle()} » après rechargement`);
+    set('javascriptEnabled', true); await wait(1000);
+    // 5) Plein écran demandé par la page : avis visible (hôte de la page), Échap en sort même si la page l'intercepte.
+    await twc.executeJavaScript('addEventListener("keydown", (e) => e.preventDefault(), true); document.documentElement.requestFullscreen().then(() => 1, () => 0)', true).catch(() => 0);
+    await wait(1200);
+    const notice = await Q.chrome.webContents.executeJavaScript("(() => { const n = document.getElementById('fsn'); return n && !n.hidden ? n.textContent : ''; })()", true).catch(() => '');
+    if (!Q.isFullscreenPage) fail('plein écran : la page n\'est pas passée en plein écran');
+    else if (!notice.includes('127.0.0.1') || Q.chrome.getBounds().height < 40) fail(`plein écran : avis absent (« ${notice} », chrome ${Q.chrome.getBounds().height} px)`);
+    else { try { fs.writeFileSync(path.join(SMOKE_DIR, '30-fullscreen-notice.png'), (await Q.chrome.webContents.capturePage()).toPNG()); } catch { /* capture facultative */ } }
+    twc.focus();
+    twc.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+    twc.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
+    await wait(1500);
+    if (Q.isFullscreenPage) fail('plein écran : Échap n\'en sort pas');
+  } finally {
+    set('javascriptEnabled', saved.js);
+    set('javascriptDisabledHosts', saved.hosts);
+    Q.store.setSetting('downloadFolder', saved.dl);
+    downloadSites.delete(`127.0.0.1:${port}`);
+    closeTab(tab.id);
+    if (Q.store.tabs.some((x) => x.id === before)) selectTab(before);
+    server.close();
+    await wait(800);
+  }
 }
 
 /** Plantage du moteur de rendu : un rechargement automatique, puis la page d'erreur au second plantage (< 1 min). */
@@ -977,6 +1135,7 @@ async function runSmoke() {
   set('language', 'fr'); await wait(1200);
   await focusChecks(report, wait);
   await themeColorCheck(report, wait, set);
+  await hostileChecks(report, wait, set);
   await layoutChecks(report, wait, set, shot);
   await crashChecks(report, wait);
   demoScreen('toolbar'); await wait(900); demoScreen('scroll', { top: 'end' }); await wait(500); await shot('29-toolbar-settings');

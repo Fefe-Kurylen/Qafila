@@ -149,7 +149,7 @@ P.toolbar = () => {
     body: preview()
       + group([navRow('sliders', t('customize_bar_menu'), '', 'editor'), navRow('grid', t('page_gallery'), '', 'gallery')])
       + group([`<div class="s-row seg-row"><div class="seg">${[['top', 'position_top'], ['bottom', 'position_bottom']].map(([v, k]) => `<button class="${v === pos ? 'on' : ''}" data-tbset="position" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('position') })
-      // Au défilement (comme sur mobile) : Fixe pose la page sous la barre ; Réduire / Masquer la font passer dessous.
+      // Au défilement (comme sur mobile) : Fixe garde la barre entière ; Réduire ne laisse que le domaine ; Masquer la retire.
       + group([segmented('scrollBehavior', [['fixed', t('scroll_fixed')], ['shrink', t('scroll_shrink')], ['hide', t('scroll_hide')]], s.scrollBehavior || 'fixed')], { header: t('on_scroll'), footer: t('scroll_desktop_footer') })
       + group([segmented('buttonWeight', [['thin', t('weight_thin')], ['regular', t('weight_regular')], ['bold', t('weight_bold')]])], { header: t('icon_weight') })
       + group([segmented('menuIcon', [['dots', t('menu_icon_dots'), 'dots'], ['dotsCircle', t('menu_icon_dots_circle'), 'dotsCircle'], ['linesCircle', t('menu_icon_lines_circle'), 'linesCircle']])], { header: t('menu_icon') })
@@ -243,21 +243,28 @@ P.language = () => ({
   body: group(pickRows('language', [['', t('language_system')], ['fr', t('lang_fr')], ['en', t('lang_en')], ['ar', t('lang_ar')], ['es', t('lang_es')], ['de', t('lang_de')]])),
 });
 
-const SHORTCUTS = [
-  ['Ctrl+T', 'newTab'], ['Ctrl+Shift+N', 'newPrivateTab'], ['Ctrl+W', 'closeTab'], ['Ctrl+Shift+T', 'reopenTab'], ['Ctrl+L', 'search'],
-  ['Ctrl+R · F5', 'reload'], ['Ctrl+F', 'find'], ['Ctrl+D', 'addBookmark'], ['Ctrl+H', 'history'], ['Ctrl+Shift+B', 'bookmarks'],
-  ['Ctrl+Shift+A', 'tabs'], ['Ctrl+,', 'settings'], ['Alt+←', 'back'], ['Alt+→', 'forward'],
-];
+/**
+ * Raccourcis affichés : mêmes touches que main/shortcuts.js. « M » = touche de commande : ⌘ sous macOS (⇧⌘N…,
+ * ⌘Y pour l'historique, ⌘[ / ⌘] pour Précédent / Suivant), sinon Ctrl dans la langue du clavier (« Strg » en allemand).
+ */
+function shortcutList(mac) {
+  const list = [
+    ['M+T', 'newTab'], ['M+Shift+N', 'newPrivateTab'], ['M+W', 'closeTab'], ['M+Shift+T', 'reopenTab'], ['M+L', 'search'],
+    ['M+R · F5', 'reload'], ['M+F', 'find'], ['M+D', 'addBookmark'], [mac ? 'M+Y' : 'M+H', 'history'], ['M+Shift+B', 'bookmarks'],
+    ['M+Shift+A', 'tabs'], ['M+,', 'settings'], [mac ? 'M+[' : 'Alt+←', 'back'], [mac ? 'M+]' : 'Alt+→', 'forward'],
+  ];
+  const fmt = (k) => (mac ? k.replace(/M\+Shift\+/g, '⇧⌘').replace(/M\+/g, '⌘') : k.replace(/M\+/g, t('kbd_ctrl') + '+'));
+  return list.map(([k, id]) => [fmt(k), id]);
+}
 P.about = () => {
   const a = S.cfg.app;
-  const mod = a.platform === 'darwin' ? '⌘' : 'Ctrl';
   return {
     title: t('page_about'),
     body: `<div class="about-head"><div class="serif">Qafila</div><div class="ar" lang="ar" dir="rtl">${esc(t('app_name_arabic'))}</div></div>`
       + group([`<div class="s-row"><span class="s-l">${esc(t('version'))}</span><span class="s-v">${esc(a.version)}</span></div>`,
-        `<div class="s-row"><span class="s-l">${esc(t('webview'))}</span><span class="s-v">${esc(t('about_engine_desktop', a.electron, a.chrome))}</span></div>`], { footer: t('about_privacy') })
+        `<div class="s-row"><span class="s-l">${esc(t('engine_label'))}</span><span class="s-v">${esc(t('about_engine_desktop', a.electron, a.chrome))}</span></div>`], { footer: t('about_privacy') })
       + group([`<button class="s-row" data-do="source"><span class="s-l">${esc(t('source_code'))}</span><span class="s-chev">${icon('external', 16)}</span></button>`])
-      + group(SHORTCUTS.map(([k, id]) => `<div class="s-row"><span class="s-ic">${icon(actionIcon(id, {}), 18)}</span><span class="s-l">${esc(actionLabel(id))}</span><span class="kbd">${esc(k.replace(/Ctrl/g, mod))}</span></div>`), { header: t('shortcuts') }),
+      + group(shortcutList(a.platform === 'darwin').map(([k, id]) => `<div class="s-row"><span class="s-ic">${icon(actionIcon(id, {}), 18)}</span><span class="s-l">${esc(actionLabel(id))}</span><span class="kbd" dir="ltr">${esc(k)}</span></div>`), { header: t('shortcuts') }),
   };
 };
 
@@ -323,7 +330,7 @@ P.bookmarks = () => {
   const list = S.state.bookmarks.filter((b) => !qy || b.title.toLowerCase().includes(qy) || b.url.toLowerCase().includes(qy));
   const rows = list.map((b) => {
     const host = hostOf(b.url);
-    return `<div class="s-row link" data-open="${esc(b.url)}">${faviconLetter(host)}<span class="s-l">${esc(b.title || host)}<span class="s-sub" dir="ltr">${esc(host)}</span></span><button class="s-x" data-unbookmark="${esc(b.id)}" title="${esc(t('delete'))}">${icon('xmarkCircle', 18)}</button></div>`;
+    return `<div class="s-row link" role="button" tabindex="0" data-open="${esc(b.url)}">${faviconLetter(host)}<span class="s-l">${esc(b.title || host)}<span class="s-sub" dir="ltr">${esc(host)}</span></span><button class="s-x" data-unbookmark="${esc(b.id)}" title="${esc(t('delete'))}">${icon('xmarkCircle', 18)}</button></div>`;
   });
   return {
     title: actionLabel('bookmarks'), root: true,
@@ -342,7 +349,7 @@ P.history = () => {
   for (const [day, list] of days) {
     body += group(list.map((h) => {
       const host = hostOf(h.url);
-      return `<div class="s-row link" data-open="${esc(h.url)}">${faviconLetter(host)}<span class="s-l">${esc(h.title || host)}<span class="s-sub" dir="ltr">${esc(host)}</span></span><span class="s-v">${esc(tf.format(new Date(h.visitedAt)))}</span><button class="s-x" data-unhistory="${esc(h.id)}" title="${esc(t('delete'))}">${icon('xmarkCircle', 18)}</button></div>`;
+      return `<div class="s-row link" role="button" tabindex="0" data-open="${esc(h.url)}">${faviconLetter(host)}<span class="s-l">${esc(h.title || host)}<span class="s-sub" dir="ltr">${esc(host)}</span></span><span class="s-v">${esc(tf.format(new Date(h.visitedAt)))}</span><button class="s-x" data-unhistory="${esc(h.id)}" title="${esc(t('delete'))}">${icon('xmarkCircle', 18)}</button></div>`;
     }), { header: day });
   }
   if (local.history.length) body += group([buttonRow(t('clear'), 'clearHistory', { red: true, center: true })]);

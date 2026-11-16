@@ -27,6 +27,14 @@
     "productName": "Qafila",
     "artifactName": "Qafila-${version}-${os}.${ext}",
     "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": true
+    },
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -89,10 +97,18 @@
     "mac": {
       "icon": "build/icon.png",
       "category": "public.app-category.productivity",
+      "artifactName": "Qafila-${version}-${os}-${arch}.${ext}",
       "target": [
-        "dmg"
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
       ],
-      "identity": null
+      "identity": "-",
+      "hardenedRuntime": false
     },
     "publish": null
   }

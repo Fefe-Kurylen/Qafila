@@ -22,6 +22,13 @@ const reader = `(function(){
   var SKIP = /^(script|style|noscript|template|nav|aside|footer|form|iframe|frame|frameset|object|embed|applet|svg|math|button|input|select|textarea|canvas|video|audio|source|track|link|meta|base|dialog|slot)$/;
   var DROP = /(^|\\s)(share|social|ad|ads)(\\s|$)|related|comment/i;
   var budget = 30000;
+  // Titre et signature sont affichés par l'en-tête du lecteur : le h1 du titre, l'élément de signature et une ligne
+  // de sous-titre juste après le h1 (domaine, date, temps de lecture…) ne sont pas repris dans l'article.
+  var titleEl = document.querySelector('h1');
+  var bylineEl = document.querySelector('[rel=author], .author, .byline');
+  var skipEls = [titleEl, bylineEl];
+  var next = titleEl && titleEl.nextElementSibling;
+  if (next && /(^|[\s_-])(sub|subtitle|byline|meta|author|dateline|date)([\s_-]|$)/i.test(next.getAttribute('class') || '') && (next.innerText || '').length < 200) skipEls.push(next);
   function abs(u){ try { return new URL(u, document.baseURI).href; } catch (e) { return ''; } }
   function walk(node, depth){
     if (--budget <= 0 || depth > 60) return null;
@@ -29,6 +36,7 @@ const reader = `(function(){
     if (node.nodeType !== 1) return null;
     var tag = String(node.localName || '').toLowerCase();
     if (SKIP.test(tag)) return null;
+    if (depth > 0 && skipEls.indexOf(node) >= 0) return null;
     var cls = node.getAttribute('class') || '';
     if (depth > 0 && DROP.test(cls)) return null;
     var a = {};
@@ -40,8 +48,8 @@ const reader = `(function(){
     return { t: tag, a: a, c: c };
   }
   var tree = walk(best, 0);
-  var title = (document.querySelector('h1') || {}).innerText || document.title;
-  var byline = (document.querySelector('[rel=author], .author, .byline') || {}).innerText || '';
+  var title = (titleEl || {}).innerText || document.title;
+  var byline = (bylineEl || {}).innerText || '';
   return JSON.stringify({ title: String(title || ''), byline: String(byline || ''), lang: String(document.documentElement.lang || ''), tree: tree });
 })();`;
 
@@ -112,10 +120,6 @@ function renderReaderTree(tree) {
 const CSP_READER = "default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
 const CSP_LOCAL = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
 const cspMeta = (csp) => `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
-// Marges laissées à la barre : variables posées par le processus principal (TabManager.applyInsets) quand la page
-// passe sous la bande du chrome (Réduire / Masquer) ; 0 quand elle est posée à côté (Fixe).
-const INSET_TOP = 'var(--qafila-inset-top, 0px)';
-const INSET_BOTTOM = 'var(--qafila-inset-bottom, 0px)';
 
 /** Code de langue BCP 47 plausible (attribut lang de l'article), sinon ''. */
 function safeLang(v) { const l = String(v || '').trim(); return /^[a-z]{2,3}(-[a-z0-9]{1,8}){0,3}$/i.test(l) ? l : ''; }
@@ -127,7 +131,7 @@ function readerPage({ title, byline, tree, host, lang }, dark) {
 <title>${escape(title)}</title>
 <style>
 :root { color-scheme: ${dark ? 'dark' : 'light'}; }
-body { margin: 0 auto; padding: calc(24px + ${INSET_TOP}) 20px calc(60px + ${INSET_BOTTOM}); font: 19px/1.6 Georgia, "Iowan Old Style", "Times New Roman", serif; background: ${dark ? '#141416' : '#fbfaf7'}; color: ${dark ? '#ececec' : '#1b1b1b'}; max-width: 680px; }
+body { margin: 0 auto; padding: 24px 20px 60px; font: 19px/1.6 Georgia, "Iowan Old Style", "Times New Roman", serif; background: ${dark ? '#141416' : '#fbfaf7'}; color: ${dark ? '#ececec' : '#1b1b1b'}; max-width: 680px; }
 h1 { font: 700 30px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0 0 8px; }
 .meta { color: #888; font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; margin-bottom: 28px; }
 img, video { max-width: 100%; height: auto; border-radius: 10px; }
@@ -146,7 +150,7 @@ function startPage({ dark, bookmarks = [], title = 'Qafila', rtl = false, lang =
 ${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <style>
 :root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${dark ? '#000000' : '#ffffff'}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? '#1c1c1e' : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; }
-body { margin: 0; min-height: 100vh; box-sizing: border-box; padding: ${INSET_TOP} 0 ${INSET_BOTTOM}; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
+body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
 .head { margin-top: 26vh; text-align: center; }
 h1 { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", serif; font-weight: 500; font-size: 40px; letter-spacing: -.02em; margin: 0; }
 .ar { font-family: "Geeza Pro", "Damascus", "Noto Naskh Arabic", serif; font-size: 19px; color: #8e8e93; margin-top: 2px; }
@@ -162,7 +166,7 @@ h1 { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", ser
 function errorPage({ title, message, url, lang = 'fr', rtl = false, dark = false }) {
   return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${cspMeta(CSP_LOCAL)}<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
-<style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:calc(24px + ${INSET_TOP}) 24px calc(24px + ${INSET_BOTTOM});background:${dark ? '#000000' : '#ffffff'};color:${dark ? '#f2f2f7' : '#1c1c1e'}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
+<style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:24px;background:${dark ? '#000000' : '#ffffff'};color:${dark ? '#f2f2f7' : '#1c1c1e'}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
 </head><body><h1>${escape(title)}</h1><p dir="auto">${escape(message)}</p><p dir="ltr" style="font-size:13px;word-break:break-all">${escape(url)}</p></body></html>`;
 }
 

@@ -85,7 +85,7 @@ function register(a) {
   // ----- Réglages -----
   handle('settings:get', () => store.settings);
   handle('settings:set', (p) => { const key = str(p.key, 64); if (PROTECTED_KEYS.has(key)) return null; const ok = store.setSetting(key, p.value); if (ok) a.onSettingChanged(key); return ok ? store.settings[key] : null; });
-  handle('settings:reset', (p) => { const key = str(p.key, 64); const d = settingsSchema.defaults(); if (!(key in d) || PROTECTED_KEYS.has(key)) return null; store.setSetting(key, d[key]); a.onSettingChanged(key); return store.settings[key]; });
+  handle('settings:reset', (p) => { const key = str(p.key, 64); const d = settingsSchema.defaults(); if (!Object.hasOwn(d, key) || PROTECTED_KEYS.has(key)) return null; store.setSetting(key, d[key]); a.onSettingChanged(key); return store.settings[key]; });
   handle('settings:schema', () => settingsSchema.describe());
   handle('settings:applyPreset', (p) => {
     const cfg = settingsSchema.presetConfig(str(p.id, 32));
@@ -110,12 +110,6 @@ function register(a) {
   handle('page:zoom', (p) => a.zoom(Number(p.delta) || 0));
   handle('page:copyLink', () => { const u = store.selectedTab?.url; return u ? copyText(u) : false; });
   handle('page:share', () => { const u = store.selectedTab?.url; return u ? copyText(u) : false; });
-  handle('page:wheel', (p) => {
-    const n = (v, max) => (Number.isFinite(Number(v)) ? Math.max(-max, Math.min(max, Number(v))) : null);
-    const w = { x: n(p.x, 20000), y: n(p.y, 20000), deltaX: n(p.deltaX, 5000), deltaY: n(p.deltaY, 5000) };
-    if (Object.values(w).some((v) => v === null)) return false;
-    return a.forwardWheel(w);
-  });
 
   // ----- Données, suggestions, configuration -----
   handle('data:clear', () => a.clearData());
@@ -150,6 +144,8 @@ function register(a) {
 
   // ----- Interface -----
   handle('ui:setChrome', (p) => a.setChrome(p.mode === 'full' ? 'full' : 'strip', Math.min(400, Math.max(40, Number(p.height) || 0)), { find: p.find === true }));
+  // Réduire : un clic sur la mini-adresse rouvre la barre.
+  handle('ui:expand', () => a.expandBar());
   handle('ui:focus', (p) => a.focusUI(p.target === 'chrome' ? 'chrome' : 'page'));
   handle('ui:window', (p) => {
     const w = a.win;

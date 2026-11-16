@@ -44,5 +44,10 @@
   "download_allow": "Permitir",
   "download_block": "Bloquear",
   "download_blocked": "Descargas múltiples bloqueadas: %1$s",
-  "scroll_desktop_footer": "Fija: la página empieza debajo de la barra, nunca se oculta nada. Reducir y Ocultar: la página pasa bajo la barra de cristal."
+  "scroll_desktop_footer": "Fija: la barra se queda entera. Reducir: al bajar, solo queda el dominio; haz clic en él o sube para volver a abrir la barra. Ocultar: la barra desaparece al bajar y vuelve al subir o al acercar el ratón al borde. La página nunca queda oculta bajo la barra.",
+  "popup_blocked": "Ventana emergente bloqueada",
+  "fullscreen_notice": "%1$s está en pantalla completa · Pulsa Esc para salir",
+  "fullscreen_notice_page": "Pantalla completa · Pulsa Esc para salir",
+  "engine_label": "Motor",
+  "kbd_ctrl": "Ctrl"
 }

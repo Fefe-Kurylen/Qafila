@@ -12,7 +12,11 @@
   <!-- Écran des onglets (fenêtre entière) -->
   <section id="tabs" class="tabs-screen" hidden></section>
   <!-- Fond de la bande quand la page est posée à côté d'elle (Fixe) : couleur du thème, ou du site en barre « Auto » -->
-  <div id="strip-bg" class="strip-bg" hidden></div>
+  <div id="strip-bg" class="strip-bg"></div>
+  <!-- Au défilement « Réduire » : mini-adresse (domaine seul) à la place de la barre ; un clic la rouvre -->
+  <button id="mini" class="mini" type="button" hidden></button>
+  <!-- Plein écran demandé par une page : avis bref « site en plein écran · Échap pour quitter » -->
+  <div id="fsn" class="fsn" role="status" hidden></div>
   <!-- Barre : faux verre (capture floutée de la page) + couleur de barre + liseré + rangée -->
   <header id="bar" class="bar">
     <div class="glass"><div id="glass-img" class="glass-img empty"></div></div>

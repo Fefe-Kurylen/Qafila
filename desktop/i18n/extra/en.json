@@ -44,5 +44,10 @@
   "download_allow": "Allow",
   "download_block": "Block",
   "download_blocked": "Multiple downloads blocked: %1$s",
-  "scroll_desktop_footer": "Fixed: the page starts below the bar, nothing is ever hidden. Shrink and Hide: the page scrolls under the glass bar."
+  "scroll_desktop_footer": "Fixed: the bar stays whole. Shrink: when you scroll down, only the domain remains; click it or scroll up to bring the bar back. Hide: the bar disappears when you scroll down and comes back when you scroll up or move the mouse to the edge. The page is never hidden under the bar.",
+  "popup_blocked": "Pop-up blocked",
+  "fullscreen_notice": "%1$s is now full screen · Press Esc to exit",
+  "fullscreen_notice_page": "Full screen · Press Esc to exit",
+  "engine_label": "Engine",
+  "kbd_ctrl": "Ctrl"
 }

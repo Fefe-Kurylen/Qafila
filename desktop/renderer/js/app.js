@@ -1,7 +1,7 @@
 // Chrome de Qafila — démarrage : abonnements à l'état poussé par le processus principal, commandes (raccourcis
 // clavier, scénario de test), voile, Échap, composition des captures d'écran de test. Aucun texte en dur :
 // toutes les chaînes viennent de config().strings (i18n/<langue>.json).
-import { q, S, $, setOverlay, render, renderNow, syncChromeMode, onRender, toast, reservesStrip } from './core.js';
+import { q, S, $, t, setOverlay, render, renderNow, syncChromeMode, onRender, toast } from './core.js';
 import { installBarEvents, beginEditing, cancelEditing, openFind, closeFind, demoEditing } from './bar.js';
 import { installMenuEvents } from './menu.js';
 import { installTabsEvents, openTabs, tabsEscape, setTabsDemo } from './tabs.js';
@@ -16,7 +16,14 @@ onRender(() => {
   document.documentElement.classList.toggle('overlay-tabs', S.overlay === 'tabs');
   // macOS : la barre déplace la fenêtre seulement quand aucune surcouche ne la recouvre (style.css).
   document.documentElement.classList.toggle('overlay-open', S.overlay !== 'none');
+  // Plein écran d'une page : seul l'avis reste visible dans la vue du chrome (posée en haut, au centre).
+  const n = S.state?.fullscreenNotice;
+  document.documentElement.classList.toggle('fullscreen-notice', !!n);
+  const fsn = $('#fsn');
+  fsn.hidden = !n;
+  if (n) fsn.textContent = n.host ? t('fullscreen_notice', n.host) : t('fullscreen_notice_page');
 });
+$('#mini').addEventListener('click', () => q.ui.expand().catch(() => {}));
 
 /** Échap : referme la surcouche la plus haute. */
 function escape() {
@@ -31,21 +38,13 @@ function escape() {
 $('#dim').addEventListener('mousedown', () => { if (S.overlay === 'editing') cancelEditing(); else setOverlay('none'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !e.target.closest('input')) escape(); });
 window.addEventListener('resize', () => render());
-// Boutons latéraux de la souris au-dessus de la barre (sous Windows, « app-command » de la fenêtre s'en charge).
+// Boutons latéraux de la souris au-dessus de la barre, macOS seulement (sous Windows et Linux, « app-command » de la
+// fenêtre s'en charge : ne pas naviguer deux fois).
 document.addEventListener('mouseup', (e) => {
-  if ((e.button !== 3 && e.button !== 4) || S.cfg?.app?.platform === 'win32') return;
+  if ((e.button !== 3 && e.button !== 4) || S.cfg?.app?.platform !== 'darwin') return;
   e.preventDefault();
   if (e.button === 3) q.tabs.back(); else q.tabs.forward();
 });
-
-// Molette au-dessus de la bande quand la page passe sous la barre (Réduire / Masquer) : la vue du chrome intercepte
-// l'événement, il est renvoyé à la page (en Fixe, la page n'est pas sous la bande : rien à faire).
-document.addEventListener('wheel', (e) => {
-  if (S.overlay !== 'none' || !S.state || reservesStrip()) return;
-  e.preventDefault();
-  const k = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
-  q.page.wheel(e.clientX, e.clientY, e.deltaX * k, e.deltaY * k).catch(() => {});
-}, { passive: false });
 
 // ----- Commandes du processus principal -----
 q.ui.onCommand(async (c) => {

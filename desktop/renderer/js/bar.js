@@ -2,7 +2,7 @@
 // (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
 import {
   q, S, $, t, esc, STRIP, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
-  shortURL, setOverlay, renderNow, toast, onRender, reservesStrip,
+  shortURL, setOverlay, renderNow, toast, onRender,
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
 import { perform, actionState, isActive, isEnabled } from './actions.js';
@@ -26,11 +26,13 @@ export function applyTheme() {
   root.style.setProperty('--card', p.card);
   root.style.setProperty('--sw', String(WEIGHTS[settings().buttonWeight] || 1.15));
   root.style.setProperty('--strip', STRIP() + 'px');
-  // Page posée à côté de la bande (Fixe) : la bande a son propre fond, couleur du thème ou du site (barre « Auto »).
-  const reserve = reservesStrip();
-  root.classList.toggle('reserve', reserve);
-  $('#strip-bg').hidden = !reserve;
+  // La page est toujours posée à côté de la bande : la bande a son propre fond, couleur du thème ou du site (barre « Auto »).
   root.style.setProperty('--strip-color', p.site ? `rgb(${p.site.join(',')})` : (st.dark ? '#000000' : '#ffffff'));
+  // Au défilement : barre réduite à la mini-adresse (Réduire) ou masquée (Masquer), décidé par le processus principal.
+  const c = st.collapse || 'none';
+  root.classList.toggle('collapse-mini', c === 'mini');
+  root.classList.toggle('collapse-hidden', c === 'hidden');
+  root.style.setProperty('--mini-fg', p.site ? (p.contentDark ? '#ffffff' : '#000000') : (st.dark ? '#f2f2f7' : '#1c1c1e'));
   root.classList.toggle('mac', S.cfg?.app?.platform === 'darwin');
   const acc = accentRGB();
   if (acc) root.style.setProperty('--accent', `rgb(${acc.join(',')})`); else root.style.removeProperty('--accent');
@@ -96,7 +98,8 @@ function button(slot, st, count) {
 /** HTML de la rangée (barre réelle ou aperçu de la galerie / des réglages). */
 export function rowHTML(cfgBar, opts = {}) {
   const s = { ...settings(), ...(opts.settings || {}) };
-  const st = opts.state || actionState();
+  // Aperçus (réglages, galerie) : dessinés comme sur une page web, même quand l'onglet courant est la page de démarrage.
+  const st = opts.state || (opts.preview ? { ...actionState(), isWeb: true } : actionState());
   const tab = opts.tab !== undefined ? opts.tab : selectedTab();
   const count = opts.count ?? (S.state?.tabs.filter((x) => !x.isPrivate).length || 0);
   const slots = rowSlots(cfgBar, s.addressStyle);
@@ -257,6 +260,15 @@ function renderBar() {
   }
   const sg = $('#suggest');
   if (sg && want !== 'editing') sg.hidden = true;
+  // Réduire : mini-adresse (domaine seul) ; un clic rouvre la barre.
+  const mini = $('#mini');
+  mini.hidden = (S.state.collapse || 'none') !== 'mini';
+  if (!mini.hidden) {
+    const tab = selectedTab();
+    const label = tab?.host || t('new_tab');
+    if (mini.textContent !== label) mini.textContent = label;
+    mini.setAttribute('aria-label', label);
+  }
 }
 onRender(renderBar);
 

@@ -37,7 +37,7 @@ function groups(list) {
 function rowHTML(tab) {
   const reading = readingLabel(tab);
   const sel = tab.id === S.state.selected;
-  return `<div class="t-row${sel ? ' sel' : ''}" data-tab="${tab.id}">
+  return `<div class="t-row${sel ? ' sel' : ''}" data-tab="${tab.id}" role="button" tabindex="0" aria-label="${esc(tab.title)}">
     ${favicon(tab, 26)}
     <span class="t-txt"><span class="t-title"><bdi>${esc(tab.title)}</bdi></span><span class="t-dom">${esc(tab.host || '')}</span></span>
     ${reading ? `<span class="pill">${esc(reading)}</span>` : ''}
@@ -50,7 +50,7 @@ function cardHTML(tab) {
   const snap = snaps.get(tab.id);
   const sel = tab.id === S.state.selected;
   const ph = `<span class="g-ph">${favicon(tab, 36)}</span>`;
-  return `<div class="gt-card${sel ? ' sel' : ''}" data-tab="${tab.id}">
+  return `<div class="gt-card${sel ? ' sel' : ''}" data-tab="${tab.id}" role="button" tabindex="0" aria-label="${esc(tab.title)}">
     <div class="g-thumb">${snap ? `<img src="${snap}" alt="">` : ph}<button class="g-close" data-close="${tab.id}" title="${esc(t('action_close_tab'))}">${icon('xmark', 12)}</button></div>
     <div class="g-cap">${favicon(tab, 14)}<span><bdi>${esc(tab.title)}</bdi></span></div>
   </div>`;
@@ -98,6 +98,8 @@ function renderTabs() {
   const n = S.state.tabs.filter((x) => !!x.isPrivate === view.private).length;
   const label = view.private ? `${t('private_tabs')} · ${n}` : t('tabs_count', n);
   const active = document.activeElement?.id === 'tabs-search';
+  // Onglet ayant le focus clavier : retrouvé après la reconstruction de la liste.
+  const focusedTab = document.activeElement?.closest?.('#tabs [data-tab]')?.dataset.tab;
   const scroll = $('#tabs-scroll')?.scrollTop || 0;
   el.innerHTML = `<div class="t-scroll${grid ? ' wide' : ''}" id="tabs-scroll"><div class="t-col">
       <label class="t-search">${icon('search', 17)}<input id="tabs-search" type="search" placeholder="${esc(t('search_tabs'))}" value="${esc(view.query)}" spellcheck="false"></label>
@@ -112,6 +114,7 @@ function renderTabs() {
   const sc = $('#tabs-scroll');
   if (sc) sc.scrollTop = scroll;
   if (active) { const i = $('#tabs-search'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+  else if (focusedTab) el.querySelector(`[data-tab="${CSS.escape(focusedTab)}"]`)?.focus();
 }
 onRender(renderTabs);
 
@@ -131,13 +134,15 @@ export function openTabs({ privateMode } = {}) {
   view.popup = false;
   if (privateMode !== undefined) view.private = privateMode;
   else view.private = !!S.state.tabs.find((x) => x.id === S.state.selected)?.isPrivate;
-  setOverlay('tabs');
+  // Clavier : la frappe va au champ de recherche ; Tab / flèches parcourent ensuite les onglets.
+  Promise.resolve(setOverlay('tabs')).then(() => $('#tabs-search')?.focus());
   refreshSnapshots();
 }
 
 export function installTabsEvents() {
   const el = $('#tabs');
   el.addEventListener('input', (e) => { if (e.target.id === 'tabs-search') { view.query = e.target.value; render(); } });
+  el.addEventListener('keydown', onTabsKey);
   el.addEventListener('click', async (e) => {
     const close = e.target.closest('[data-close]');
     if (close) { e.stopPropagation(); snaps.delete(close.dataset.close); await q.tabs.close(close.dataset.close); return; }
@@ -166,6 +171,21 @@ export function installTabsEvents() {
     const row = e.target.closest('[data-tab]');
     if (row) { await q.tabs.select(row.dataset.tab); setOverlay('none'); }
   });
+}
+
+/** Clavier : Entrée / Espace ouvre l'onglet ; flèches haut / bas (et gauche / droite en grille) passent au voisin. */
+function onTabsKey(e) {
+  const row = e.target.closest?.('[data-tab]');
+  const items = [...$('#tabs').querySelectorAll('[data-tab]')];
+  if (e.target.id === 'tabs-search' && e.key === 'ArrowDown' && items.length) { e.preventDefault(); items[0].focus(); return; }
+  if (!row || e.target !== row) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); row.click(); return; }
+  const rtl = document.documentElement.dir === 'rtl';
+  const step = { ArrowDown: 1, ArrowUp: -1, ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1 }[e.key];
+  if (!step) return;
+  e.preventDefault();
+  const i = items.indexOf(row) + step;
+  if (i < 0) $('#tabs-search')?.focus(); else items[Math.min(i, items.length - 1)]?.focus();
 }
 
 export function tabsEscape() { if (view.popup) { view.popup = false; render(); return true; } return false; }

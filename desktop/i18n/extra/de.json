@@ -44,5 +44,10 @@
   "download_allow": "Zulassen",
   "download_block": "Blockieren",
   "download_blocked": "Mehrere Downloads blockiert: %1$s",
-  "scroll_desktop_footer": "Fixiert: Die Seite beginnt unter der Leiste, nichts wird verdeckt. Verkleinern und Ausblenden: Die Seite läuft unter der Glasleiste."
+  "scroll_desktop_footer": "Fixiert: Die Leiste bleibt vollständig. Verkleinern: Beim Herunterscrollen bleibt nur die Domain; klicken Sie darauf oder scrollen Sie hoch, um die Leiste wieder zu öffnen. Ausblenden: Die Leiste verschwindet beim Herunterscrollen und kehrt beim Hochscrollen oder am Fensterrand zurück. Die Seite wird nie von der Leiste verdeckt.",
+  "popup_blocked": "Pop-up blockiert",
+  "fullscreen_notice": "%1$s ist jetzt im Vollbildmodus · Esc zum Beenden",
+  "fullscreen_notice_page": "Vollbild · Esc zum Beenden",
+  "engine_label": "Engine",
+  "kbd_ctrl": "Strg"
 }

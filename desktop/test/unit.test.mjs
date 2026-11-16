@@ -133,3 +133,43 @@ test('state.json : écriture impossible = état gardé « à écrire » et nouve
   assert.ok(store._timer, 'nouvel essai programmé');
   clearTimeout(store._timer);
 });
+
+// ----- Raccourcis clavier : dispositions non latines, conventions macOS -----
+const shortcuts = require('../main/shortcuts.js');
+const key = (k, o = {}) => ({ type: 'keyDown', key: k, code: '', ...o });
+
+test('raccourcis : disposition arabe = touche physique (Ctrl+T, Ctrl+W, Ctrl+L)', () => {
+  assert.equal(shortcuts.resolve(key('ف', { code: 'KeyT', control: true }), 'win32'), 'newTab');
+  assert.equal(shortcuts.resolve(key('ت', { code: 'KeyW', control: true }), 'win32'), 'closeTab');
+  assert.equal(shortcuts.resolve(key('م', { code: 'KeyL', control: true }), 'linux'), 'focusAddress');
+  assert.equal(shortcuts.resolve(key('ف', { code: 'KeyT', control: true, shift: true }), 'win32'), 'reopenTab');
+  // AZERTY : la lettre de la disposition (Ctrl+A en position Q reste « a »), chiffres par position physique.
+  assert.equal(shortcuts.resolve(key('a', { code: 'KeyQ', control: true, shift: true }), 'win32'), 'tabs');
+  assert.equal(shortcuts.resolve(key('&', { code: 'Digit1', control: true }), 'win32'), 'tab:1');
+  assert.equal(shortcuts.resolve(key('à', { code: 'Digit0', control: true }), 'win32'), 'zoomReset');
+});
+
+test('raccourcis : macOS — ⌥←/→ laissé au système, ⌘[ ⌘] , ⌘Y historique, ⌘H libre, ⌘⌥I', () => {
+  assert.equal(shortcuts.resolve(key('ArrowLeft', { alt: true }), 'darwin'), null);
+  assert.equal(shortcuts.resolve(key('ArrowLeft', { alt: true }), 'win32'), 'back');
+  assert.equal(shortcuts.resolve(key('[', { meta: true }), 'darwin'), 'back');
+  assert.equal(shortcuts.resolve(key(']', { meta: true }), 'darwin'), 'forward');
+  assert.equal(shortcuts.resolve(key('y', { meta: true }), 'darwin'), 'history');
+  assert.equal(shortcuts.resolve(key('h', { meta: true }), 'darwin'), null);
+  assert.equal(shortcuts.resolve(key('h', { control: true }), 'win32'), 'history');
+  assert.equal(shortcuts.resolve(key('Dead', { code: 'KeyI', meta: true, alt: true }), 'darwin'), 'devtools');
+  assert.equal(shortcuts.resolve(key('I', { code: 'KeyI', control: true, shift: true }), 'win32'), 'devtools');
+  assert.equal(shortcuts.resolve(key('t', { control: true }), 'darwin'), null);
+  assert.equal(shortcuts.resolve({ ...key('t', { control: true }), type: 'keyUp' }, 'win32'), null);
+});
+
+// ----- Réglages : clés héritées du prototype refusées sans exception -----
+const settingsSchema = require('../main/settings.js');
+
+test('réglages : __proto__, constructor, toString refusés ; state.json gardé', () => {
+  for (const k of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) assert.equal(settingsSchema.validate(k, 'x'), undefined, k);
+  const out = settingsSchema.sanitize(JSON.parse('{"__proto__": {"polluted": true}, "constructor": 1, "blockAds": false}'));
+  assert.equal(out.blockAds, false);
+  assert.equal(({}).polluted, undefined);
+  assert.equal(Object.getPrototypeOf(out), Object.prototype);
+});

@@ -45,5 +45,10 @@
   "download_allow": "Autoriser",
   "download_block": "Bloquer",
   "download_blocked": "Téléchargements multiples bloqués : %1$s",
-  "scroll_desktop_footer": "Fixe : la page commence sous la barre, rien n'est jamais caché. Réduire et Masquer : la page passe sous la barre en verre."
+  "scroll_desktop_footer": "Fixe : la barre reste entière. Réduire : en descendant, seul le domaine reste ; cliquez dessus ou remontez pour rouvrir la barre. Masquer : la barre disparaît en descendant et revient en remontant ou en approchant la souris du bord. La page n'est jamais cachée sous la barre.",
+  "popup_blocked": "Fenêtre surgissante bloquée",
+  "fullscreen_notice": "%1$s est en plein écran · Échap pour quitter",
+  "fullscreen_notice_page": "Plein écran · Échap pour quitter",
+  "engine_label": "Moteur",
+  "kbd_ctrl": "Ctrl"
 }

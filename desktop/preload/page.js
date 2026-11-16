@@ -64,22 +64,38 @@ function pageInfo() {
 window.addEventListener('DOMContentLoaded', () => { pageInfo(); setTimeout(pageInfo, 1500); setTimeout(pageInfo, 5000); });
 window.addEventListener('load', pageInfo);
 
-// Défilement : au plus un signal toutes les 100 ms, puis un dernier à l'arrêt (le processus principal capture la page).
+// Défilement : au plus un signal toutes les 100 ms, puis un dernier à l'arrêt (le processus principal capture la page
+// pour le faux verre et, en Réduire / Masquer, replie ou rouvre la barre selon le sens : y = scrollY, dy = écart).
 let lastScroll = 0;
+let lastY = window.scrollY || 0;
 let idle = null;
+function sendScroll(final) {
+  const y = Math.round(window.scrollY || 0);
+  ipcRenderer.send('qafila:page:scroll', { final, y, dy: y - lastY });
+  lastY = y;
+}
 window.addEventListener('scroll', () => {
   const now = performance.now();
-  if (now - lastScroll >= 100) { lastScroll = now; ipcRenderer.send('qafila:page:scroll', { final: false }); }
+  if (now - lastScroll >= 100) { lastScroll = now; sendScroll(false); }
   clearTimeout(idle);
-  idle = setTimeout(() => ipcRenderer.send('qafila:page:scroll', { final: true }), 150);
+  idle = setTimeout(() => sendScroll(true), 150);
+}, { passive: true, capture: true });
+
+// Masquer : la souris touche le bord haut ou bas de la page → la barre peut revenir (au plus un signal / 300 ms).
+let lastEdge = 0;
+window.addEventListener('mousemove', (e) => {
+  const edge = e.clientY <= 2 ? 'top' : e.clientY >= window.innerHeight - 3 ? 'bottom' : null;
+  if (!edge || performance.now() - lastEdge < 300) return;
+  lastEdge = performance.now();
+  ipcRenderer.send('qafila:page:edge', { edge });
 }, { passive: true, capture: true });
 
 // Le thème du système change : la couleur du site (theme-color avec media) peut changer avec lui.
 try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => setTimeout(pageInfo, 50)); } catch { /* ignoré */ }
 
-// Boutons latéraux de la souris (Précédent / Suivant). Sous Windows, l'événement « app-command » de la fenêtre s'en
-// charge déjà (main/index.js) : ne pas naviguer deux fois.
-if (process.platform !== 'win32') {
+// Boutons latéraux de la souris (Précédent / Suivant), macOS seulement : sous Windows et Linux, l'événement
+// « app-command » de la fenêtre s'en charge déjà (main/index.js) ; ne pas naviguer deux fois.
+if (process.platform === 'darwin') {
   window.addEventListener('mouseup', (e) => {
     if (e.button !== 3 && e.button !== 4) return;
     e.preventDefault();

@@ -133,9 +133,6 @@ export function accentRGB() {
 /** Hauteur déclarée au processus principal (bande = hauteur + 2 × 12) : capsule 64 → bande 88 ; Classique / Verre → bande 64. */
 export function barHeight() { return toolbar().style === 'floating' ? BAR.floating : BAR.full - 16; }
 
-/** La page est posée à côté de la bande (Classique, ou « Au défilement » = Fixe) : même règle que main/index.js. */
-export function reservesStrip() { return toolbar().style === 'classic' || (settings().scrollBehavior || 'fixed') === 'fixed'; }
-
 /** Bande (barre seule) ou fenêtre entière (menu, suggestions, écrans) ; le processus principal redimensionne la vue. */
 export async function syncChromeMode() {
   const mode = S.overlay === 'none' ? 'strip' : 'full';

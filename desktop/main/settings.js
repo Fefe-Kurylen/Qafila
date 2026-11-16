@@ -73,8 +73,10 @@ function clone(v) { return v === undefined ? v : JSON.parse(JSON.stringify(v)); 
 /** Valide une valeur pour une clé ; renvoie la valeur normalisée ou `undefined` si elle est refusée. */
 function validate(key, value) {
   const { byKey, enums } = describe();
+  // Clés propres seulement : « __proto__ », « constructor », « toString »… ne désignent jamais un réglage.
+  if (typeof key !== 'string' || !Object.hasOwn(byKey, key)) return undefined;
   const s = byKey[key];
-  if (!s) return undefined;
+  if (!s || typeof s.type !== 'string') return undefined;
   const type = s.type;
   if (type === 'boolean') return typeof value === 'boolean' ? value : undefined;
   if (type === 'string') return typeof value === 'string' ? value : undefined;
@@ -119,9 +121,10 @@ function sanitize(raw) {
   const out = defaults();
   if (!raw || typeof raw !== 'object') return out;
   for (const [k, v] of Object.entries(raw)) {
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
     const ok = validate(k, v);
     if (ok !== undefined) out[k] = ok;
-    else if (!(k in out)) out[k] = v; // clé d'une autre plateforme ou d'une version future : conservée telle quelle
+    else if (!Object.hasOwn(out, k)) out[k] = v; // clé d'une autre plateforme ou d'une version future : conservée telle quelle
   }
   return out;
 }

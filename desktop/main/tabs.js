@@ -30,7 +30,12 @@ const CRASH_RELOAD_MS = 60_000;
 // micro (media), MIDI, lecture du presse-papiers, gestion des fenêtres (getScreenDetails : écrans, positions,
 // libellés), capteurs, stockage partagé entre sites, ouverture d'applications (gérée à part, avec confirmation)…
 const GRANTED_PERMISSIONS = new Set(['fullscreen', 'pointerLock', 'clipboard-sanitized-write']);
-const MOBILE_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36';
+// User agent mobile : même version majeure de Chrome que le moteur (sinon l'écart UA / moteur distingue l'utilisateur).
+const CHROME_MAJOR = String(process.versions.chrome || '140').split('.')[0];
+const MOBILE_UA = `Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_MAJOR}.0.0.0 Mobile Safari/537.36`;
+// JavaScript désactivé (réglage global ou par site) : appliqué à chaque document par cet en-tête, quelle que soit la
+// vue (redirection vers un site désactivé, réglage changé après l'ouverture de l'onglet).
+const NO_SCRIPT_CSP = "script-src 'none'";
 const ERR_ABORTED = -3;
 
 /** User agent « Chrome ordinaire » : sans Electron/… ni Qafila/… (la connexion Google exige un navigateur connu). */
@@ -66,15 +71,16 @@ class TabManager extends EventEmitter {
     this.httpOnlyHosts = new Set();
     this.lastGesture = new Map();  // webContentsId → instant du dernier clic / appui de touche dans la page
     this.externalPrompt = new Set(); // webContentsId dont une demande d'application externe est ouverte
-    this.downloadState = new Map(); // webContentsId → { used, at } : téléchargements de la page (geste / automatique)
+    this.downloadState = new Map(); // webContentsId → { used, at } : téléchargements de l'onglet (geste / automatique)
+    this.trustedNav = new Map();   // webContentsId → la navigation en cours vient du navigateur ou d'un geste
+    this.popupGesture = new Map(); // webContentsId → instant du geste déjà consommé par une fenêtre surgissante
     this.crashReloads = new Map(); // tabId → instant du dernier rechargement après un plantage
-    this.localInsets = { top: 0, bottom: 0 }; // marges des pages locales quand la page passe sous la barre
-    this.insetKeys = new Map();    // webContentsId → clé du CSS des marges inséré (pour le remplacer)
     this.attached = null;        // onglet dont la vue est affichée
     this.pageBounds = { x: 0, y: 0, width: 0, height: 0 };
     this.userAgent = desktopUserAgent(userAgent);
     this.persistent = session.fromPartition('persist:qafila');
     this.private = null;
+    this.privateClearing = null;   // effacement de la session privée en cours (attendu avant toute nouvelle page privée)
     this.prepare(this.persistent);
   }
 
@@ -99,6 +105,19 @@ class TabManager extends EventEmitter {
       }
       cb(this.blocker.shouldBlock(details) ? { cancel: true } : {});
     });
+    // Un seul gestionnaire onHeadersReceived par session : JavaScript désactivé = « script-src 'none' » ajouté au
+    // document (les politiques s'additionnent : le site ne peut pas l'assouplir). Cadre principal : réglage de son
+    // adresse ; sous-cadre : réglage de la page qui le contient (comme Chrome, réglage par site de premier niveau).
+    ses.webRequest.onHeadersReceived({ urls: ['http://*/*', 'https://*/*'] }, (details, cb) => {
+      const { resourceType } = details;
+      if (resourceType !== 'mainFrame' && resourceType !== 'subFrame') return cb({});
+      const top = resourceType === 'mainFrame' ? details.url : (this.pageURLFor(details.webContentsId) || details.url);
+      if (this.isJavaScriptEnabled(top)) return cb({});
+      const headers = { ...(details.responseHeaders || {}) };
+      const key = Object.keys(headers).find((k) => k.toLowerCase() === 'content-security-policy') || 'Content-Security-Policy';
+      headers[key] = [...[].concat(headers[key] || []), NO_SCRIPT_CSP];
+      cb({ responseHeaders: headers });
+    });
   }
 
   /** Adresse https à utiliser pour une navigation principale en http, ou null. */
@@ -118,13 +137,20 @@ class TabManager extends EventEmitter {
     return this.private;
   }
 
-  /** Plus aucun onglet privé : les données de navigation privée disparaissent avec la dernière page. */
+  /**
+   * Plus aucun onglet privé : les données de navigation privée disparaissent avec la dernière page, connexions
+   * ouvertes (keep-alive, HTTP/2) et cache DNS compris. Une nouvelle page privée attend la fin de l'effacement (open).
+   */
   dropPrivateData() {
-    if (!this.private) return;
+    if (!this.private) return null;
     const s = this.private;
-    s.clearStorageData().catch(() => {});
-    s.clearCache().catch(() => {});
-    s.clearAuthCache().catch(() => {});
+    const run = () => Promise.all([
+      s.closeAllConnections(), s.clearStorageData(), s.clearCache(), s.clearAuthCache(), s.clearHostResolverCache(),
+    ].map((p) => Promise.resolve(p).catch(() => {})));
+    const job = (this.privateClearing || Promise.resolve()).then(run);
+    this.privateClearing = job;
+    job.then(() => { if (this.privateClearing === job) this.privateClearing = null; });
+    return job;
   }
 
   // ----- Vues -----
@@ -152,7 +178,7 @@ class TabManager extends EventEmitter {
         nodeIntegration: false,
         webviewTag: false,
         spellcheck: false,
-        javascript: this.isJavaScriptEnabled(tab.url),
+        javascript: true, // réglage JavaScript appliqué à chaque document (onHeadersReceived), pas à la vue
         backgroundThrottling: true,
         safeDialogs: true,
         zoomFactor: this.zoomFactor(),
@@ -173,6 +199,11 @@ class TabManager extends EventEmitter {
     const wc = this.contents(tabId);
     const tab = this.store.tabs.find((x) => x.id === tabId);
     if (!wc || !tab) return;
+    // Onglet privé pendant l'effacement de la session privée précédente : chargement après la fin de l'effacement.
+    if (tab.isPrivate && this.privateClearing) {
+      this.privateClearing.then(() => { if (!wc.isDestroyed()) this.open(tabId, url, { initial }); });
+      return;
+    }
     this.readerActive.delete(tabId);
     if (url && url !== 'about:blank' && !url.startsWith('about:')) {
       if (this.offline && /^https?:/.test(url)) {
@@ -239,7 +270,8 @@ class TabManager extends EventEmitter {
     this.lastGesture.delete(wc.id);
     this.externalPrompt.delete(wc.id);
     this.downloadState.delete(wc.id);
-    this.insetKeys.delete(wc.id);
+    this.trustedNav.delete(wc.id);
+    this.popupGesture.delete(wc.id);
     this.views.delete(tabId);
     this.live.delete(tabId);
     this.readerActive.delete(tabId);
@@ -256,14 +288,14 @@ class TabManager extends EventEmitter {
     wc.on('did-start-loading', () => update({ loading: true, progress: 0.1 }));
     wc.on('did-stop-loading', () => { update({ loading: false, progress: 1 }); navState(); this.emit('glass', tabId); });
     wc.on('did-start-navigation', (e) => {
-      const { url, isMainFrame, isSameDocument } = e;
+      const { isMainFrame, isSameDocument, initiator } = e;
       if (!isMainFrame || isSameDocument) return;
       this.blocker.resetCount(wc.id);
-      this.downloadState.delete(wc.id); // nouvelle page : de nouveau un téléchargement automatique permis
+      // Navigation du navigateur (adresse, favori, Précédent : sans cadre initiateur) ou suivant un geste récent :
+      // seule une telle page, une fois affichée (did-navigate), remet à zéro le compteur de téléchargements. Une page
+      // qui se redirige seule vers des fichiers (location.href en boucle) ne le remet donc jamais à zéro.
+      this.trustedNav.set(wc.id, !initiator || this.recentGesture(wc));
       update({ blocked: 0, progress: 0.2 });
-      // Les navigations JavaScript désactivé / activé se décident à la navigation (réglage par site).
-      const enabled = this.isJavaScriptEnabled(url);
-      if (wc.getWebPreferences?.()?.javascript !== enabled) { /* appliqué à la prochaine création de vue */ }
     });
     wc.on('dom-ready', () => {
       update({ progress: 0.6 });
@@ -272,10 +304,13 @@ class TabManager extends EventEmitter {
       if (css) wc.insertCSS(css).catch(() => {});
       const tab = this.store.tabs.find((x) => x.id === tabId);
       if (tab && this.isDarkened(tab)) wc.insertCSS(scripts.darkenCSS).catch(() => {});
-      this.insetKeys.delete(wc.id);
-      if (this.isLocal(url)) this.applyInsets(wc);
     });
     wc.on('did-navigate', (_e, url, code) => {
+      // Nouveau document affiché (un téléchargement n'en affiche aucun) : de nouveau un téléchargement automatique
+      // permis, si la navigation venait du navigateur ou d'un geste de l'utilisateur.
+      if (this.trustedNav.get(wc.id)) this.downloadState.delete(wc.id);
+      this.trustedNav.delete(wc.id);
+      this.emit('navigated', tabId);
       this.trackURL(tabId, url);
       navState();
       update({ blocked: this.blocker.count(wc.id) });
@@ -339,13 +374,18 @@ class TabManager extends EventEmitter {
       if (!INTERNAL_SCHEMES.has(scheme)) { e.preventDefault(); this.openExternal(url, wc); }
     });
     wc.setWindowOpenHandler(({ url }) => {
-      // target=_blank / window.open : un nouvel onglet dans Qafila (privé si l'onglet d'origine l'est).
+      // target=_blank / window.open : un nouvel onglet dans Qafila (privé si l'onglet d'origine l'est), seulement
+      // juste après un geste de l'utilisateur, un onglet par geste (bloqueur de fenêtres surgissantes : Electron n'en a
+      // pas). Sans geste, rien ne s'ouvre et la barre le signale. « Ouvrir dans un nouvel onglet » (menu) n'est pas concerné.
       const tab = this.store.tabs.find((x) => x.id === tabId);
-      if (/^https?:/.test(url)) this.emit('open-tab', { url, isPrivate: !!tab?.isPrivate, select: true });
-      else this.openExternal(url, wc);
+      if (!/^https?:/.test(url)) { this.openExternal(url, wc); return { action: 'deny' }; }
+      const gesture = this.lastGesture.get(wc.id) || 0;
+      if (!this.recentGesture(wc) || this.popupGesture.get(wc.id) === gesture) { this.emit('popup-blocked', tabId, url); return { action: 'deny' }; }
+      this.popupGesture.set(wc.id, gesture);
+      this.emit('open-tab', { url, isPrivate: !!tab?.isPrivate, select: true });
       return { action: 'deny' };
     });
-    wc.on('enter-html-full-screen', () => this.emit('fullscreen', true));
+    wc.on('enter-html-full-screen', () => this.emit('fullscreen', true, stripWWW(hostOf(wc.getURL()))));
     wc.on('leave-html-full-screen', () => this.emit('fullscreen', false));
     wc.on('found-in-page', (_e, result) => this.emit('found', tabId, result));
     wc.on('update-target-url', (_e, url) => this.emit('status', tabId, url));
@@ -355,7 +395,10 @@ class TabManager extends EventEmitter {
     wc.on('context-menu', (_e, params) => this.contextMenu(tabId, params));
     wc.on('ipc-message', (_e, channel, data) => {
       if (channel === 'qafila:page:info') this.onPageInfo(tabId, wc, data || {});
-      else if (channel === 'qafila:page:scroll') this.emit('scroll', tabId, !!data?.final);
+      else if (channel === 'qafila:page:scroll') {
+        const n = (v) => (Number.isFinite(Number(v)) ? Math.max(-1e7, Math.min(1e7, Number(v))) : 0);
+        this.emit('scroll', tabId, { final: !!data?.final, y: n(data?.y), dy: n(data?.dy) });
+      } else if (channel === 'qafila:page:edge') { if (data?.edge === 'top' || data?.edge === 'bottom') this.emit('edge', tabId, data.edge); }
       else if (channel === 'qafila:page:nav') { if (data?.dir === 'back') this.back(tabId); else if (data?.dir === 'forward') this.forward(tabId); }
     });
     wc.on('zoom-changed', (_e, dir) => this.emit('zoom', dir));
@@ -369,28 +412,14 @@ class TabManager extends EventEmitter {
     wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch(() => {});
   }
 
-  /**
-   * Marges des pages locales (démarrage, lecteur, erreur) : hauteur de la bande quand la page passe sous la barre
-   * (Réduire / Masquer), 0 quand elle est posée à côté (Fixe). Variables CSS lues par ces pages (scripts.js).
-   */
-  setLocalInsets({ top = 0, bottom = 0 }) {
-    if (top === this.localInsets.top && bottom === this.localInsets.bottom) return;
-    this.localInsets = { top, bottom };
-    for (const v of this.views.values()) { const wc = v.webContents; if (!wc.isDestroyed() && this.isLocal(wc.getURL())) this.applyInsets(wc); }
-  }
-
-  applyInsets(wc) {
-    const { top, bottom } = this.localInsets;
-    const old = this.insetKeys.get(wc.id);
-    if (old) wc.removeInsertedCSS(old).catch(() => {});
-    this.insetKeys.delete(wc.id);
-    wc.insertCSS(`:root{--qafila-inset-top:${top}px;--qafila-inset-bottom:${bottom}px}`).then((k) => { if (!wc.isDestroyed()) this.insetKeys.set(wc.id, k); }, () => {});
-  }
+  /** Un clic ou une touche dans la page il y a moins de GESTURE_WINDOW_MS. */
+  recentGesture(wc) { return Date.now() - (this.lastGesture.get(wc.id) || 0) <= GESTURE_WINDOW_MS; }
 
   /**
    * Téléchargement lancé par une page (règle de Chrome) : un geste de l'utilisateur (clic, touche) permet un
-   * téléchargement, et le premier téléchargement automatique d'une page passe aussi. Au-delà, il faut demander
-   * (une fois par site). Renvoie { ask: false } ou { ask: true, host }.
+   * téléchargement, et le premier téléchargement automatique passe aussi. Au-delà, il faut demander (une fois par
+   * site). Le compteur appartient à l'onglet : seule une nouvelle page ouverte par l'utilisateur le remet à zéro
+   * (did-navigate). Renvoie { ask: false } ou { ask: true, host }.
    */
   downloadVerdict(wc) {
     if (!wc || wc.isDestroyed?.()) return { ask: false };
@@ -595,6 +624,14 @@ class TabManager extends EventEmitter {
     if (wc.getUserAgent() !== ua) wc.setUserAgent(ua);
   }
   applyUserAgentToOpenTabs() { for (const id of this.views.keys()) this.applyUserAgent(id); }
+
+  /** Réglage JavaScript changé : les pages web ouvertes sont rechargées (le nouvel en-tête s'applique au rechargement). */
+  reloadForJavaScript() {
+    for (const [id, v] of this.views) {
+      const wc = v.webContents;
+      if (!wc.isDestroyed() && /^https?:/.test(wc.getURL())) { this.readerActive.delete(id); wc.reload(); }
+    }
+  }
 
   isJavaScriptEnabled(url) { const s = this.store.settings; if (!s.javascriptEnabled) return false; const h = hostOf(url || ''); return !h || !(s.javascriptDisabledHosts || []).includes(h); }
 

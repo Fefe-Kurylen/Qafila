@@ -21,9 +21,13 @@ export function isActive(id, st = actionState()) {
     || (id === 'reader' && st.reader) || (id === 'addBookmark' && st.bookmarked);
 }
 
+// Actions qui n'ont de sens que sur une page web (pas sur la page de démarrage ni une page vide) : grisées ailleurs.
+const WEB_ONLY = new Set(['share', 'copyLink', 'find', 'reader', 'desktopSite', 'blocker', 'javascript', 'translate', 'addBookmark']);
+
 export function isEnabled(id, st = actionState()) {
   if (id === 'back') return st.canGoBack;
   if (id === 'forward') return st.canGoForward;
+  if (WEB_ONLY.has(id)) return st.isWeb;
   return true;
 }
 

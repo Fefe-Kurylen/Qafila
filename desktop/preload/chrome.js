@@ -68,8 +68,6 @@ contextBridge.exposeInMainWorld('qafila', {
     copyLink: () => invoke('page:copyLink'),
     share: () => invoke('page:share'),
     onStatus: (cb) => on('status', cb),
-    /** Molette au-dessus de la bande, renvoyée à la page qui passe dessous (Réduire / Masquer). */
-    wheel: (x, y, deltaX, deltaY) => invoke('page:wheel', { x, y, deltaX, deltaY }),
   },
   data: {
     clear: () => invoke('data:clear'),
@@ -95,6 +93,8 @@ contextBridge.exposeInMainWorld('qafila', {
     setChrome: (mode, height, find = false) => invoke('ui:setChrome', { mode, height, find: !!find }),
     /** Focus clavier natif : 'chrome' ou 'page'. */
     focus: (target) => invoke('ui:focus', { target }),
+    /** Réduire : rouvre la barre depuis la mini-adresse. */
+    expand: () => invoke('ui:expand'),
     onCommand: (cb) => on('command', cb),
     onTheme: (cb) => on('theme', cb),
     close: () => invoke('ui:window', { action: 'close' }),

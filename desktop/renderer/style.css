@@ -78,6 +78,17 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 /* Fond de la bande quand la page est posée à côté d'elle (Fixe) : la capsule flotte sur la couleur du thème (ou du site). */
 .strip-bg { position: fixed; left: 0; right: 0; top: 0; height: var(--strip); background: var(--strip-color, transparent); z-index: 0; }
 :root.bottom .strip-bg { top: auto; bottom: 0; }
+/* Au défilement : Réduire = mini-adresse (domaine seul, 11 px) dans une bande de 28 px ; Masquer = bande de hauteur nulle. */
+:root.collapse-mini .bar, :root.collapse-hidden .bar { visibility: hidden; }
+.mini { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; padding: 0 16px; border: 0; background: transparent;
+  color: var(--mini-fg); font: 600 11px/1 -apple-system, "Segoe UI", system-ui, sans-serif; letter-spacing: .01em; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-app-region: no-drag; }
+.mini[hidden] { display: none; }
+/* Plein écran d'une page : la vue du chrome n'affiche plus que l'avis, pilule sombre centrée. */
+:root.fullscreen-notice body > :not(#fsn) { display: none !important; }
+.fsn { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 24px; border-radius: 32px;
+  background: rgba(28, 28, 30, .92); color: #fff; font: 500 14px/1.3 -apple-system, "Segoe UI", system-ui, sans-serif; text-align: center; }
+.fsn[hidden] { display: none; }
 /* Ombre contenue dans la marge de 12 px (décalage 3 + flou 8 < 12) : jamais coupée net par le bord de la bande. */
 .bar { position: fixed; left: 12px; right: 12px; top: 12px; height: 64px; border-radius: 32px; overflow: hidden; z-index: 3; isolation: isolate;
   box-shadow: 0 3px 8px rgba(0, 0, 0, calc(.05 + .05 * var(--alpha))), 0 1px 2px rgba(0, 0, 0, .06); }
@@ -214,6 +225,9 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .t-search input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 16px; color: var(--text); height: 38px; }
 .t-search input::placeholder { color: var(--secondary); }
 .t-search input::-webkit-search-cancel-button { filter: grayscale(1); }
+/* Champ de recherche actif : liseré discret autour de la pastille plutôt qu'un contour sur le seul champ. */
+.t-search input:focus-visible { outline: none; }
+.t-search:focus-within { box-shadow: inset 0 0 0 1.5px var(--accent-ui); }
 .t-head { display: flex; justify-content: space-between; padding: 22px 20px 9px; font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--secondary); }
 .t-group { background: var(--cell); border-radius: 22px; overflow: hidden; }
 .t-head + .t-group, .t-head + .g-grid { margin-top: 0; }
