@@ -199,6 +199,8 @@ class SupportManager(private val app: Application, private val scope: CoroutineS
         val own = handlers.filter { isQafila(it.activityInfo.packageName) }.map { ComponentName(it.activityInfo.packageName, it.activityInfo.name) }
         val others = handlers.map { it.activityInfo.packageName }.filterNot(::isQafila).distinct()
         val default = runCatching { pm.resolveActivity(view, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName }.getOrNull()
+        // Qafila est le seul navigateur installé : un sélecteur vide n'aiderait pas, on l'explique.
+        if (others.isEmpty() && own.isNotEmpty()) { message.value = app.getString(R.string.support_open_failed); return }
         val launch = when {
             // Un autre navigateur est déjà le navigateur par défaut.
             default != null && default in others -> view
