@@ -29,6 +29,14 @@ Il faut un ordinateur (Windows ou Mac) et un câble.
 ℹ️ Avec un identifiant gratuit, l'appli fonctionne **7 jours** ; il suffit de refaire l'étape 4 pour la prolonger.
 Le compte Apple Developer (99 €/an) ne sert qu'à publier sur l'App Store / TestFlight.
 
+## 💛 Soutenir Qafila
+
+Dans ces versions de test, **Réglages › Soutenir Qafila** ouvre la page de paiement **Stripe** du propriétaire dans le navigateur
+du téléphone (Safari, donc Apple Pay, sur iPhone ; Google Pay ou carte sur Android), jamais dans un onglet Qafila.
+Le paiement se fait chez Stripe : Qafila ne voit aucune information de paiement et rien n'est à débloquer (l'icône **Or** est offerte à tous).
+Tant que le lien n'est pas encore renseigné, le bouton est grisé et indique **« Bientôt disponible »**.
+Les versions App Store et Google Play gardent l'abonnement à 0,99 €/mois.
+
 ## ✅ Quoi vérifier
 
 **Navigation**
@@ -45,11 +53,14 @@ Le compte Apple Developer (99 €/an) ne sert qu'à publier sur l'App Store / Te
 - [ ] Style de barre : Classique / Verre / **Flottante**, et le curseur **Transparence** juste en dessous (aperçu en direct ; vrai Liquid Glass sur iOS 26)
 - [ ] Couleurs de barre clair et sombre, épaisseur des icônes, icône du menu
 - [ ] Les 6 styles d'adresse, la galerie de barres, l'éditeur de boutons
-- [ ] Icône de l'appli (Classique, Nuit, Encre, Désert)
+- [ ] Icône de l'appli (Classique, Nuit, Encre, Désert, Or)
 
 **Confidentialité et lecture**
 - [ ] Bloqueur (pubs, traqueurs, cookies) et « Désactiver le bloqueur ici »
 - [ ] Assombrir les sites, taille du texte, version bureau
+
+**Soutien**
+- [ ] Réglages › Soutenir Qafila : le bouton ouvre la page Stripe dans le navigateur du téléphone (pas dans un onglet Qafila) ; tant que le lien n'est pas renseigné, il est grisé et indique « Bientôt disponible »
 
 **À signaler en priorité (Android)** : le menu ⋯ et la barre « Flottante » doivent être **opaques**
 (sur l'émulateur de GitHub, la page apparaissait légèrement à travers).

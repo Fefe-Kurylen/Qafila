@@ -27,6 +27,7 @@ exigent **vos** comptes développeur. Suivez les cases dans l'ordre.
 - [ ] Dans App Store Connect → *Mes apps* → **+** : créer l'app « Qafila : Navigateur Internet », bundle `fr.qafila.QafilaBrowser`, SKU `qafila-browser`.
 
 ### Abonnement « Soutenir Qafila » (0,99 €/mois, débloque l'icône Or)
+- Concerne les builds App Store, TestFlight et Xcode, qui gardent cet abonnement. L'IPA de test (hors App Store) passe par le lien Stripe (voir § 4).
 - [ ] App Store Connect → *Accords, taxes et services bancaires* : signer l'accord **Applications payantes**, ajouter compte bancaire et fiscalité.
 - [ ] App → *Abonnements* → créer le groupe **Soutien Qafila**, puis l'abonnement :
       ID produit **`qafila_soutien_mensuel`**, durée **1 mois**, prix **0,99 €**, nom affiché « Soutenir Qafila »,
@@ -65,6 +66,7 @@ Sans Mac, tout passe par GitHub Actions. Avec un Mac : `cd ios-browser && brew i
       *Administrateur de versions*, télécharger sa clé JSON, puis l'inviter dans *Utilisateurs et autorisations* de l'app.
 
 ### Abonnement « Soutenir Qafila »
+- Concerne le bundle Google Play, qui garde cet abonnement. L'APK de test (hors Google Play) passe par le lien Stripe (voir § 4).
 - [ ] Play Console → *Paramètres* → *Profil de paiement* : créer le profil marchand (compte bancaire).
 - [ ] App → *Monétiser* → *Produits* → *Abonnements* : ID **`qafila_soutien_mensuel`**, une offre de base **mensuelle** à renouvellement
       automatique, prix **0,99 €**. (Nécessite d'avoir envoyé au moins une version contenant la bibliothèque de facturation.)
@@ -104,3 +106,31 @@ Sans Mac, tout passe par GitHub Actions. Avec un Mac : `cd ios-browser && brew i
 
 - [ ] Mettre à jour `release_notes.txt` (iOS) et `play/whatsnew/*` (Android) à chaque version, puis relancer les workflows.
 - [ ] Les numéros de build sont automatiques (`github.run_number`) ; la version marketing est `1.0.<run>` côté Android et `MARKETING_VERSION` dans `project.yml` côté iOS.
+
+## 4. Passer le soutien sur Stripe dans les Stores
+
+Aujourd'hui, « Soutenir Qafila » passe par **Stripe** uniquement dans les versions de test (APK et IPA de la release *Version de test*) ;
+App Store, TestFlight et Google Play gardent l'**abonnement 0,99 €/mois**. En France et dans l'EEE, un lien vers un paiement externe
+dans une appli des stores n'est permis qu'après inscription aux programmes d'Apple et de Google : sans eux, la version risque d'être refusée
+(Apple, règles 3.1.1 / 3.1.3) ou de valoir un avertissement Google Play.
+
+**Le lien Stripe**, un seul endroit pour toutes les plateformes : `shared/support.json` → `"stripePaymentLink": "https://buy.stripe.com/…"`.
+- Le créer dans Stripe → *Liens de paiement* (option « le client choisit le montant » pour une contribution libre). Apple Pay et Google Pay
+  apparaissent sur la page Stripe s'ils sont activés dans *Paramètres › Moyens de paiement*.
+- Seules les adresses `https` de `buy.stripe.com`, `donate.stripe.com` et `checkout.stripe.com` sont acceptées ; vide ou autre adresse = bouton « Bientôt disponible ».
+- Une fois le lien collé, les versions de test se recompilent toutes seules ; pour les stores, il faut publier une nouvelle version.
+
+**Apple (App Store, TestFlight)**
+- [ ] Accepter dans App Store Connect les conditions de lien externe de l'UE (**DPLA, annexe 14**) et obtenir l'autorisation correspondante pour l'app.
+- [ ] Commission Apple : **5 %** sur les ventes réalisées dans les **7 jours** qui suivent le toucher sur le lien.
+- [ ] Déclarer ces ventes à Apple via les **API External Purchase**. ⚠️ Pas encore intégré dans l'appli : à ajouter avant de basculer.
+- [ ] Puis, dans `ios-browser/project.yml`, passer `QAFILA_SUPPORT_CHANNEL: store` à **`stripe`** et relancer les lanes `beta` / `release`.
+
+**Google (Google Play)**
+- [ ] Compte Play Console au nom d'une **entreprise enregistrée**.
+- [ ] S'inscrire au **programme d'offres externes de l'EEE** (Play Console), accepter ses **frais de service** et **déclarer les transactions** à Google.
+      ⚠️ La déclaration n'est pas encore intégrée dans l'appli : à ajouter avant de basculer.
+- [ ] Puis compiler avec `gradle bundleRelease -Pqafila.stripeInStores=true` (pour le workflow *Qafila Android* : ajouter
+      `qafila.stripeInStores=true` dans `android-browser/gradle.properties`).
+
+Après la bascule, l'appli ne propose plus l'abonnement : retirer `qafila_soutien_mensuel` de la vente dans App Store Connect et la Play Console.
