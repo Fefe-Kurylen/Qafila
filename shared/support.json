@@ -1,0 +1,5 @@
+{
+  "$comment": "Lien « Soutenir Qafila » commun à toutes les plateformes. stripePaymentLink : lien de paiement Stripe du propriétaire (https://buy.stripe.com/… ou https://donate.stripe.com/…), ouvert dans le navigateur du système pour profiter d'Apple Pay / Google Pay. Vide = soutien pas encore ouvert : les applis affichent « Bientôt disponible ».",
+  "stripePaymentLink": "",
+  "allowedHosts": ["buy.stripe.com", "donate.stripe.com", "checkout.stripe.com"]
+}
