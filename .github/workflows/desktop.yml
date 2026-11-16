@@ -45,23 +45,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        if: ${{ hashFiles('desktop/package-lock.json') != '' }}
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: desktop/package-lock.json
       - name: Dépendances
+        if: ${{ hashFiles('desktop/package-lock.json') != '' }}
         run: npm ci
       - name: Empaqueter
+        if: ${{ hashFiles('desktop/package-lock.json') != '' }}
         run: npm run ${{ matrix.script }} -- --publish never
       - name: Lister
+        if: ${{ hashFiles('desktop/package-lock.json') != '' }}
         shell: bash
         run: ls -la dist | grep -Ei "exe|appimage|dmg" || ls -la dist
       - uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('desktop/package-lock.json') != '' }}
         with:
           name: qafila-pc-${{ matrix.label }}
           path: ${{ matrix.glob }}
       - name: Publier dans la release de test
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' && hashFiles('desktop/package-lock.json') != '' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: test
