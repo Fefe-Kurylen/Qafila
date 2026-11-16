@@ -27,7 +27,8 @@ function applyDemo(store, { dark = false, screen = 'page', language = 'fr' } = {
   if (screen === 'start') store.tabs.unshift({ id: uuid(), url: null, title: '', isPrivate: false, createdAt: now, lastVisited: now, readingMinutes: 0, faviconURL: null, themeColorHex: null });
   store.selected = store.tabs[0].id;
   store.bookmarks = DEMO_BOOKMARKS.map(([title, url], i) => ({ id: uuid(), title, url, addedAt: now - i * 1000 }));
-  store.history = [];
+  // Historique : les pages des onglets de démonstration (suggestions de la saisie d'adresse).
+  store.history = DEMO_TABS.map(([url, title], i) => ({ id: uuid(), title, url, visitedAt: now - i * 3_600_000 }));
   const settingsSchema = require('./settings');
   store.settings = settingsSchema.defaults();
   if (dark) store.settings.appearance = 'dark';
@@ -37,4 +38,12 @@ function applyDemo(store, { dark = false, screen = 'page', language = 'fr' } = {
   store.scheduleSave();
 }
 
-module.exports = { DEMO_TABS, DEMO_BOOKMARKS, applyDemo };
+/** Suggestions « du moteur » hors ligne (captures reproductibles) : complétions plausibles de la saisie. */
+const DEMO_COMPLETIONS = ['caravane', 'caravane de chameaux', 'caravanserail', 'caravane sahara', 'cardamome', 'carte du monde', 'caravage'];
+function demoSuggestions(query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return [];
+  return DEMO_COMPLETIONS.filter((x) => x.startsWith(q.slice(0, 3))).slice(0, 5);
+}
+
+module.exports = { DEMO_TABS, DEMO_BOOKMARKS, applyDemo, demoSuggestions };

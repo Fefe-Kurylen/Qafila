@@ -20,5 +20,7 @@
   "find_count": "%1$d sur %2$d",
   "demo_mode": "Mode démo",
   "support_coming_soon": "Bientôt disponible",
-  "support_desktop_pitch": "Qafila est gratuit, sans publicité ni pistage. Votre soutien passe par une page de paiement sécurisée Stripe (Apple Pay, Google Pay ou carte), ouverte dans votre navigateur."
+  "support_desktop_pitch": "Qafila est gratuit, sans publicité ni pistage. Votre soutien passe par une page de paiement sécurisée Stripe (Apple Pay, Google Pay ou carte), ouverte dans votre navigateur.",
+  "reading_time_label": "%1$s de lecture",
+  "find_none": "Aucun résultat"
 }

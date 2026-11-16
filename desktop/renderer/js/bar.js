@@ -1,0 +1,362 @@
+// Barre de Qafila : capsule flottante en faux verre (ou barre Classique / Verre pleine largeur), carte d'adresse
+// (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
+import {
+  q, S, $, t, esc, STRIP, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
+  shortURL, setOverlay, renderNow, toast, onRender,
+} from './core.js';
+import { icon, actionIcon, tabsGlyph } from './icons.js';
+import { perform, actionState, isActive, isEnabled } from './actions.js';
+
+const SIZES = { small: 17, medium: 20, large: 23 };
+const WEIGHTS = { thin: 1.15, regular: 1.5, bold: 2 };
+
+// ----- Thème : variables CSS de la barre et de l'interface -----
+export function applyTheme() {
+  const root = document.documentElement;
+  const st = S.state;
+  const tb = toolbar();
+  const p = palette();
+  root.classList.toggle('dark', !!st.dark);
+  root.classList.toggle('bar-dark', p.contentDark);
+  root.classList.toggle('bottom', tb.position === 'bottom');
+  for (const s of ['classic', 'glass', 'floating']) root.classList.toggle('style-' + s, (tb.style || 'floating') === s);
+  root.style.setProperty('--bar-rgb', p.bar.join(','));
+  root.style.setProperty('--alpha', p.alpha.toFixed(3));
+  root.style.setProperty('--alpha-solid', (p.style === 'classic' ? 1 : 1 - 0.12 * p.transparency).toFixed(3));
+  root.style.setProperty('--card', p.card);
+  root.style.setProperty('--sw', String(WEIGHTS[settings().buttonWeight] || 1.15));
+  root.style.setProperty('--strip', STRIP() + 'px');
+  const acc = accentRGB();
+  if (acc) root.style.setProperty('--accent', `rgb(${acc.join(',')})`); else root.style.removeProperty('--accent');
+  root.classList.toggle('accent-mono', !acc);
+  root.lang = st.lang;
+  root.dir = st.rtl ? 'rtl' : 'ltr';
+}
+
+// ----- Carte d'adresse -----
+/** Carte d'adresse d'un onglet selon le style ; `opts.preview` pour les aperçus des réglages. */
+export function addressCard(tab, opts = {}) {
+  const s = { ...settings(), ...(opts.settings || {}) };
+  const style = opts.style || (s.addressStyle === 'hidden' ? 'card' : s.addressStyle || 'card');
+  const showFav = s.addressShowsFavicon !== false;
+  const showRead = s.addressShowsReadingTime !== false;
+  const reading = showRead ? readingLabel(tab) : null;
+  const domain = tab?.host || '';
+  const pill = reading ? `<span class="pill">${esc(reading)}</span>` : '';
+  let inner;
+  if (!opts.preview && S.toast) {
+    inner = `<span class="toast">${esc(S.toast)}</span>`;
+  } else if (!tab?.url) {
+    const centered = style === 'domainPill' || style === 'centered';
+    inner = `<span class="ph${centered ? ' center' : ''}">${icon('search')}<span>${esc(t('search_or_enter_address'))}</span></span>`;
+  } else if (style === 'fullURL') {
+    const lock = tab.url.startsWith('https://') ? `<span class="lock">${icon('lock')}</span>` : '';
+    inner = `${showFav ? favicon(tab, 18) : ''}${lock}<span class="url">${esc(shortURL(tab.url))}</span>${pill}`;
+  } else if (style === 'domainPill') {
+    inner = `<span class="dom-pill">${showFav ? favicon(tab, 16) : ''}<span class="h">${esc(domain)}</span>${reading ? `<span class="sub">· ${esc(reading)}</span>` : ''}</span>`;
+  } else if (style === 'titleReading') {
+    const sub = reading ? t('reading_time_label', reading) : domain;
+    inner = `${showFav ? favicon(tab, 20) : ''}<span class="txt"><span class="title strong">${esc(tab.title)}</span><span class="sub">${esc(sub)}</span></span>`;
+  } else if (style === 'centered') {
+    inner = `<span class="txt center"><span class="dom">${esc(domain)}</span><span class="title">${esc(tab.title)}${reading ? ` <span class="sub">${esc(reading)}</span>` : ''}</span></span>`;
+  } else {
+    inner = `${showFav ? favicon(tab, 20) : ''}<span class="txt"><span class="dom">${esc(domain)}</span><span class="title" dir="auto">${esc(tab.title)}</span></span>${pill}`;
+  }
+  const loading = !opts.preview && tab?.loading;
+  const progress = opts.preview ? '' : `<span class="progress" style="opacity:${loading ? 1 : 0};transform:scaleX(${loading ? Math.max(0.06, tab.progress || 0) : 1})"></span>`;
+  return `<div class="address style-${style}${opts.preview ? '' : ' live'}" ${opts.preview ? '' : 'data-address'} title="${esc(tab?.url || '')}">${inner}${progress}</div>`;
+}
+
+// ----- Rangée d'icônes -----
+/** Emplacements affichés : l'adresse est insérée en 3e position si la barre n'en contient pas (barre sur une ligne). */
+export function rowSlots(bar, addressStyle) {
+  const list = [...(bar || [])];
+  const hasAddress = list.some((s) => s.action === 'address');
+  if (!hasAddress && addressStyle !== 'hidden') list.splice(Math.min(2, list.length), 0, { action: 'address', size: 'medium' });
+  return list;
+}
+
+function button(slot, st, count) {
+  const id = slot.action;
+  const size = SIZES[slot.size] || 20;
+  const enabled = isEnabled(id, st);
+  const glyph = id === 'tabs' ? tabsGlyph(count, size) : icon(actionIcon(id, st), size);
+  return `<button class="btn${enabled ? '' : ' off'}${isActive(id, st) ? ' on' : ''}" data-action="${id}" ${enabled ? '' : 'disabled'} title="${esc(actionLabel(id))}" aria-label="${esc(actionLabel(id))}">${glyph}</button>`;
+}
+
+/** HTML de la rangée (barre réelle ou aperçu de la galerie / des réglages). */
+export function rowHTML(cfgBar, opts = {}) {
+  const s = { ...settings(), ...(opts.settings || {}) };
+  const st = opts.state || actionState();
+  const tab = opts.tab !== undefined ? opts.tab : selectedTab();
+  const count = opts.count ?? (S.state?.tabs.filter((x) => !x.isPrivate).length || 0);
+  const slots = rowSlots(cfgBar, s.addressStyle);
+  const inline = slots.some((x) => x.action === 'address');
+  const parts = slots.map((slot) => {
+    if (slot.action === 'separator') return '<span class="gap"></span>';
+    if (slot.action === 'address') return addressCard(tab, { preview: opts.preview, settings: opts.settings });
+    return button(slot, st, count);
+  });
+  return `<div class="row${inline ? ' inline' : ' spread'}">${parts.join('')}</div>`;
+}
+
+// ----- Saisie d'adresse -----
+const edit = { text: '', results: { local: [], remote: [] }, index: -1, seq: 0 };
+
+export function beginEditing(initial) {
+  const tab = selectedTab();
+  edit.text = initial !== undefined ? initial : (tab?.url && /^https?:/.test(tab.url) ? tab.url : '');
+  edit.index = -1;
+  edit.results = { local: [], remote: [] };
+  S.find = null;
+  setOverlay('editing').then(() => {
+    const input = $('#edit-input');
+    if (input) { input.value = edit.text; input.focus(); input.select(); }
+    fetchSuggestions();
+  });
+}
+
+export function cancelEditing() { if (S.overlay === 'editing') setOverlay('none'); }
+
+let suggestTimer = null;
+function fetchSuggestions() {
+  clearTimeout(suggestTimer);
+  const seq = ++edit.seq;
+  suggestTimer = setTimeout(async () => {
+    const query = edit.text.trim() && edit.text === selectedTab()?.url ? '' : edit.text;
+    const r = await q.suggest(query).catch(() => ({ local: [], remote: [] }));
+    if (seq !== edit.seq) return;
+    edit.results = r || { local: [], remote: [] };
+    edit.index = -1;
+    renderSuggestions();
+  }, edit.text ? 90 : 0);
+}
+
+/** Lignes du panneau : saisie telle quelle, puis favoris / historique, puis suggestions du moteur. */
+function suggestionItems() {
+  const items = [];
+  const text = edit.text.trim();
+  const isCurrent = text && text === selectedTab()?.url;
+  if (text && !isCurrent) items.push({ kind: 'go', text, label: text });
+  for (const l of edit.results.local || []) items.push({ kind: l.kind, text: l.url, label: l.title || shortURL(l.url), sub: shortURL(l.url) });
+  for (const r of edit.results.remote || []) if (r.toLowerCase() !== text.toLowerCase()) items.push({ kind: 'remote', text: r, label: r });
+  return items.slice(0, 12);
+}
+
+function renderSuggestions() {
+  const box = $('#suggest');
+  if (!box) return;
+  const items = suggestionItems();
+  if (!items.length) { box.hidden = true; box.innerHTML = ''; return; }
+  const engine = S.cfg.engines?.[settings().searchEngine] || '';
+  const looksURL = (s) => /^[a-z]+:\/\//i.test(s) || (/^\S+\.\S+$/.test(s) && !/\s/.test(s));
+  let html = '';
+  let lastGroup = null;
+  items.forEach((it, i) => {
+    const group = it.kind === 'remote' ? 'remote' : it.kind === 'go' ? 'go' : 'local';
+    if (lastGroup && group !== lastGroup) html += '<div class="sep"></div>';
+    lastGroup = group;
+    let ic = 'search';
+    let sub = it.sub || '';
+    if (it.kind === 'bookmark') ic = 'book';
+    else if (it.kind === 'history') ic = 'clock';
+    else if (it.kind === 'go') { ic = looksURL(it.text) ? 'link' : 'search'; sub = looksURL(it.text) ? '' : engine; }
+    html += `<div class="sg${i === edit.index ? ' sel' : ''}" data-sg="${i}">${icon(ic)}<span class="l"><span class="t">${esc(it.label)}</span>${sub ? `<span class="s">${esc(sub)}</span>` : ''}</span>${it.kind === 'remote' ? `<span class="fill" data-fill="${i}" title="${esc(t('fill_in'))}">${icon('arrowUpLeft')}</span>` : ''}</div>`;
+  });
+  box.innerHTML = html;
+  box.hidden = false;
+  alignSuggestions(box);
+}
+
+/** Le panneau prend la largeur de la pilule de saisie (barre flottante) ; pleine largeur sinon. */
+function alignSuggestions(box) {
+  const field = document.querySelector('#bar .edit-field');
+  if (!field) return;
+  const r = field.getBoundingClientRect();
+  const wide = toolbar().style !== 'floating';
+  const left = wide ? Math.max(12, r.left - 6) : r.left - 6;
+  box.style.left = left + 'px';
+  box.style.right = 'auto';
+  box.style.width = Math.min(window.innerWidth - left - 12, r.width + 12) + 'px';
+}
+
+function commit(text) {
+  const v = String(text || '').trim();
+  if (!v) return;
+  q.tabs.navigate(v);
+  setOverlay('none');
+}
+
+function editingHTML() {
+  return `<div class="row inline editing">
+    <label class="address edit-field">${icon('search')}<input id="edit-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('search_or_enter_address'))}" dir="auto"><button class="clear" data-edit-clear title="${esc(t('clear'))}">${icon('xmarkCircle')}</button></label>
+    <button class="text-btn" data-edit-cancel>${esc(t('cancel'))}</button></div>`;
+}
+
+// ----- Recherche dans la page -----
+export function openFind() {
+  if (S.overlay !== 'none') setOverlay('none');
+  S.find = S.find || { text: '', matches: 0, active: 0 };
+  renderNow();
+  const input = $('#find-input');
+  if (input) { input.focus(); input.select(); }
+}
+
+export function closeFind() {
+  if (!S.find) return;
+  S.find = null;
+  q.page.stopFind('clearSelection');
+  renderNow();
+}
+
+function findHTML() {
+  const f = S.find;
+  const count = f.text ? (f.matches ? t('find_count', f.active, f.matches) : t('find_none')) : '';
+  return `<div class="row inline finding">
+    <label class="address edit-field">${icon('textSearch')}<input id="find-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('find_placeholder'))}" dir="auto"><span class="count" id="find-count">${esc(count)}</span></label>
+    <button class="btn" data-find="prev" title="${esc(t('find_previous'))}">${icon('chevronDown', 20).replace('<svg', '<svg style="transform:rotate(180deg)"')}</button>
+    <button class="btn" data-find="next" title="${esc(t('find_next'))}">${icon('chevronDown', 20)}</button>
+    <button class="text-btn" data-find="done">${esc(t('done'))}</button></div>`;
+}
+
+function updateFindCount() {
+  const f = S.find;
+  const el = $('#find-count');
+  if (!f || !el) return;
+  el.textContent = f.text ? (f.matches ? t('find_count', f.active, f.matches) : t('find_none')) : '';
+}
+
+// ----- Rendu de la barre -----
+let mode = null; // 'row' | 'editing' | 'find' : la saisie n'est pas reconstruite à chaque mise à jour
+function renderBar() {
+  if (!S.state || !S.cfg) return;
+  applyTheme();
+  const host = $('#bar-content');
+  const want = S.overlay === 'editing' ? 'editing' : S.find ? 'find' : 'row';
+  if (want === 'editing') {
+    if (mode !== 'editing') { host.innerHTML = editingHTML(); mode = 'editing'; }
+  } else if (want === 'find') {
+    if (mode !== 'find') { host.innerHTML = findHTML(); mode = 'find'; const i = $('#find-input'); if (i) i.value = S.find.text || ''; }
+    updateFindCount();
+  } else {
+    host.innerHTML = rowHTML(toolbar().bar);
+    mode = 'row';
+  }
+  const sg = $('#suggest');
+  if (sg && want !== 'editing') sg.hidden = true;
+}
+onRender(renderBar);
+
+// ----- Faux verre : capture floutée de la page sous la bande -----
+// Le flou estompe les bords de l'image vers la transparence : la couche reçoit en fond la couleur moyenne de la
+// capture, si bien que la page ne transparaît jamais nette sous la barre.
+const avgCanvas = document.createElement('canvas');
+avgCanvas.width = 1; avgCanvas.height = 1;
+q.glass.onFrame(async (frame) => {
+  const img = $('#glass-img');
+  if (!img) return;
+  img.style.backgroundImage = frame ? `url("${frame.dataURL}")` : 'none';
+  img.classList.toggle('empty', !frame);
+  if (!frame) { img.parentNode.style.backgroundColor = ''; return; }
+  try {
+    const im = new Image();
+    im.src = frame.dataURL;
+    await im.decode();
+    const ctx = avgCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.drawImage(im, 0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    img.parentNode.style.backgroundColor = `rgb(${r},${g},${b})`;
+  } catch { /* capture illisible : la teinte seule suffit */ }
+});
+
+// ----- Interactions -----
+let pressTimer = null;
+let longPressed = false;
+
+function addressTap() {
+  if (settings().addressTap === 'menu') perform('menu'); else beginEditing();
+}
+function addressLongPress() {
+  const s = settings();
+  if (s.addressTap === 'menu') return beginEditing();
+  if (s.addressLongPress === 'menu') return perform('menu');
+  if (s.addressLongPress === 'copy') return q.page.copyLink().then((ok) => ok && toast(t('toast_address_copied')));
+  return null;
+}
+
+export function installBarEvents() {
+  const bar = $('#bar');
+  bar.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('[data-address]') || e.button !== 0) return;
+    longPressed = false;
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => { longPressed = true; addressLongPress(); }, 450);
+  });
+  const cancelPress = () => clearTimeout(pressTimer);
+  bar.addEventListener('pointerup', cancelPress);
+  bar.addEventListener('pointerleave', cancelPress);
+  bar.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-address]')) { e.preventDefault(); addressLongPress(); } });
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-action]');
+    if (b) { if (!b.disabled) perform(b.dataset.action); return; }
+    if (e.target.closest('[data-address]')) { if (!longPressed) addressTap(); longPressed = false; return; }
+    if (e.target.closest('[data-edit-cancel]')) { cancelEditing(); return; }
+    if (e.target.closest('[data-edit-clear]')) { const i = $('#edit-input'); i.value = ''; edit.text = ''; i.focus(); fetchSuggestions(); return; }
+    const f = e.target.closest('[data-find]');
+    if (f) {
+      const what = f.dataset.find;
+      if (what === 'done') closeFind();
+      else if (S.find?.text) q.page.find(S.find.text, { findNext: false, forward: what === 'next' });
+    }
+  });
+  bar.addEventListener('input', (e) => {
+    if (e.target.id === 'edit-input') { edit.text = e.target.value; fetchSuggestions(); }
+    if (e.target.id === 'find-input') {
+      S.find.text = e.target.value;
+      // Electron : findNext = true ouvre une NOUVELLE recherche ; false passe au résultat suivant.
+      if (S.find.text) q.page.find(S.find.text, { findNext: true, forward: true }); else { q.page.stopFind('clearSelection'); S.find.matches = 0; updateFindCount(); }
+    }
+  });
+  bar.addEventListener('keydown', (e) => {
+    if (e.target.id === 'edit-input') {
+      const items = suggestionItems();
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        edit.index = (edit.index + (e.key === 'ArrowDown' ? 1 : -1) + items.length + 1) % (items.length + 1);
+        if (edit.index === items.length) edit.index = -1;
+        renderSuggestions();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const it = items[edit.index];
+        commit(it ? it.text : e.target.value);
+      } else if (e.key === 'Escape') { e.preventDefault(); cancelEditing(); }
+    }
+    if (e.target.id === 'find-input') {
+      if (e.key === 'Enter' && S.find?.text) { e.preventDefault(); q.page.find(S.find.text, { findNext: false, forward: !e.shiftKey }); }
+      else if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
+    }
+  });
+  const box = $('#suggest');
+  box.addEventListener('mousedown', (e) => e.preventDefault()); // garde le focus dans le champ
+  box.addEventListener('click', (e) => {
+    const fill = e.target.closest('[data-fill]');
+    const items = suggestionItems();
+    if (fill) { const it = items[Number(fill.dataset.fill)]; const i = $('#edit-input'); i.value = it.text + ' '; edit.text = i.value; i.focus(); fetchSuggestions(); return; }
+    const row = e.target.closest('[data-sg]');
+    if (row) commit(items[Number(row.dataset.sg)]?.text);
+  });
+  q.page.onFound((r) => {
+    if (!S.find || !r) return;
+    S.find.matches = r.matches || 0;
+    S.find.active = r.activeMatchOrdinal || 0;
+    updateFindCount();
+  });
+}
+
+/** Scénario de démonstration : saisie « cara » et suggestions affichées. */
+export function demoEditing(text) {
+  beginEditing(text);
+  setTimeout(() => { edit.text = text; const i = $('#edit-input'); if (i) { i.value = text; i.setSelectionRange(text.length, text.length); } fetchSuggestions(); }, 50);
+}
+

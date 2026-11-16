@@ -19,5 +19,7 @@
   "find_count": "%1$d von %2$d",
   "demo_mode": "Demomodus",
   "support_coming_soon": "Demnächst verfügbar",
-  "support_desktop_pitch": "Qafila ist kostenlos, ohne Werbung und ohne Tracking. Die Unterstützung läuft über eine sichere Stripe-Zahlungsseite (Apple Pay, Google Pay oder Karte), die in Ihrem Browser geöffnet wird."
+  "support_desktop_pitch": "Qafila ist kostenlos, ohne Werbung und ohne Tracking. Die Unterstützung läuft über eine sichere Stripe-Zahlungsseite (Apple Pay, Google Pay oder Karte), die in Ihrem Browser geöffnet wird.",
+  "reading_time_label": "%1$s Lesezeit",
+  "find_none": "Keine Treffer"
 }

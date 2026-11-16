@@ -14,7 +14,8 @@ const id = (v) => (typeof v === 'string' && /^[0-9A-Fa-f-]{36}$/.test(v) ? v : n
  * @param {object} app0 les services de l'application (store, tabs, actions, ui…)
  */
 function register(a) {
-  const { store, tabs } = a;
+  // Accès paresseux : les onglets (TabManager) sont créés avec la fenêtre, après l'enregistrement des canaux.
+  const store = a.store;
   const handle = (channel, fn) => ipcMain.handle(`qafila:${channel}`, async (_e, p) => fn(p || {}));
   const current = (p) => id(p.id) || store.selected;
 
@@ -26,12 +27,12 @@ function register(a) {
   handle('tabs:reopen', () => a.reopenTab());
   handle('tabs:select', (p) => { const t = id(p.id); if (t) a.selectTab(t); });
   handle('tabs:navigate', (p) => a.navigate(str(p.text), current(p)));
-  handle('tabs:back', (p) => tabs.back(current(p)));
-  handle('tabs:forward', (p) => tabs.forward(current(p)));
-  handle('tabs:reload', (p) => tabs.reload(current(p)));
-  handle('tabs:stop', (p) => tabs.stop(current(p)));
+  handle('tabs:back', (p) => a.tabs.back(current(p)));
+  handle('tabs:forward', (p) => a.tabs.forward(current(p)));
+  handle('tabs:reload', (p) => a.tabs.reload(current(p)));
+  handle('tabs:stop', (p) => a.tabs.stop(current(p)));
   handle('tabs:goHome', (p) => a.goHome(current(p)));
-  handle('tabs:snapshot', (p) => tabs.snapshot(current(p), Math.min(1600, Math.max(40, Number(p.width) || 320))));
+  handle('tabs:snapshot', (p) => a.tabs.snapshot(current(p), Math.min(1600, Math.max(40, Number(p.width) || 320))));
   handle('tabs:move', (p) => a.moveTab(id(p.id), Number(p.index)));
 
   // ----- État -----
@@ -39,9 +40,9 @@ function register(a) {
 
   // ----- Favoris / historique -----
   handle('bookmarks:list', () => store.bookmarks);
-  handle('bookmarks:add', (p) => { const b = store.addBookmark(str(p.title, 512), str(p.url)); tabs.refreshStartPages(); return b; });
-  handle('bookmarks:remove', (p) => { store.removeBookmark(str(p.id)); tabs.refreshStartPages(); });
-  handle('bookmarks:update', (p) => { store.updateBookmark(str(p.id), { title: str(p.patch?.title, 512), url: str(p.patch?.url) }); tabs.refreshStartPages(); });
+  handle('bookmarks:add', (p) => { const b = store.addBookmark(str(p.title, 512), str(p.url)); a.tabs.refreshStartPages(); return b; });
+  handle('bookmarks:remove', (p) => { store.removeBookmark(str(p.id)); a.tabs.refreshStartPages(); });
+  handle('bookmarks:update', (p) => { store.updateBookmark(str(p.id), { title: str(p.patch?.title, 512), url: str(p.patch?.url) }); a.tabs.refreshStartPages(); });
   handle('bookmarks:toggleCurrent', () => a.toggleBookmark());
   handle('history:list', (p) => {
     const q = str(p.query, 256).toLowerCase();
@@ -67,15 +68,15 @@ function register(a) {
   });
 
   // ----- Page courante -----
-  handle('page:find', (p) => tabs.findInPage(store.selected, str(p.text, 512), p));
-  handle('page:stopFind', (p) => tabs.stopFind(store.selected, ['clearSelection', 'keepSelection', 'activateSelection'].includes(p.action) ? p.action : 'clearSelection'));
-  handle('page:toggleReader', () => tabs.toggleReader(store.selected));
+  handle('page:find', (p) => a.tabs.findInPage(store.selected, str(p.text, 512), p));
+  handle('page:stopFind', (p) => a.tabs.stopFind(store.selected, ['clearSelection', 'keepSelection', 'activateSelection'].includes(p.action) ? p.action : 'clearSelection'));
+  handle('page:toggleReader', () => a.tabs.toggleReader(store.selected));
   handle('page:toggleDarken', () => a.toggleDarken());
   handle('page:toggleDesktop', () => a.toggleDesktop());
   handle('page:toggleBlocker', () => a.toggleBlocker());
   handle('page:toggleJavascript', () => a.toggleJavascript());
-  handle('page:translate', () => tabs.translate(store.selected));
-  handle('page:scrollTo', (p) => tabs.scrollTo(store.selected, p.where === 'bottom' ? 'bottom' : 'top'));
+  handle('page:translate', () => a.tabs.translate(store.selected));
+  handle('page:scrollTo', (p) => a.tabs.scrollTo(store.selected, p.where === 'bottom' ? 'bottom' : 'top'));
   handle('page:zoom', (p) => a.zoom(Number(p.delta) || 0));
   handle('page:copyLink', () => { const u = store.selectedTab?.url; if (u) clipboard.writeText(u); return !!u; });
   handle('page:share', () => { const u = store.selectedTab?.url; if (u) clipboard.writeText(u); return !!u; });

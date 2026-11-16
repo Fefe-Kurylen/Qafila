@@ -279,6 +279,7 @@ async function suggest(query) {
   const s = Q.store.settings;
   const priv = !!Q.store.selectedTab?.isPrivate;
   let remote = [];
+  if (OFFLINE) return { local, remote: s.suggestions === 'never' ? [] : demo.demoSuggestions(query) };
   if (s.suggestions === 'everywhere' || (s.suggestions === 'notPrivate' && !priv)) {
     const base = search.suggestURL(s);
     if (base) {
@@ -480,41 +481,61 @@ app.on('web-contents-created', (_e, wc) => {
   wc.on('will-attach-webview', (e) => e.preventDefault());
 });
 
-/** Scénario de test : onglets de démonstration, captures (bande, menu, onglets, réglages, sombre), sortie 0. */
+/** Scénario de test : onglets de démonstration, captures (page, menu, saisie, onglets, réglages, galerie, éditeur,
+ * démarrage, sombre, barre en bas), contrôle de la bande, sortie 0. */
 async function runSmoke() {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const report = { started: Date.now(), shots: [], errors: [] };
   const shot = async (name) => { try { const f = await screenshot(name); report.shots.push(f); console.log('capture', f); } catch (e) { report.errors.push(`${name}: ${e.message}`); } };
+  const demoScreen = (screen, extra = {}) => Q.chrome.webContents.send('qafila:command', { name: 'demo', screen, ...extra });
+  const set = (key, value) => { Q.store.setSetting(key, value); onSettingChanged(key); };
   // Le chrome est prêt et la première page chargée.
   await new Promise((resolve) => { if (Q.chrome.webContents.isLoading()) Q.chrome.webContents.once('did-finish-load', resolve); else resolve(); });
   await wait(2500);
+  Q.glass.refresh(0);
+  await wait(500);
   await shot('01-page');
-  Q.chrome.webContents.send('qafila:command', { name: 'demo', screen: 'menu' });
+  demoScreen('menu'); await wait(900); await shot('02-menu');
+  demoScreen('address', { text: 'cara' }); await wait(1200); await shot('03-address');
+  demoScreen('none'); await wait(400);
+  demoScreen('tabs'); await wait(1400); await shot('04-tabs');
+  set('tabsLayout', 'grid'); await wait(1200); await shot('05-tabs-grid');
+  set('tabsLayout', 'list');
+  demoScreen('tabs-popup'); await wait(700); await shot('06-tabs-popup');
+  demoScreen('none'); await wait(400);
+  demoScreen('settings'); await wait(900); await shot('07-settings');
+  demoScreen('appearance'); await wait(900); await shot('08-appearance');
+  demoScreen('gallery'); await wait(900); await shot('09-gallery');
+  demoScreen('editor'); await wait(900); await shot('10-editor');
+  demoScreen('none'); await wait(400);
+  demoScreen('find', { text: 'caravane' }); await wait(900); await shot('11-find');
+  demoScreen('none'); await wait(300);
+  // Page de démarrage : un nouvel onglet, refermé ensuite.
+  const start = newTab();
+  await wait(1500); await shot('12-start');
+  closeTab(start.id); await wait(800);
+  set('appearance', 'dark');
+  await wait(1800); Q.glass.refresh(0); await wait(400); await shot('13-dark');
+  demoScreen('menu'); await wait(900); await shot('14-dark-menu');
+  demoScreen('tabs'); await wait(1200); await shot('15-dark-tabs');
+  demoScreen('settings'); await wait(900); await shot('16-dark-settings');
+  demoScreen('none'); await wait(500);
+  set('appearance', 'light');
+  set('toolbar', { ...Q.store.settings.toolbar, position: 'bottom', style: 'glass' });
+  await wait(1500); Q.glass.refresh(0); await wait(400); await shot('17-bottom-glass');
+  set('toolbar', { ...Q.store.settings.toolbar, position: 'top', style: 'floating' });
   await wait(900);
-  await shot('02-menu');
-  Q.chrome.webContents.send('qafila:command', { name: 'demo', screen: 'tabs' });
-  await wait(1400);
-  await shot('03-tabs');
-  Q.chrome.webContents.send('qafila:command', { name: 'demo', screen: 'settings' });
-  await wait(900);
-  await shot('04-settings');
-  Q.chrome.webContents.send('qafila:command', { name: 'demo', screen: 'none' });
-  Q.store.setSetting('appearance', 'dark'); onSettingChanged('appearance');
-  await wait(1800);
-  await shot('05-dark');
-  Q.chrome.webContents.send('qafila:command', { name: 'demo', screen: 'menu' });
-  await wait(900);
-  await shot('06-dark-menu');
-  Q.chrome.webContents.send('qafila:command', { name: 'demo', screen: 'none' });
-  await wait(900);
-  // La vue du chrome doit être revenue à la bande (barre + 2 × 12 px) une fois la surcouche fermée.
+  demoScreen('history'); await wait(900); await shot('19-history');
+  demoScreen('bookmarks'); await wait(900); await shot('20-bookmarks');
+  demoScreen('none'); await wait(900);
+  // La vue du chrome doit être revenue à la bande (barre + 2 × 12 px) une fois les surcouches fermées.
   const cb = Q.chrome.getBounds();
   if (cb.height !== Q.barHeight + 2 * BAR_MARGIN) report.errors.push(`bande : hauteur ${cb.height} au lieu de ${Q.barHeight + 2 * BAR_MARGIN}`);
   // Bande seule (transparence du chrome) et état complet.
   try {
     const img = await Q.chrome.webContents.capturePage();
-    fs.writeFileSync(path.join(SMOKE_DIR, '07-chrome-strip.png'), img.toPNG());
-    report.shots.push(path.join(SMOKE_DIR, '07-chrome-strip.png'));
+    fs.writeFileSync(path.join(SMOKE_DIR, '18-chrome-strip.png'), img.toPNG());
+    report.shots.push(path.join(SMOKE_DIR, '18-chrome-strip.png'));
   } catch (e) { report.errors.push('strip: ' + e.message); }
   report.state = describeState();
   report.finished = Date.now();
@@ -522,4 +543,3 @@ async function runSmoke() {
   console.log('smoke terminé :', report.shots.length, 'captures,', report.errors.length, 'erreurs');
   app.exit(report.errors.length ? 1 : 0);
 }
-

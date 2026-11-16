@@ -7,20 +7,24 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Voile (10 %) derrière les popovers et écrans plein cadre -->
+  <!-- Voile (10 %) derrière le menu, la saisie d'adresse et la feuille des réglages -->
   <div id="dim" hidden></div>
-  <!-- Barre flottante : faux verre (capture floutée de la page) + couleur de barre + liseré -->
-  <div id="bar" class="bar">
-    <div class="glass"><div class="glass-img"></div></div>
+  <!-- Écran des onglets (fenêtre entière) -->
+  <section id="tabs" class="tabs-screen" hidden></section>
+  <!-- Barre : faux verre (capture floutée de la page) + couleur de barre + liseré + rangée -->
+  <header id="bar" class="bar">
+    <div class="glass"><div id="glass-img" class="glass-img empty"></div></div>
     <div class="tint"></div>
     <div class="rim"></div>
-    <div class="row" id="row"></div>
-    <div class="progress" id="progress"></div>
-  </div>
-  <!-- Surcouches (étape 1 : squelettes ; l'interface complète arrive à l'étape suivante) -->
-  <div id="menu" class="menu" hidden></div>
-  <section id="screen" class="screen" hidden></section>
+    <div id="bar-content" class="bar-content"></div>
+  </header>
+  <!-- Suggestions de la saisie d'adresse -->
+  <div id="suggest" class="suggest card-glass" hidden></div>
+  <!-- Menu flottant -->
+  <nav id="menu" class="menu card-glass" hidden></nav>
+  <!-- Feuille : réglages, galerie, éditeur, favoris, historique -->
+  <section id="sheet" class="sheet" hidden></section>
   <canvas id="composite" hidden></canvas>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
