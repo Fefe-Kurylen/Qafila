@@ -1,0 +1,23 @@
+{
+  "open_in_new_tab": "فتح في علامة تبويب جديدة",
+  "open_in_private_tab": "فتح في علامة تبويب خاصة",
+  "copy_image_address": "نسخ عنوان الصورة",
+  "save_image_as": "حفظ الصورة باسم…",
+  "search_selection": "البحث عن « %1$s »",
+  "language": "اللغة",
+  "language_system": "لغة النظام",
+  "shortcuts": "اختصارات لوحة المفاتيح",
+  "window_close": "إغلاق النافذة",
+  "window_minimize": "تصغير",
+  "window_maximize": "تكبير",
+  "support_open_page": "ادعم قافلة",
+  "update_check": "التحقق من التحديثات",
+  "about_engine_desktop": "Electron %1$s · Chromium %2$s",
+  "downloads": "التنزيلات",
+  "download_done": "اكتمل التنزيل: %1$s",
+  "find_placeholder": "البحث في الصفحة",
+  "find_count": "%1$d من %2$d",
+  "demo_mode": "وضع العرض",
+  "support_coming_soon": "قريبًا",
+  "support_desktop_pitch": "قافلة مجاني بلا إعلانات ولا تتبّع. يتم الدعم عبر صفحة دفع آمنة من Stripe (Apple Pay أو Google Pay أو بطاقة) تُفتح في متصفحك."
+}

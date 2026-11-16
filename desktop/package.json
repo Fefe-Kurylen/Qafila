@@ -1,0 +1,94 @@
+{
+  "name": "qafila-desktop",
+  "productName": "Qafila",
+  "version": "0.9.0",
+  "description": "Qafila pour PC : navigateur minimaliste et respectueux de la vie privée (Electron).",
+  "license": "MIT",
+  "private": true,
+  "main": "main/index.js",
+  "author": "Qafila",
+  "homepage": "https://qafila.fr",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "node test/smoke.mjs",
+    "i18n": "node scripts/i18n-from-android.mjs",
+    "dist:win": "electron-builder --win nsis --x64",
+    "dist:linux": "electron-builder --linux AppImage",
+    "dist:mac": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "fr.qafila.desktop",
+    "productName": "Qafila",
+    "artifactName": "Qafila-${version}-${os}.${ext}",
+    "asar": true,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main/**/*",
+      "preload/**/*",
+      "renderer/**/*",
+      "blocker/**/*",
+      "i18n/**/*",
+      "config/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../shared/toolbar-actions.json",
+        "to": "shared/toolbar-actions.json"
+      },
+      {
+        "from": "../shared/settings-keys.json",
+        "to": "shared/settings-keys.json"
+      },
+      {
+        "from": "../shared/qafila-forms.js",
+        "to": "shared/qafila-forms.js"
+      },
+      {
+        "from": "../shared/support.json",
+        "to": "shared/support.json"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "shortcutName": "Qafila",
+      "createDesktopShortcut": true
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Network",
+      "target": [
+        "AppImage"
+      ]
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ],
+      "identity": null
+    },
+    "publish": null
+  }
+}

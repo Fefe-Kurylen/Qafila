@@ -1,0 +1,23 @@
+{
+  "open_in_new_tab": "Abrir en una pestaña nueva",
+  "open_in_private_tab": "Abrir en una pestaña privada",
+  "copy_image_address": "Copiar la dirección de la imagen",
+  "save_image_as": "Guardar imagen como…",
+  "search_selection": "Buscar «%1$s»",
+  "language": "Idioma",
+  "language_system": "Idioma del sistema",
+  "shortcuts": "Atajos de teclado",
+  "window_close": "Cerrar la ventana",
+  "window_minimize": "Minimizar",
+  "window_maximize": "Maximizar",
+  "support_open_page": "Apoyar Qafila",
+  "update_check": "Buscar actualizaciones",
+  "about_engine_desktop": "Electron %1$s · Chromium %2$s",
+  "downloads": "Descargas",
+  "download_done": "Descarga terminada: %1$s",
+  "find_placeholder": "Buscar en la página",
+  "find_count": "%1$d de %2$d",
+  "demo_mode": "Modo demo",
+  "support_coming_soon": "Próximamente",
+  "support_desktop_pitch": "Qafila es gratuito, sin anuncios ni rastreo. El apoyo se hace en una página de pago segura de Stripe (Apple Pay, Google Pay o tarjeta), abierta en tu navegador."
+}

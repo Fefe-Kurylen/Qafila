@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+  <title>Qafila</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Voile (10 %) derrière les popovers et écrans plein cadre -->
+  <div id="dim" hidden></div>
+  <!-- Barre flottante : faux verre (capture floutée de la page) + couleur de barre + liseré -->
+  <div id="bar" class="bar">
+    <div class="glass"><div class="glass-img"></div></div>
+    <div class="tint"></div>
+    <div class="rim"></div>
+    <div class="row" id="row"></div>
+    <div class="progress" id="progress"></div>
+  </div>
+  <!-- Surcouches (étape 1 : squelettes ; l'interface complète arrive à l'étape suivante) -->
+  <div id="menu" class="menu" hidden></div>
+  <section id="screen" class="screen" hidden></section>
+  <canvas id="composite" hidden></canvas>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
