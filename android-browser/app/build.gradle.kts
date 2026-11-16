@@ -27,6 +27,9 @@ fun javaLiteral(s: String) = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\""
 // Builds Google Play : abonnement natif tant que le programme d'offres externes de l'EEE n'est pas signé.
 // Une fois inscrit : gradle bundleRelease -Pqafila.stripeInStores=true
 val stripeInStores = (findProperty("qafila.stripeInStores") as? String)?.trim() == "true"
+// Captures d'écran Google Play : elles sont prises sur l'APK debug, qui doit alors montrer le canal
+// des stores (abonnement) et non Stripe : gradle assembleDebug -Pqafila.supportChannel=store
+val debugSupportChannel = (findProperty("qafila.supportChannel") as? String)?.trim()
 
 android {
     namespace = "fr.qafila.browser"
@@ -68,8 +71,9 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
-            // APK de test gratuit (hors Google Play) : soutien par le lien Stripe.
-            buildConfigField("boolean", "SUPPORT_VIA_STRIPE", "true")
+            // APK de test gratuit (hors Google Play) : soutien par le lien Stripe,
+            // sauf -Pqafila.supportChannel=store (captures de la fiche Google Play).
+            buildConfigField("boolean", "SUPPORT_VIA_STRIPE", (debugSupportChannel != "store").toString())
         }
     }
 
