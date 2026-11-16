@@ -20,10 +20,10 @@ export const S = {
 };
 
 // ----- Chaînes -----
+// Même règle que main/i18n.js : français à part, sinon règles CLDR (arabe : few de 3 à 10, many de 11 à 99…).
 function plural(lang, n) {
   if (lang === 'fr') return n <= 1 ? 'one' : 'many';
-  if (lang === 'ar') return n === 1 ? 'one' : n === 2 ? 'two' : 'other';
-  return n === 1 ? 'one' : 'other';
+  try { return new Intl.PluralRules(lang).select(n); } catch { return n === 1 ? 'one' : 'other'; }
 }
 
 /** t(clé, ...args) : gabarits Android (%d, %s, %1$s, %%), pluriels avec le nombre en premier argument. */

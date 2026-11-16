@@ -71,11 +71,13 @@ class TabManager extends EventEmitter {
     this.live = new Map();       // tabId → { loading, progress, canGoBack, canGoForward, blocked }
     this.readerActive = new Set();
     this.upgradedFrom = new Map(); // webContentsId → adresse http d'origine d'un passage forcé en https
-    this.httpOnlyHosts = new Set();
+    this.httpOnlyHosts = new Set();        // sites restés en http (https impossible), onglets ordinaires
+    this.privateHttpOnlyHosts = new Set(); // idem pour la navigation privée, oublié avec la dernière page privée
     this.lastGesture = new Map();  // webContentsId → instant du dernier clic / appui de touche dans la page
     this.externalPrompt = new Set(); // webContentsId dont une demande d'application externe est ouverte
     this.downloadState = new Map(); // webContentsId → { used, at } : téléchargements de l'onglet (geste / automatique)
     this.trustedNav = new Map();   // webContentsId → la navigation en cours vient du navigateur ou d'un geste
+    this.navSeq = new Map();       // webContentsId → nombre de navigations principales commencées
     this.popupGesture = new Map(); // webContentsId → instant du geste déjà consommé par une fenêtre surgissante
     this.crashReloads = new Map(); // tabId → instant du dernier rechargement après un plantage
     this.attached = null;        // onglet dont la vue est affichée
@@ -106,7 +108,7 @@ class TabManager extends EventEmitter {
     // 2) bloqueur : requêtes tierces vers les domaines publicitaires / traqueurs / bandeaux annulées.
     ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*'] }, (details, cb) => {
       if (details.resourceType === 'mainFrame') {
-        const upgraded = this.upgrade(details);
+        const upgraded = this.upgrade(details, ses !== this.persistent);
         return cb(upgraded ? { redirectURL: upgraded } : {});
       }
       cb(this.blocker.shouldBlock(details) ? { cancel: true } : {});
@@ -126,11 +128,14 @@ class TabManager extends EventEmitter {
     });
   }
 
+  /** Sites restés en http : un ensemble par type de session (rien de la navigation privée ne reste après elle). */
+  httpOnlyFor(isPrivate) { return isPrivate ? this.privateHttpOnlyHosts : this.httpOnlyHosts; }
+
   /** Adresse https à utiliser pour une navigation principale en http, ou null. */
-  upgrade(details) {
+  upgrade(details, isPrivate = false) {
     if (!details.url.startsWith('http://') || !this.store.settings.upgradeToHTTPS) return null;
     const host = hostOf(details.url);
-    if (!host || this.httpOnlyHosts.has(host) || host === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || host.startsWith('[') || host.endsWith('.local')) return null;
+    if (!host || this.httpOnlyFor(isPrivate).has(host) || host === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || host.startsWith('[') || host.endsWith('.local')) return null;
     this.upgradedFrom.set(details.webContentsId, details.url);
     return 'https://' + details.url.slice('http://'.length);
   }
@@ -150,6 +155,8 @@ class TabManager extends EventEmitter {
   dropPrivateData() {
     if (!this.private) return null;
     const s = this.private;
+    this.privateHttpOnlyHosts.clear();
+    this.emit('private-dropped');
     const run = () => Promise.all([
       s.closeAllConnections(), s.clearStorageData(), s.clearCache(), s.clearAuthCache(), s.clearHostResolverCache(),
     ].map((p) => Promise.resolve(p).catch(() => {})));
@@ -281,6 +288,7 @@ class TabManager extends EventEmitter {
     this.downloadState.delete(wc.id);
     this.trustedNav.delete(wc.id);
     this.popupGesture.delete(wc.id);
+    this.navSeq.delete(wc.id);
     this.views.delete(tabId);
     this.live.delete(tabId);
     this.readerActive.delete(tabId);
@@ -299,6 +307,7 @@ class TabManager extends EventEmitter {
     wc.on('did-start-navigation', (e) => {
       const { isMainFrame, isSameDocument, initiator, url } = e;
       if (!isMainFrame || isSameDocument) return;
+      this.navSeq.set(wc.id, (this.navSeq.get(wc.id) || 0) + 1);
       // Fichier déposé sur la page ou toute autre navigation vers file: : arrêtée, page d'erreur à la place.
       if (isFileURL(url)) {
         setImmediate(() => { if (!wc.isDestroyed()) { wc.stop(); this.showError(wc, this.t()('file_blocked'), url); } });
@@ -334,11 +343,14 @@ class TabManager extends EventEmitter {
       }
     });
     wc.on('did-navigate-in-page', (_e, url, isMainFrame) => { if (isMainFrame) { this.trackURL(tabId, url); navState(); } });
-    wc.on('did-redirect-navigation', (_e, url, _inPlace, isMainFrame) => {
+    // Session de l'onglet (privée ou non) : fixée à la création de la vue.
+    const isPrivate = !!this.store.tabs.find((x) => x.id === tabId)?.isPrivate;
+    wc.on('did-redirect-navigation', (e) => {
       // https a renvoyé vers http : on reste en http pour ce site, sans boucler.
+      const { url, isMainFrame } = e;
       if (!isMainFrame) return;
       const from = this.upgradedFrom.get(wc.id);
-      if (from && url.startsWith('http://') && hostOf(url) === hostOf(from)) { this.httpOnlyHosts.add(hostOf(url)); this.upgradedFrom.delete(wc.id); }
+      if (from && url.startsWith('http://') && hostOf(url) === hostOf(from)) { this.httpOnlyFor(isPrivate).add(hostOf(url)); this.upgradedFrom.delete(wc.id); }
     });
     wc.on('page-title-updated', (_e, title) => {
       if (this.isLocal(wc.getURL())) return;
@@ -364,7 +376,7 @@ class TabManager extends EventEmitter {
       if (from && validatedURL === from.replace(/^http:/, 'https:')) {
         // Le site n'existe pas en https : retour à l'adresse http d'origine.
         this.upgradedFrom.delete(wc.id);
-        this.httpOnlyHosts.add(hostOf(from));
+        this.httpOnlyFor(isPrivate).add(hostOf(from));
         wc.loadURL(from).catch(() => {});
         return;
       }
@@ -382,7 +394,8 @@ class TabManager extends EventEmitter {
       // Second plantage en moins d'une minute : page d'erreur plutôt qu'une boucle plantage / rechargement.
       this.showError(wc, this.t()('page_crashed'), tab.url || '');
     });
-    wc.on('will-navigate', (e, url) => {
+    wc.on('will-navigate', (e) => {
+      const { url } = e;
       let scheme = '';
       try { scheme = new URL(url).protocol; } catch { return; }
       if (scheme === 'file:') { e.preventDefault(); setImmediate(() => { if (!wc.isDestroyed()) this.showError(wc, this.t()('file_blocked'), url); }); return; }
@@ -640,11 +653,21 @@ class TabManager extends EventEmitter {
   }
   applyUserAgentToOpenTabs() { for (const id of this.views.keys()) this.applyUserAgent(id); }
 
-  /** Réglage JavaScript changé : les pages web ouvertes sont rechargées (le nouvel en-tête s'applique au rechargement). */
-  reloadForJavaScript() {
-    for (const [id, v] of this.views) {
-      const wc = v.webContents;
-      if (!wc.isDestroyed() && /^https?:/.test(wc.getURL())) { this.readerActive.delete(id); wc.reload(); }
+  /**
+   * Réglage JavaScript changé : les pages web ouvertes sont rechargées (le nouvel en-tête s'applique au rechargement).
+   * Limite de l'en-tête CSP : un document servi par un service worker (depuis son cache) ne passe pas par
+   * onHeadersReceived. Les service workers des sites concernés (tous si le réglage global est coupé) sont donc
+   * supprimés des deux sessions avant le rechargement. `hosts` : sites dont JavaScript vient d'être coupé.
+   */
+  async reloadForJavaScript(hosts = null) {
+    const sessions = [this.persistent, this.private].filter(Boolean);
+    const origins = hosts ? hosts.flatMap((h) => [`https://${h}`, `http://${h}`]) : [null];
+    // Pages à recharger fixées maintenant : une page partie ailleurs entre-temps n'est pas ramenée en arrière.
+    const before = new Map([...this.views].map(([id, v]) => [id, { wc: v.webContents, seq: this.navSeq.get(v.webContents.id) || 0 }]));
+    await Promise.all(sessions.flatMap((s) => origins.map((origin) => s.clearStorageData({ storages: ['serviceworkers'], ...(origin ? { origin } : {}) }).catch(() => {}))));
+    for (const [id, { wc, seq }] of before) {
+      if (wc.isDestroyed() || (this.navSeq.get(wc.id) || 0) !== seq) continue;
+      if (/^https?:/.test(wc.getURL())) { this.readerActive.delete(id); wc.reload(); }
     }
   }
 

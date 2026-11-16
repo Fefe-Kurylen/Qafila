@@ -188,6 +188,26 @@ test('raccourcis : Alt+D et F6 (champ d\'adresse), pavé numérique sans Verr. N
   assert.equal(shortcuts.resolve(key('Tab', { code: 'Tab', control: true }), 'win32'), 'nextTab');
 });
 
+test('raccourcis : AZERTY Ctrl+- (touche 6) = zoom arrière ; macOS français ⌘ + touches [ ] = Précédent / Suivant', () => {
+  assert.equal(shortcuts.resolve(key('-', { code: 'Digit6', control: true }), 'win32'), 'zoomOut');
+  assert.equal(shortcuts.resolve(key('=', { code: 'Equal', control: true }), 'win32'), 'zoomIn');
+  assert.equal(shortcuts.resolve(key('+', { code: 'Equal', control: true, shift: true }), 'win32'), 'zoomIn');
+  assert.equal(shortcuts.resolve(key('(', { code: 'Digit5', control: true }), 'win32'), 'tab:5');
+  assert.equal(shortcuts.resolve(key('Dead', { code: 'BracketLeft', meta: true }), 'darwin'), 'back');
+  assert.equal(shortcuts.resolve(key('$', { code: 'BracketRight', meta: true }), 'darwin'), 'forward');
+  assert.equal(shortcuts.resolve(key('Dead', { code: 'BracketLeft', control: true }), 'win32'), null);
+});
+
+test('pluriels : arabe few / many (Intl.PluralRules), français inchangé', () => {
+  const i18n = require('../main/i18n.js');
+  const ar = i18n.translator('ar');
+  assert.ok(ar('close_n_tabs', 8).includes('علامات'), ar('close_n_tabs', 8));
+  assert.notEqual(ar('close_n_tabs', 8), ar('close_n_tabs', 100));
+  const fr = i18n.translator('fr');
+  assert.ok(!fr('close_n_tabs', 0).includes('onglets'), fr('close_n_tabs', 0));
+  assert.ok(fr('close_n_tabs', 2).includes('onglets'), fr('close_n_tabs', 2));
+});
+
 // ----- Identifiant de l'application : égal à build.appId (raccourcis NSIS, épinglage Windows) -----
 test('APP_ID = build.appId de package.json', () => {
   const pkg = require('../package.json');

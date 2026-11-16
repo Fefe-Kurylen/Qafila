@@ -46,11 +46,15 @@ function resolve(input, platform = process.platform) {
   if (key === 'F12') return 'devtools';
   if (mod && key === 'i' && (mac ? alt : shift)) return 'devtools';
   if (!mod) return null;
+  // Zoom par le caractère avant les chiffres : en AZERTY, « - » est sur la touche 6 (Digit6), « = » et « + » ailleurs.
+  if (!alt && (key === '-' || key === '+' || key === '=')) return key === '-' ? 'zoomOut' : 'zoomIn';
   // Chiffres par position physique (Ctrl+1…9, Ctrl+0) : indépendants de la disposition (AZERTY : « & », « é »…).
   // Pavé numérique : seulement s'il donne un chiffre (Verr. Num. éteint, Ctrl+Fin ou Ctrl+Inser restent à la page).
   const digit = /^(Digit|Numpad)([0-9])$/.exec(input.code || '');
   if (digit && !shift && !alt && (digit[1] === 'Digit' || /^[0-9]$/.test(String(input.key || '')))) return digit[2] === '0' ? 'zoomReset' : `tab:${digit[2]}`;
   if (mac && alt && !shift && (key === 'ArrowLeft' || key === 'ArrowRight')) return key === 'ArrowLeft' ? 'prevTab' : 'nextTab';
+  // macOS : ⌘[ / ⌘] par la touche physique (clavier français : « ^ » touche morte et « $ », « [ » demande ⌥).
+  if (mac && !shift && !alt && (input.code === 'BracketLeft' || input.code === 'BracketRight')) return input.code === 'BracketLeft' ? 'back' : 'forward';
   if (mac && shift && !alt && (key === '{' || key === '}' || input.code === 'BracketLeft' || input.code === 'BracketRight')) {
     return key === '{' || (key !== '}' && input.code === 'BracketLeft') ? 'prevTab' : 'nextTab';
   }

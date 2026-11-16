@@ -6,6 +6,8 @@
 const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, session, Menu, dialog, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
+const { execFile } = require('node:child_process');
 const { Store } = require('./store');
 const { TabManager, hostOf, desktopUserAgent } = require('./tabs');
 const { Blocker } = require('./blocker');
@@ -277,6 +279,7 @@ function closeTab(id) {
   const tab = Q.store.removeTab(id);
   if (!tab) return;
   Q.tabs.discard(id);
+  popupNotices.delete(id);
   if (tab.isPrivate && !Q.store.tabs.some((t) => t.isPrivate)) Q.tabs.dropPrivateData();
   if (!Q.store.tabs.length) newTab(); else showSelected();
   broadcast();
@@ -387,7 +390,10 @@ async function clearData() {
   Q.store.closedTabs = [];
   Q.favicons?.entries.clear();
   Q.tabs.httpOnlyHosts.clear();
+  Q.tabs.privateHttpOnlyHosts.clear();
   downloadSites.clear();
+  privateDownloadSites.clear();
+  blockedNotified.clear();
   broadcast();
   return true;
 }
@@ -397,7 +403,9 @@ function onSettingChanged(key) {
   if (key === 'appearance') nativeTheme.themeSource = s.appearance;
   if (key === 'toolbar' || key === 'scrollBehavior') { Q.collapse = 'none'; Q.scrollAcc = 0; layout(); }
   // JavaScript : appliqué à chaque navigation (en-tête CSP) ; les pages ouvertes sont rechargées pour le prendre en compte.
-  if (key === 'javascriptEnabled' || key === 'javascriptDisabledHosts') Q.tabs.reloadForJavaScript();
+  // Service workers des sites dont JavaScript est coupé supprimés d'abord (voir TabManager.reloadForJavaScript).
+  if (key === 'javascriptEnabled') Q.tabs.reloadForJavaScript(s.javascriptEnabled ? [] : null);
+  if (key === 'javascriptDisabledHosts') Q.tabs.reloadForJavaScript(s.javascriptDisabledHosts || []);
   if (key === 'textZoom') Q.tabs.applyZoom();
   if (key === 'language') { Q.t = null; translator(); Q.tabs.refreshStartPages(); }
   if (['darkenSites', 'darkenOnlyInDarkMode', 'darkenHosts'].includes(key)) Q.tabs.refreshDarken();
@@ -505,29 +513,84 @@ function downloadFolder() {
   return app.getPath('downloads');
 }
 
-/** Chemin libre dans le dossier : « nom.ext », puis « nom (1).ext », « nom (2).ext »… */
+// Chemins promis à des téléchargements encore en cours : deux fichiers du même nom lancés ensemble (double clic,
+// deux pièces jointes « document.pdf ») ne s'écrasent jamais. Windows et macOS ignorent la casse.
+const reservedPaths = new Set();
+const pathKey = (p) => (process.platform === 'linux' ? p : p.toLowerCase());
+
+/** Nom de fichier sans caractère interdit (Windows compris), 200 caractères au plus. */
+function safeFilename(filename) {
+  return String(filename || 'download').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200) || 'download';
+}
+
+/** Chemin libre dans le dossier : « nom.ext », puis « nom (1).ext », « nom (2).ext »… (ni sur le disque ni réservé). */
 function uniquePath(dir, filename) {
-  const safe = String(filename || 'download').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200) || 'download';
+  const safe = safeFilename(filename);
   const ext = path.extname(safe);
   const stem = safe.slice(0, safe.length - ext.length);
+  const taken = (p) => fs.existsSync(p) || reservedPaths.has(pathKey(p));
   let candidate = path.join(dir, safe);
-  for (let i = 1; fs.existsSync(candidate) && i < 1000; i++) candidate = path.join(dir, `${stem} (${i})${ext}`);
+  for (let i = 1; taken(candidate) && i < 1000; i++) candidate = path.join(dir, `${stem} (${i})${ext}`);
   return candidate;
 }
 
-// Téléchargements automatiques répétés (sans geste de l'utilisateur) : décision par site pour la session.
+// Zone d'attente : un téléchargement qui attend la réponse de l'utilisateur n'est jamais écrit sous son nom final.
+// (Chromium écrit le fichier entier même mis en pause dans « will-download ».) Dossier temporaire propre au profil,
+// vidé au démarrage : une seule instance par profil (requestSingleInstanceLock).
+function pendingDir() {
+  const tag = crypto.createHash('sha256').update(app.getPath('userData')).digest('hex').slice(0, 12);
+  return path.join(app.getPath('temp'), `qafila-pending-${tag}`);
+}
+function clearPendingDir() { try { fs.rmSync(pendingDir(), { recursive: true, force: true }); } catch { /* fichier verrouillé : ignoré */ } }
+
+/** Déplace un fichier confirmé de la zone d'attente vers le dossier de téléchargement (copie si autre volume). */
+async function moveIntoPlace(src, name) {
+  const dir = downloadFolder();
+  await fs.promises.mkdir(dir, { recursive: true }).catch(() => {});
+  const dest = uniquePath(dir, name);
+  try { await fs.promises.rename(src, dest); } catch {
+    await fs.promises.copyFile(src, dest, fs.constants.COPYFILE_EXCL);
+    await fs.promises.unlink(src).catch(() => {});
+  }
+  return dest;
+}
+
+/**
+ * Marque d'origine Internet (Chromium la pose par un service qu'Electron ne branche pas) : Windows, flux
+ * Zone.Identifier (SmartScreen, mode protégé d'Office, blocage des macros) ; macOS, attribut com.apple.quarantine
+ * (Gatekeeper). L'adresse source n'est jamais écrite pour un téléchargement privé. Volume FAT ou erreur : ignoré.
+ */
+function markFromInternet(file, url, isPrivate) {
+  const web = /^https?:\/\//i.test(String(url || '')) && !isPrivate;
+  if (process.platform === 'win32') {
+    try { fs.writeFileSync(`${file}:Zone.Identifier`, `[ZoneTransfer]\r\nZoneId=3\r\n${web ? `HostUrl=${url}\r\n` : ''}`); } catch { /* volume sans flux NTFS */ }
+  } else if (process.platform === 'darwin') {
+    const value = `0081;${Math.floor(Date.now() / 1000).toString(16)};Qafila;`;
+    execFile('/usr/bin/xattr', ['-w', 'com.apple.quarantine', value, file], () => { /* échec : ignoré */ });
+  }
+}
+
+// Téléchargements automatiques sans geste de l'utilisateur : décision par site pour la session. La navigation privée a
+// ses propres décisions, oubliées avec la dernière page privée.
 const downloadSites = new Map(); // hôte → true | false | Promise<boolean> (question en cours)
+const privateDownloadSites = new Map();
+const sitesFor = (isPrivate) => (isPrivate ? privateDownloadSites : downloadSites);
+const riskyPrompts = new Set();   // webContents dont une question « fichier exécutable » est ouverte
+const blockedNotified = new Set(); // « priv:hôte » / « hôte » déjà signalés comme bloqués (un seul message par site)
+const MAX_WAITING_PER_SITE = 5;    // fichiers en zone d'attente par site pendant une question ; au-delà, annulés
+const waitingBySite = new Map();
 
 /** Demande une seule fois par site s'il peut télécharger plusieurs fichiers (règle de Chrome). */
-function allowMultipleDownloads(host) {
-  if (downloadSites.has(host)) return Promise.resolve(downloadSites.get(host));
+function allowMultipleDownloads(host, isPrivate) {
+  const sites = sitesFor(isPrivate);
+  if (sites.has(host)) return Promise.resolve(sites.get(host));
   const t = translator();
   const asked = dialog.showMessageBox(Q.win, {
     type: 'question', buttons: [t('download_allow'), t('download_block')], defaultId: 1, cancelId: 1, noLink: true,
     message: t('download_multiple', host),
   }).then((r) => r.response === 0, () => false);
-  downloadSites.set(host, asked);
-  return asked.then((ok) => { downloadSites.set(host, ok); return ok; });
+  sites.set(host, asked);
+  return asked.then((ok) => { sites.set(host, ok); return ok; });
 }
 
 // Fichiers capables d'exécuter du code ou d'ouvrir autre chose (Windows d'abord, puis macOS et Linux). Sans geste
@@ -544,51 +607,118 @@ function pageHost(wc) {
   try { return new URL(u).host || u.slice(0, 80); } catch { return u.slice(0, 80); }
 }
 
-function onDownload(item, wc) {
+/**
+ * Nouveau téléchargement. Libre (geste de l'utilisateur, premier fichier automatique d'une page) : écrit directement
+ * sous un nom unique du dossier. Sinon il part en zone d'attente et n'arrive dans le dossier que si l'utilisateur
+ * accepte ET que le fichier est complet ; refusé, il est supprimé. Une seule question « fichier exécutable » à la
+ * fois par page ; un refus vaut pour le site pendant la session (les suivants sont annulés sans question).
+ */
+function onDownload(item, wc, isPrivate) {
   const t = translator();
-  const dir = downloadFolder();
-  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* repli : dialogue d'Electron */ }
-  const file = uniquePath(dir, item.getFilename());
-  item.setSavePath(file);
+  const name = safeFilename(item.getFilename());
   const key = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const name = path.basename(file);
-  const start = () => {
-    downloads.set(key, { name, received: 0, total: item.getTotalBytes(), state: 'progressing' });
+  const live = !!(wc && !wc.isDestroyed());
+  const sites = sitesFor(isPrivate);
+  const notifyBlocked = (host) => {
+    const k = `${isPrivate ? 'priv:' : ''}${host}`;
+    if (blockedNotified.has(k)) return;
+    blockedNotified.add(k);
+    command('toast', { text: t('download_blocked', host) });
+  };
+
+  // 1) Décision : null = libre ; sinon promesse de la réponse (true : garder).
+  let decision = null;
+  let site = '';
+  let refused = false;
+  const risky = RISKY_EXTENSIONS.has(path.extname(name).slice(1).toLowerCase()) && !(live && Q.tabs.recentGesture(wc));
+  if (risky) {
+    site = pageHost(wc);
+    if (sites.get(site) === false) { refused = true; notifyBlocked(site); }
+    else if (live && riskyPrompts.has(wc.id)) refused = true; // question déjà ouverte pour cette page : annulé sans bruit
+    else {
+      const wcId = live ? wc.id : 0;
+      if (wcId) riskyPrompts.add(wcId);
+      decision = dialog.showMessageBox(Q.win, {
+        type: 'warning', buttons: [t('download_keep'), t('cancel')], defaultId: 1, cancelId: 1, noLink: true,
+        message: t('download_risky', site, name),
+      }).then((r) => r.response === 0, () => false).then((ok) => {
+        riskyPrompts.delete(wcId);
+        if (!ok) { sites.set(site, false); command('toast', { text: t('download_canceled', name) }); }
+        return ok;
+      });
+    }
+  } else {
+    // Un geste (clic, touche) = un téléchargement ; le premier téléchargement automatique d'une page passe aussi.
+    const verdict = Q.tabs.downloadVerdict(wc);
+    if (verdict.ask) {
+      site = verdict.host;
+      if (sites.get(site) === false) { refused = true; notifyBlocked(site); }
+      else if ((waitingBySite.get(site) || 0) >= MAX_WAITING_PER_SITE) refused = true;
+      else decision = allowMultipleDownloads(site, isPrivate).then((ok) => { if (!ok) notifyBlocked(site); return ok; });
+    }
+  }
+
+  // 2) Destination : nom final réservé (libre) ou fichier anonyme de la zone d'attente (question, refus).
+  const gated = refused || !!decision;
+  let file;
+  if (gated) {
+    try { fs.mkdirSync(pendingDir(), { recursive: true }); } catch { /* repli : écriture refusée plus bas */ }
+    file = path.join(pendingDir(), crypto.randomUUID());
+  } else {
+    const dir = downloadFolder();
+    try { fs.mkdirSync(dir, { recursive: true }); } catch { /* repli : dialogue d'Electron */ }
+    file = uniquePath(dir, name);
+    reservedPaths.add(pathKey(file));
+  }
+  item.setSavePath(file);
+  if (refused) { item.cancel(); fs.promises.unlink(file).catch(() => {}); return; }
+
+  const track = () => {
+    downloads.set(key, { name, received: item.getReceivedBytes(), total: item.getTotalBytes(), state: 'progressing' });
     command('toast', { text: t('download_started', name) });
     broadcast();
   };
   item.on('updated', () => { const d = downloads.get(key); if (d) { d.received = item.getReceivedBytes(); d.total = item.getTotalBytes(); broadcast(); } });
-  item.once('done', (_e, state) => {
+
+  // 3) Fin : il faut l'état final de Chromium et, en zone d'attente, la réponse de l'utilisateur.
+  let ended = null;
+  let accepted = gated ? null : true;
+  const settle = async () => {
+    if (ended === null || accepted === null) return;
     const tracked = downloads.delete(key);
-    if (state === 'completed') {
-      command('toast', { text: t('download_done', name) });
-      if (process.platform === 'darwin') app.dock?.downloadFinished(file);
-    } else if (state !== 'cancelled' && tracked) command('toast', { text: t('download_failed', name) });
-    lastDownload = state === 'completed' ? file : lastDownload;
+    if (!gated) reservedPaths.delete(pathKey(file));
+    if (accepted && ended === 'completed') {
+      let dest = file;
+      if (gated) {
+        try { dest = await moveIntoPlace(file, name); } catch {
+          fs.promises.unlink(file).catch(() => {});
+          command('toast', { text: t('download_failed', name) });
+          broadcast();
+          return;
+        }
+      }
+      markFromInternet(dest, item.getURL(), isPrivate);
+      command('toast', { text: t('download_done', path.basename(dest)) });
+      if (process.platform === 'darwin') app.dock?.downloadFinished(dest);
+      lastDownload = dest;
+    } else {
+      if (gated) fs.promises.unlink(file).catch(() => {});
+      if (accepted && ended !== 'cancelled' && tracked) command('toast', { text: t('download_failed', name) });
+    }
     broadcast();
-  });
-  // Fichier exécutable sans geste récent : confirmation explicite, Annuler par défaut.
-  const risky = RISKY_EXTENSIONS.has(path.extname(name).slice(1).toLowerCase()) && !(wc && !wc.isDestroyed() && Q.tabs.recentGesture(wc));
-  if (risky) {
-    const host = pageHost(wc);
-    item.pause();
-    dialog.showMessageBox(Q.win, {
-      type: 'warning', buttons: [t('download_keep'), t('cancel')], defaultId: 1, cancelId: 1, noLink: true,
-      message: t('download_risky', host, name),
-    }).then((r) => r.response === 0, () => false).then((ok) => {
-      if (item.getState() !== 'progressing') return;
-      if (ok) { start(); item.resume(); } else { item.cancel(); command('toast', { text: t('download_canceled', name) }); }
-    });
-    return;
-  }
-  // Un geste (clic, touche) = un téléchargement ; le premier téléchargement automatique d'une page passe aussi.
-  // Au-delà, le fichier attend en pause la réponse (une fois par site) ; refusé, il est annulé avec un message.
-  const verdict = Q.tabs.downloadVerdict(wc);
-  if (!verdict.ask) { start(); return; }
-  item.pause();
-  allowMultipleDownloads(verdict.host).then((ok) => {
-    if (item.getState() !== 'progressing') return;
-    if (ok) { start(); item.resume(); } else { item.cancel(); command('toast', { text: t('download_blocked', verdict.host) }); }
+  };
+  item.once('done', (_e, state) => { ended = state; settle(); });
+
+  if (!gated) { track(); return; }
+  item.pause(); // n'empêche pas l'écriture (zone d'attente), mais économise le réseau en attendant la réponse
+  waitingBySite.set(site, (waitingBySite.get(site) || 0) + 1);
+  decision.then((ok) => {
+    waitingBySite.set(site, Math.max(0, (waitingBySite.get(site) || 1) - 1));
+    accepted = ok;
+    if (ended === null) {
+      if (ok) { track(); item.resume(); } else item.cancel();
+    }
+    settle();
   });
 }
 let lastDownload = null;
@@ -636,6 +766,7 @@ ipcMain.on('qafila:test:composited', (e, msg) => {
   const cb = Q.pending.get(id); if (cb) { Q.pending.delete(id); cb(dataURL); } });
 
 // ----- Fenêtre -----
+const popupNotices = new Map(); // onglet → { shown, at } : message « fenêtre surgissante bloquée » (voir createWindow)
 /**
  * Menu de l'application. macOS : menus standard (Qafila, Édition, Présentation, Fenêtre) : Cmd+C / V / X / A / Z
  * et Cmd+Q passent par leurs rôles. Windows / Linux : aucune barre de menus ; Chromium y gère lui-même les raccourcis
@@ -724,9 +855,17 @@ function createWindow() {
   Q.tabs.on('status', (id, url) => { if (id === Q.store.selected) Q.chrome.webContents.send('qafila:status', url); });
   Q.tabs.on('input', shortcut);
   Q.tabs.on('fullscreen', (on, host) => onPageFullscreen(on, host));
-  Q.tabs.on('popup-blocked', (id) => { if (id === Q.store.selected) command('toast', { text: translator()('popup_blocked') }); });
+  // Fenêtre surgissante bloquée : un seul message par page affichée et au plus un toutes les 10 s par onglet (le
+  // message remplace un instant le domaine dans la barre : une page ne doit pas pouvoir le cacher en boucle).
+  Q.tabs.on('popup-blocked', (id) => {
+    const now = Date.now();
+    const last = popupNotices.get(id);
+    if (id !== Q.store.selected || (last && (last.shown || now - last.at < 10000))) return;
+    popupNotices.set(id, { shown: true, at: now });
+    command('toast', { text: translator()('popup_blocked') });
+  });
   Q.tabs.on('edge', onPageEdge);
-  Q.tabs.on('navigated', (id) => { if (id === Q.store.selected) setCollapse('none'); });
+  Q.tabs.on('navigated', (id) => { const n = popupNotices.get(id); if (n) n.shown = false; if (id === Q.store.selected) setCollapse('none'); });
   Q.tabs.on('zoom', (dir) => zoom(dir === 'in' ? 10 : -10));
 
   Q.store.on('change', broadcast);
@@ -748,7 +887,8 @@ function createWindow() {
 
   // Téléchargements : dossier par défaut (réglage « downloadFolder », sinon Téléchargements du système), sans dialogue,
   // nom unique, notification dans la barre (début, fin, échec) et progression dans l'état poussé au chrome.
-  Q.tabs.on('download', (item, wc) => onDownload(item, wc));
+  Q.tabs.on('download', (item, wc, isPrivate) => onDownload(item, wc, isPrivate));
+  Q.tabs.on('private-dropped', () => { privateDownloadSites.clear(); for (const k of blockedNotified) if (k.startsWith('priv:')) blockedNotified.delete(k); });
 
   Q.chrome.webContents.once('did-finish-load', () => {
     layout();
@@ -769,6 +909,7 @@ function urlsFromArgv(list) {
 if (GOT_LOCK) app.whenReady().then(async () => {
   Q.store = new Store(app.getPath('userData'), { ephemeral: DEMO });
   Q.store.load();
+  clearPendingDir(); // téléchargements jamais confirmés lors d'une session précédente
   if (DEMO) demo.applyDemo(Q.store, { dark: DEMO_DARK, language: typeof arg('lang') === 'string' ? arg('lang') : 'fr' });
   nativeTheme.themeSource = Q.store.settings.appearance || 'system';
   if (!Q.store.tabs.length) Q.store.addTab({ url: search.newTabURL(Q.store.settings) });
@@ -1043,6 +1184,8 @@ async function hostileChecks(report, wait, set) {
       await wait(2600);
     } finally { Q.tabs.downloadVerdict = original; }
     if (verdicts.length < 3 || verdicts[0] !== 'libre' || verdicts.slice(1).some((v) => v !== 'demande')) fail(`téléchargements en boucle : verdicts [${verdicts.join(', ')}]`);
+    const looped = fs.readdirSync(path.join(SMOKE_DIR, 'downloads')).filter((f) => /^f\d\.bin$/.test(f));
+    if (looped.join() !== 'f0.bin') fail(`téléchargements en boucle : fichiers enregistrés [${looped.join(', ')}] au lieu de f0.bin`);
     // 3) JavaScript coupé pour localhost : la redirection 127.0.0.1 → localhost n'exécute pas le script.
     await twc.loadURL('about:blank').catch(() => {});
     set('javascriptDisabledHosts', ['localhost']);
@@ -1085,20 +1228,44 @@ async function hostileChecks(report, wait, set) {
     await sugg();
     const sent = await sugg();
     if (sent !== '') fail(`suggestions : cookie renvoyé au moteur (« ${sent} »)`);
-    // 8) Exécutable sans geste : confirmation demandée ; refusé, rien n'est enregistré.
+    // 8) Exécutables sans geste : une seule question par page à la fois (trois liens cliqués par script), réponse
+    // donnée après la fin du transfert (Chromium écrit le fichier même en pause) ; refusé, rien dans le dossier ni
+    // dans la zone d'attente, et le site n'est plus questionné ; accepté (autre site), le fichier arrive dans le dossier.
+    const dlDir = path.join(SMOKE_DIR, 'downloads');
+    const exes = () => fs.readdirSync(dlDir).filter((f) => /^setup.*\.exe$/.test(f));
+    const pendingLeft = () => { try { return fs.readdirSync(pendingDir()).length; } catch { return 0; } };
     const asked = [];
+    let answer = 1;
     const showBox = dialog.showMessageBox;
-    dialog.showMessageBox = (...a) => { asked.push(a[a.length - 1]?.message || ''); return Promise.resolve({ response: 1 }); };
+    dialog.showMessageBox = (...a) => { asked.push(a[a.length - 1]?.message || ''); const r = answer; return new Promise((ok) => setTimeout(() => ok({ response: r }), 900)); };
+    downloadSites.delete(`127.0.0.1:${port}`); // décision « bloquer » du contrôle 2 oubliée
+    const clickThree = 'for (let i = 0; i < 3; i++) { const a = document.createElement("a"); a.href = "/setup.exe?" + i; a.download = ""; document.body.append(a); a.click(); } 1';
     try {
       await twc.loadURL(`${base}/js`).catch(() => {});
       await wait(500);
       Q.tabs.lastGesture.delete(twc.id);
       Q.tabs.downloadState.delete(twc.id);
-      await twc.executeJavaScript(`location.href = '/setup.exe'; 1`, true).catch(() => {});
+      await twc.executeJavaScript(clickThree, true).catch(() => {});
+      await wait(2200);
+      if (asked.length !== 1 || !asked[0].includes('setup.exe')) fail(`exécutable sans geste : ${asked.length} question(s) pour 3 fichiers`);
+      if (exes().length) fail(`exécutable sans geste : ${exes().join(', ')} enregistré(s) malgré le refus`);
+      if (pendingLeft()) fail(`exécutable sans geste : ${pendingLeft()} fichier(s) laissé(s) en zone d'attente`);
+      // Site déjà refusé : plus aucune question.
+      await twc.executeJavaScript(clickThree, true).catch(() => {});
       await wait(1500);
-    } finally { dialog.showMessageBox = showBox; }
-    if (asked.length !== 1 || !asked[0].includes('setup.exe')) fail(`exécutable sans geste : ${asked.length} question(s)`);
-    if (fs.existsSync(path.join(SMOKE_DIR, 'downloads', 'setup.exe'))) fail('exécutable sans geste : fichier enregistré malgré le refus');
+      if (asked.length !== 1) fail(`exécutable sans geste : site refusé questionné de nouveau (${asked.length})`);
+      if (exes().length || pendingLeft()) fail('exécutable sans geste : fichier écrit après refus du site');
+      // Accepté sur un autre site : le fichier complet arrive sous son nom, la zone d'attente est vide.
+      answer = 0;
+      await twc.loadURL(`http://localhost:${port}/js`).catch(() => {});
+      await wait(500);
+      Q.tabs.lastGesture.delete(twc.id);
+      await twc.executeJavaScript('location.href = "/setup.exe"; 1', true).catch(() => {});
+      await wait(2200);
+      if (asked.length !== 2) fail(`exécutable accepté : ${asked.length - 1} question(s)`);
+      if (exes().join() !== 'setup.exe' || fs.readFileSync(path.join(dlDir, 'setup.exe'), 'utf8') !== 'MZ') fail(`exécutable accepté : dossier [${exes().join(', ')}]`);
+      if (pendingLeft()) fail('exécutable accepté : zone d\'attente non vidée');
+    } finally { dialog.showMessageBox = showBox; downloadSites.delete(`localhost:${port}`); }
   } finally {
     set('javascriptEnabled', saved.js);
     set('javascriptDisabledHosts', saved.hosts);

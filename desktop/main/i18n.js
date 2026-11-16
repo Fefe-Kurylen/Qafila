@@ -37,10 +37,11 @@ function format(template, args) {
   });
 }
 
+// Forme plurielle : règle propre aux chaînes Android françaises (0 et 1 au singulier), sinon règles CLDR (arabe :
+// zero, one, two, few de 3 à 10, many de 11 à 99, other). Une forme absente retombe sur other, many puis one.
 function pluralForm(lang, n) {
   if (lang === 'fr') return n <= 1 ? 'one' : 'many';
-  if (lang === 'ar') return n === 1 ? 'one' : n === 2 ? 'two' : 'other';
-  return n === 1 ? 'one' : 'other';
+  try { return new Intl.PluralRules(lang).select(n); } catch { return n === 1 ? 'one' : 'other'; }
 }
 
 /** Crée un traducteur pour une langue : t(clé, ...args) ; les pluriels prennent le nombre en premier argument. */
