@@ -661,7 +661,7 @@ class TabManager extends EventEmitter {
    */
   async reloadForJavaScript(hosts = null) {
     const sessions = [this.persistent, this.private].filter(Boolean);
-    const origins = hosts ? hosts.flatMap((h) => [`https://${h}`, `http://${h}`]) : [null];
+    const origins = hosts ? this.originsOfHosts(hosts) : [null];
     // Pages à recharger fixées maintenant : une page partie ailleurs entre-temps n'est pas ramenée en arrière.
     const before = new Map([...this.views].map(([id, v]) => [id, { wc: v.webContents, seq: this.navSeq.get(v.webContents.id) || 0 }]));
     await Promise.all(sessions.flatMap((s) => origins.map((origin) => s.clearStorageData({ storages: ['serviceworkers'], ...(origin ? { origin } : {}) }).catch(() => {}))));
@@ -669,6 +669,23 @@ class TabManager extends EventEmitter {
       if (wc.isDestroyed() || (this.navSeq.get(wc.id) || 0) !== seq) continue;
       if (/^https?:/.test(wc.getURL())) { this.readerActive.delete(id); wc.reload(); }
     }
+  }
+
+  /**
+   * Origines (port compris) connues pour ces noms d'hôte : ports par défaut, pages ouvertes, onglets, historique,
+   * favoris et service workers en cours. Le réglage JavaScript vaut pour le nom d'hôte sans le port
+   * (https://nas.example:8443 compris) : le service worker de chaque port doit partir.
+   */
+  originsOfHosts(hosts) {
+    const wanted = new Set(hosts.map((h) => String(h).toLowerCase()));
+    const origins = new Set([...wanted].flatMap((h) => [`https://${h}`, `http://${h}`]));
+    const add = (url) => { try { const u = new URL(url); if (/^https?:$/.test(u.protocol) && wanted.has(u.hostname.toLowerCase())) origins.add(u.origin); } catch { /* adresse invalide */ } };
+    for (const v of this.views.values()) { try { add(v.webContents.getURL()); } catch { /* vue détruite */ } }
+    for (const list of [this.store.tabs, this.store.history, this.store.bookmarks]) for (const x of list || []) add(x?.url);
+    for (const s of [this.persistent, this.private].filter(Boolean)) {
+      try { for (const w of Object.values(s.serviceWorkers.getAllRunning())) add(w.scope); } catch { /* API absente */ }
+    }
+    return [...origins];
   }
 
   isJavaScriptEnabled(url) { const s = this.store.settings; if (!s.javascriptEnabled) return false; const h = hostOf(url || ''); return !h || !(s.javascriptDisabledHosts || []).includes(h); }

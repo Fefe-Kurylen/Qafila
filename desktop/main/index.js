@@ -19,6 +19,7 @@ const demo = require('./demo');
 const { FaviconCache } = require('./favicon');
 const shortcuts = require('./shortcuts');
 const { APP_ID } = require('./app-id');
+const { safeFilename, extensionOf, zoneIdentifier } = require('./filename');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -518,11 +519,6 @@ function downloadFolder() {
 const reservedPaths = new Set();
 const pathKey = (p) => (process.platform === 'linux' ? p : p.toLowerCase());
 
-/** Nom de fichier sans caractère interdit (Windows compris), 200 caractères au plus. */
-function safeFilename(filename) {
-  return String(filename || 'download').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200) || 'download';
-}
-
 /** Chemin libre dans le dossier : « nom.ext », puis « nom (1).ext », « nom (2).ext »… (ni sur le disque ni réservé). */
 function uniquePath(dir, filename) {
   const safe = safeFilename(filename);
@@ -534,25 +530,78 @@ function uniquePath(dir, filename) {
   return candidate;
 }
 
-// Zone d'attente : un téléchargement qui attend la réponse de l'utilisateur n'est jamais écrit sous son nom final.
-// (Chromium écrit le fichier entier même mis en pause dans « will-download ».) Dossier temporaire propre au profil,
-// vidé au démarrage : une seule instance par profil (requestSingleInstanceLock).
-function pendingDir() {
+// Zone d'attente : un téléchargement qui attend la réponse de l'utilisateur n'est jamais écrit sous son nom final
+// (Chromium écrit le fichier entier même mis en pause dans « will-download »). Sous-dossier caché du dossier de
+// téléchargement : même volume, donc le déplacement final est un renommage (ni copie, ni place prise ailleurs : /tmp
+// en mémoire sous Linux, %TEMP% sur C: quand les téléchargements vont sur D:). Propre au profil (une seule instance
+// par profil), privé (0700, à soi, jamais un lien ni un dossier créé par un autre compte : sinon repli dans le
+// profil), vidé au démarrage et à la fermeture, supprimé dès qu'il est vide.
+const pendingUse = new Map(); // zone d'attente → fichiers en cours d'utilisation
+function pendingDir(folder = downloadFolder()) {
   const tag = crypto.createHash('sha256').update(app.getPath('userData')).digest('hex').slice(0, 12);
-  return path.join(app.getPath('temp'), `qafila-pending-${tag}`);
+  return path.join(folder, `.qafila-pending-${tag}`);
 }
-function clearPendingDir() { try { fs.rmSync(pendingDir(), { recursive: true, force: true }); } catch { /* fichier verrouillé : ignoré */ } }
+const fallbackPendingDir = () => path.join(app.getPath('userData'), 'pending');
 
-/** Déplace un fichier confirmé de la zone d'attente vers le dossier de téléchargement (copie si autre volume). */
+/** Prend une place dans une zone d'attente sûre pour le dossier de téléchargement actuel (null : aucune). */
+function acquirePendingDir() {
+  for (const dir of [pendingDir(), fallbackPendingDir()]) {
+    try {
+      fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+      const st = fs.lstatSync(dir);
+      if (!st.isDirectory() || st.isSymbolicLink()) continue;
+      if (process.platform !== 'win32') {
+        if (st.uid !== process.getuid()) continue;
+        if (st.mode & 0o077) fs.chmodSync(dir, 0o700);
+      } else if (!pendingUse.has(dir)) {
+        execFile(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'attrib.exe'), ['+h', dir], { windowsHide: true }, () => { /* échec : ignoré */ });
+      }
+      pendingUse.set(dir, (pendingUse.get(dir) || 0) + 1);
+      return dir;
+    } catch { /* dossier en lecture seule : suivant */ }
+  }
+  return null;
+}
+/** Rend la place ; zone vide : supprimée (synchrone, donc jamais pendant qu'un autre téléchargement la prend). */
+function releasePendingDir(dir) {
+  const n = (pendingUse.get(dir) || 1) - 1;
+  if (n > 0) { pendingUse.set(dir, n); return; }
+  pendingUse.set(dir, 0);
+  try { fs.rmdirSync(dir); } catch { /* pas encore vide (Chromium) : vidée à la fermeture */ }
+}
+function clearPendingDirs() {
+  const dirs = new Set([...pendingUse.keys(), fallbackPendingDir()]);
+  try { dirs.add(pendingDir()); } catch { /* réglages pas encore chargés */ }
+  for (const dir of dirs) {
+    try { if (!fs.lstatSync(dir).isSymbolicLink()) fs.rmSync(dir, { recursive: true, force: true }); } catch { /* absent ou verrouillé : ignoré */ }
+  }
+}
+
+/**
+ * Déplace un fichier confirmé de la zone d'attente vers le dossier de téléchargement. Le nom choisi est réservé avant
+ * toute attente : plusieurs fichiers du même nom acceptés par une seule réponse ne s'écrasent pas. Autre volume
+ * (dossier changé pendant la question, zone de repli) : copie sous un nom caché du même volume, puis renommage.
+ */
 async function moveIntoPlace(src, name) {
   const dir = downloadFolder();
-  await fs.promises.mkdir(dir, { recursive: true }).catch(() => {});
+  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* erreur au renommage */ }
   const dest = uniquePath(dir, name);
-  try { await fs.promises.rename(src, dest); } catch {
-    await fs.promises.copyFile(src, dest, fs.constants.COPYFILE_EXCL);
-    await fs.promises.unlink(src).catch(() => {});
-  }
-  return dest;
+  const key = pathKey(dest);
+  reservedPaths.add(key);
+  try {
+    try { fs.renameSync(src, dest); return dest; } catch (e) { if (e.code === 'ENOENT') throw e; /* EXDEV, fichier verrouillé : copie */ }
+    const stageDir = acquirePendingDir();
+    const stage = stageDir ? path.join(stageDir, crypto.randomUUID()) : path.join(dir, `.qafila-${crypto.randomUUID()}.part`);
+    try {
+      await fs.promises.copyFile(src, stage, fs.constants.COPYFILE_EXCL);
+      fs.renameSync(stage, dest);
+    } catch (e) {
+      try { fs.rmSync(stage, { force: true }); } catch { /* ignoré */ }
+      throw e;
+    } finally { if (stageDir) releasePendingDir(stageDir); }
+    try { fs.rmSync(src, { force: true }); } catch { /* vidée à la fermeture */ }
+    return dest;
+  } finally { reservedPaths.delete(key); }
 }
 
 /**
@@ -561,9 +610,8 @@ async function moveIntoPlace(src, name) {
  * (Gatekeeper). L'adresse source n'est jamais écrite pour un téléchargement privé. Volume FAT ou erreur : ignoré.
  */
 function markFromInternet(file, url, isPrivate) {
-  const web = /^https?:\/\//i.test(String(url || '')) && !isPrivate;
   if (process.platform === 'win32') {
-    try { fs.writeFileSync(`${file}:Zone.Identifier`, `[ZoneTransfer]\r\nZoneId=3\r\n${web ? `HostUrl=${url}\r\n` : ''}`); } catch { /* volume sans flux NTFS */ }
+    try { fs.writeFileSync(`${file}:Zone.Identifier`, zoneIdentifier(url, isPrivate)); } catch { /* volume sans flux NTFS */ }
   } else if (process.platform === 'darwin') {
     const value = `0081;${Math.floor(Date.now() / 1000).toString(16)};Qafila;`;
     execFile('/usr/bin/xattr', ['-w', 'com.apple.quarantine', value, file], () => { /* échec : ignoré */ });
@@ -630,7 +678,7 @@ function onDownload(item, wc, isPrivate) {
   let decision = null;
   let site = '';
   let refused = false;
-  const risky = RISKY_EXTENSIONS.has(path.extname(name).slice(1).toLowerCase()) && !(live && Q.tabs.recentGesture(wc));
+  const risky = RISKY_EXTENSIONS.has(extensionOf(name)) && !(live && Q.tabs.recentGesture(wc));
   if (risky) {
     site = pageHost(wc);
     if (sites.get(site) === false) { refused = true; notifyBlocked(site); }
@@ -652,7 +700,8 @@ function onDownload(item, wc, isPrivate) {
     const verdict = Q.tabs.downloadVerdict(wc);
     if (verdict.ask) {
       site = verdict.host;
-      if (sites.get(site) === false) { refused = true; notifyBlocked(site); }
+      if (sites.get(site) === true) { /* site déjà autorisé pour la session : libre, sans zone d'attente */ }
+      else if (sites.get(site) === false) { refused = true; notifyBlocked(site); }
       else if ((waitingBySite.get(site) || 0) >= MAX_WAITING_PER_SITE) refused = true;
       else decision = allowMultipleDownloads(site, isPrivate).then((ok) => { if (!ok) notifyBlocked(site); return ok; });
     }
@@ -661,9 +710,11 @@ function onDownload(item, wc, isPrivate) {
   // 2) Destination : nom final réservé (libre) ou fichier anonyme de la zone d'attente (question, refus).
   const gated = refused || !!decision;
   let file;
+  let pending = null;
   if (gated) {
-    try { fs.mkdirSync(pendingDir(), { recursive: true }); } catch { /* repli : écriture refusée plus bas */ }
-    file = path.join(pendingDir(), crypto.randomUUID());
+    pending = acquirePendingDir();
+    if (!pending) { item.cancel(); if (!refused) command('toast', { text: t('download_failed', name) }); return; }
+    file = path.join(pending, crypto.randomUUID());
   } else {
     const dir = downloadFolder();
     try { fs.mkdirSync(dir, { recursive: true }); } catch { /* repli : dialogue d'Electron */ }
@@ -671,7 +722,9 @@ function onDownload(item, wc, isPrivate) {
     reservedPaths.add(pathKey(file));
   }
   item.setSavePath(file);
-  if (refused) { item.cancel(); fs.promises.unlink(file).catch(() => {}); return; }
+  // Fichier anonyme de la zone d'attente supprimé (synchrone, avant de rendre la place : zone vide supprimée).
+  const dropPending = () => { try { fs.rmSync(file, { force: true }); } catch { /* vidée à la fermeture */ } releasePendingDir(pending); };
+  if (refused) { item.once('done', dropPending); item.cancel(); return; }
 
   const track = () => {
     downloads.set(key, { name, received: item.getReceivedBytes(), total: item.getTotalBytes(), state: 'progressing' });
@@ -683,26 +736,29 @@ function onDownload(item, wc, isPrivate) {
   // 3) Fin : il faut l'état final de Chromium et, en zone d'attente, la réponse de l'utilisateur.
   let ended = null;
   let accepted = gated ? null : true;
+  let settled = false;
   const settle = async () => {
-    if (ended === null || accepted === null) return;
+    if (ended === null || accepted === null || settled) return;
+    settled = true; // item.cancel() peut émettre « done » avant la fin de la réponse : une seule conclusion
     const tracked = downloads.delete(key);
     if (!gated) reservedPaths.delete(pathKey(file));
     if (accepted && ended === 'completed') {
       let dest = file;
       if (gated) {
         try { dest = await moveIntoPlace(file, name); } catch {
-          fs.promises.unlink(file).catch(() => {});
+          dropPending();
           command('toast', { text: t('download_failed', name) });
           broadcast();
           return;
         }
+        releasePendingDir(pending);
       }
       markFromInternet(dest, item.getURL(), isPrivate);
       command('toast', { text: t('download_done', path.basename(dest)) });
       if (process.platform === 'darwin') app.dock?.downloadFinished(dest);
       lastDownload = dest;
     } else {
-      if (gated) fs.promises.unlink(file).catch(() => {});
+      if (gated) dropPending();
       if (accepted && ended !== 'cancelled' && tracked) command('toast', { text: t('download_failed', name) });
     }
     broadcast();
@@ -909,7 +965,7 @@ function urlsFromArgv(list) {
 if (GOT_LOCK) app.whenReady().then(async () => {
   Q.store = new Store(app.getPath('userData'), { ephemeral: DEMO });
   Q.store.load();
-  clearPendingDir(); // téléchargements jamais confirmés lors d'une session précédente
+  clearPendingDirs(); // téléchargements jamais confirmés lors d'une session précédente
   if (DEMO) demo.applyDemo(Q.store, { dark: DEMO_DARK, language: typeof arg('lang') === 'string' ? arg('lang') : 'fr' });
   nativeTheme.themeSource = Q.store.settings.appearance || 'system';
   if (!Q.store.tabs.length) Q.store.addTab({ url: search.newTabURL(Q.store.settings) });
@@ -938,6 +994,8 @@ app.on('second-instance', (_e, otherArgv) => {
 });
 app.on('window-all-closed', () => { Q.store?.saveNow(); app.quit(); });
 app.on('before-quit', () => { Q.store?.saveNow(); });
+// Fichiers jamais confirmés (question sans réponse, navigation privée) : rien ne reste après la fermeture.
+app.on('will-quit', () => { if (Q.store) clearPendingDirs(); });
 // Certificat client demandé par un site (TLS) : Electron enverrait sans rien demander le premier certificat du
 // système (certificats d'entreprise, eID…), qui révèle le nom ou l'adresse de l'utilisateur et le suit d'un site à
 // l'autre, même en navigation privée. Qafila n'envoie jamais de certificat : la connexion continue sans.
@@ -1139,6 +1197,7 @@ async function hostileChecks(report, wait, set) {
   const pages = {
     '/popup': '<!doctype html><title>Pop</title><script>for (let i = 0; i < 4; i++) window.open("https://example.org/p" + i);</script>',
     '/js': '<!doctype html><title>Statique</title><script>document.title = "JSRAN";</script>',
+    '/swpage': '<!doctype html><title>Statique</title><script>document.title = "SW…"; navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready).then(() => { document.title = navigator.serviceWorker.controller ? "SWJS" : "SWPRET"; });</script>',
     '/dl-loop': '<!doctype html><title>Boucle</title><script>let n = 0; const go = () => { if (n < 4) { location.href = "/file?n=" + (n++); setTimeout(go, 350); } }; go();</script>',
   };
   const server = http.createServer((q, r) => {
@@ -1146,6 +1205,8 @@ async function hostileChecks(report, wait, set) {
     if (u.pathname === '/redir') { r.writeHead(302, { location: `http://localhost:${server.address().port}/js` }); r.end(); return; }
     if (u.pathname === '/suggest') { r.writeHead(200, { 'content-type': 'application/json', 'set-cookie': 'NID=pistage; Max-Age=999999', 'cache-control': 'no-cache' }); r.end(JSON.stringify(['x', [String(q.headers.cookie || '')]])); return; }
     if (u.pathname === '/setup.exe') { r.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': 'attachment; filename="setup.exe"' }); r.end('MZ'); return; }
+    if (u.pathname === '/sw.js') { r.writeHead(200, { 'content-type': 'text/javascript' }); r.end('self.addEventListener("install", () => self.skipWaiting()); self.addEventListener("activate", (e) => e.waitUntil(clients.claim())); self.addEventListener("fetch", (e) => { if (e.request.mode === "navigate") e.respondWith(fetch(e.request)); });'); return; }
+    if (u.pathname === '/same.bin') { r.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': 'attachment; filename="same.bin"' }); r.end(`content-${u.search.slice(1)}`); return; }
     if (u.pathname === '/file') { r.writeHead(200, { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="f${u.searchParams.get('n')}.bin"` }); r.end('x'); return; }
     r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); r.end(pages[u.pathname] || '<!doctype html><title>Vide</title>');
   });
@@ -1201,6 +1262,17 @@ async function hostileChecks(report, wait, set) {
     set('javascriptEnabled', false); await wait(1200);
     if (twc.getTitle() !== 'Statique') fail(`JavaScript coupé globalement : « ${twc.getTitle()} » après rechargement`);
     set('javascriptEnabled', true); await wait(1000);
+    // 4 bis) Service worker d'un site sur un port non standard : JavaScript coupé pour ce nom d'hôte, il est supprimé
+    // (sinon la page servie par lui échappe à « script-src 'none' »).
+    await twc.loadURL(`${base}/swpage`).catch(() => {});
+    await wait(1200);
+    await twc.loadURL(`${base}/swpage`).catch(() => {});
+    await wait(1200);
+    const swTitle = twc.getTitle();
+    set('javascriptDisabledHosts', ['127.0.0.1']); await wait(1500);
+    if (swTitle !== 'SWJS') fail(`service worker : non installé (« ${swTitle} »)`);
+    else if (twc.getTitle() !== 'Statique') fail(`service worker : JavaScript toujours actif après coupure (« ${twc.getTitle()} »)`);
+    set('javascriptDisabledHosts', saved.hosts); await wait(1000);
     // 5) Plein écran demandé par la page : avis visible (hôte de la page), Échap en sort même si la page l'intercepte.
     await twc.executeJavaScript('addEventListener("keydown", (e) => e.preventDefault(), true); document.documentElement.requestFullscreen().then(() => 1, () => 0)', true).catch(() => 0);
     await wait(1200);
@@ -1235,9 +1307,17 @@ async function hostileChecks(report, wait, set) {
     const exes = () => fs.readdirSync(dlDir).filter((f) => /^setup.*\.exe$/.test(f));
     const pendingLeft = () => { try { return fs.readdirSync(pendingDir()).length; } catch { return 0; } };
     const asked = [];
+    const zones = []; // zone d'attente vue au moment de chaque réponse : dans le dossier de téléchargement, privée (0700)
     let answer = 1;
     const showBox = dialog.showMessageBox;
-    dialog.showMessageBox = (...a) => { asked.push(a[a.length - 1]?.message || ''); const r = answer; return new Promise((ok) => setTimeout(() => ok({ response: r }), 900)); };
+    dialog.showMessageBox = (...a) => {
+      asked.push(a[a.length - 1]?.message || '');
+      const r = answer;
+      return new Promise((ok) => setTimeout(() => {
+        try { zones.push(`${path.dirname(pendingDir())}|${(fs.statSync(pendingDir()).mode & 0o777).toString(8)}`); } catch { zones.push('absente'); }
+        ok({ response: r });
+      }, 900));
+    };
     downloadSites.delete(`127.0.0.1:${port}`); // décision « bloquer » du contrôle 2 oubliée
     const clickThree = 'for (let i = 0; i < 3; i++) { const a = document.createElement("a"); a.href = "/setup.exe?" + i; a.download = ""; document.body.append(a); a.click(); } 1';
     try {
@@ -1265,6 +1345,23 @@ async function hostileChecks(report, wait, set) {
       if (asked.length !== 2) fail(`exécutable accepté : ${asked.length - 1} question(s)`);
       if (exes().join() !== 'setup.exe' || fs.readFileSync(path.join(dlDir, 'setup.exe'), 'utf8') !== 'MZ') fail(`exécutable accepté : dossier [${exes().join(', ')}]`);
       if (pendingLeft()) fail('exécutable accepté : zone d\'attente non vidée');
+      if (fs.existsSync(pendingDir())) fail('exécutable accepté : zone d\'attente vide non supprimée');
+      const zoneOK = `${dlDir}|${process.platform === 'win32' ? '' : '700'}`;
+      if (!zones.length || zones.some((z) => (process.platform === 'win32' ? !z.startsWith(zoneOK) : z !== zoneOK))) fail(`zone d'attente : [${zones.join(', ')}] au lieu de ${zoneOK}`);
+      // 9) Trois fichiers du même nom sans geste, deux en attente acceptés par une seule réponse (transferts déjà
+      // finis) : trois fichiers distincts, aucun écrasé. Site autorisé ensuite : le suivant passe sans question.
+      const same = () => fs.readdirSync(dlDir).filter((f) => /^same( \(\d\))?\.bin$/.test(f)).sort();
+      const contents = () => same().map((f) => fs.readFileSync(path.join(dlDir, f), 'utf8')).sort().join();
+      Q.tabs.lastGesture.delete(twc.id);
+      Q.tabs.downloadState.delete(twc.id);
+      await twc.executeJavaScript('for (let i = 0; i < 3; i++) { const a = document.createElement("a"); a.href = "/same.bin?" + i; a.download = ""; document.body.append(a); a.click(); } 1', true).catch(() => {});
+      await wait(2400);
+      if (asked.length !== 3) fail(`même nom : ${asked.length - 2} question(s) au lieu d'une`);
+      if (same().join() !== 'same (1).bin,same (2).bin,same.bin' || contents() !== 'content-0,content-1,content-2') fail(`même nom : [${same().join(', ')}] contenus [${contents()}]`);
+      await twc.executeJavaScript('{ const a = document.createElement("a"); a.href = "/same.bin?3"; a.download = ""; document.body.append(a); a.click(); } 1', true).catch(() => {});
+      await wait(1200);
+      if (asked.length !== 3 || same().length !== 4) fail(`site autorisé : ${asked.length - 3} question(s), ${same().length} fichier(s)`);
+      if (fs.existsSync(pendingDir())) fail('même nom : zone d\'attente vide non supprimée');
     } finally { dialog.showMessageBox = showBox; downloadSites.delete(`localhost:${port}`); }
   } finally {
     set('javascriptEnabled', saved.js);

@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const scripts = require('../main/scripts.js');
 const { safeFaviconURL } = require('../main/favicon.js');
+const filename = require('../main/filename.js');
 
 test('lecteur : aucun attribut on*, aucun lien javascript:, aucune balise script', () => {
   const tree = { t: 'article', a: {}, c: [
@@ -188,8 +189,15 @@ test('raccourcis : Alt+D et F6 (champ d\'adresse), pavé numérique sans Verr. N
   assert.equal(shortcuts.resolve(key('Tab', { code: 'Tab', control: true }), 'win32'), 'nextTab');
 });
 
-test('raccourcis : AZERTY Ctrl+- (touche 6) = zoom arrière ; macOS français ⌘ + touches [ ] = Précédent / Suivant', () => {
-  assert.equal(shortcuts.resolve(key('-', { code: 'Digit6', control: true }), 'win32'), 'zoomOut');
+test('raccourcis : AZERTY Ctrl+6 (« - ») = onglet 6, Ctrl+) = zoom arrière ; macOS français ⌘ + touches [ ] = Précédent / Suivant', () => {
+  assert.equal(shortcuts.resolve(key('-', { code: 'Digit6', control: true }), 'win32'), 'tab:6');
+  assert.equal(shortcuts.resolve(key('-', { code: 'Digit6', control: true }), 'linux'), 'tab:6');
+  assert.equal(shortcuts.resolve(key('+', { code: 'Digit1', control: true }), 'win32'), 'tab:1'); // tchèque
+  assert.equal(shortcuts.resolve(key(')', { code: 'Minus', control: true }), 'win32'), 'zoomOut');
+  assert.equal(shortcuts.resolve(key('-', { code: 'NumpadSubtract', control: true }), 'win32'), 'zoomOut');
+  assert.equal(shortcuts.resolve(key('-', { code: 'Slash', control: true }), 'linux'), 'zoomOut'); // QWERTZ
+  assert.equal(shortcuts.resolve(key('-', { code: 'Equal', meta: true }), 'darwin'), 'zoomOut'); // AZERTY Mac
+  assert.equal(shortcuts.resolve(key('-', { code: 'Minus', control: true }), 'win32'), 'zoomOut');
   assert.equal(shortcuts.resolve(key('=', { code: 'Equal', control: true }), 'win32'), 'zoomIn');
   assert.equal(shortcuts.resolve(key('+', { code: 'Equal', control: true, shift: true }), 'win32'), 'zoomIn');
   assert.equal(shortcuts.resolve(key('(', { code: 'Digit5', control: true }), 'win32'), 'tab:5');
@@ -223,4 +231,44 @@ test('réglages : __proto__, constructor, toString refusés ; state.json gardé'
   assert.equal(out.blockAds, false);
   assert.equal(({}).polluted, undefined);
   assert.equal(Object.getPrototypeOf(out), Object.prototype);
+});
+
+// ----- Noms des fichiers téléchargés et marque d'origine Internet -----
+test('noms de fichiers : coupe avant l\'extension, ni point ni espace final, périphériques Windows', () => {
+  const { safeFilename, extensionOf } = filename;
+  const long = 'A'.repeat(195);
+  // Coupé à 200 caractères sans perdre l'extension réelle ; jamais « ….exe. » (Windows écrirait « ….exe »).
+  for (const n of [`${long}.exe.x`, `${long}.exe x`, `${long}.exe.`, `${long}.exe `, 'payload.exe.', 'payload.exe . .']) {
+    const s = safeFilename(n);
+    assert.ok(s.length <= 200, n);
+    assert.doesNotMatch(s, /[. ]$/, JSON.stringify(s));
+  }
+  assert.equal(extensionOf(`${long}.exe.x`), 'x');
+  assert.equal(extensionOf(`${long}.exe x`), 'exe x'); // écrit tel quel : « ….exe x » n'est pas un .exe
+  assert.equal(extensionOf('payload.exe.'), 'exe');
+  assert.equal(extensionOf('payload.exe . .'), 'exe');
+  assert.equal(extensionOf(`${'B'.repeat(400)}.msi`), 'msi');
+  assert.equal(safeFilename(`${'B'.repeat(400)}.msi`).length, 200);
+  // Jamais une moitié de caractère (paire de substitution UTF-16) au point de coupe.
+  const emoji = safeFilename(`${'C'.repeat(194)}😀😀😀.pdf`);
+  assert.doesNotMatch(emoji, /[\ud800-\udbff](?![\udc00-\udfff])/);
+  assert.ok(emoji.endsWith('.pdf'));
+  // Caractères interdits, fichier caché, noms de périphériques.
+  assert.equal(safeFilename('a/b\\c:d*e?.txt'), 'a_b_c_d_e_.txt');
+  assert.equal(safeFilename('..'), 'download');
+  assert.equal(safeFilename('.bashrc'), 'bashrc');
+  assert.equal(safeFilename(''), 'download');
+  assert.equal(safeFilename('CON'), '_CON');
+  assert.equal(safeFilename('nul.txt'), '_nul.txt');
+  assert.equal(safeFilename('com1.tar.gz'), '_com1.tar.gz');
+  assert.equal(safeFilename('console.txt'), 'console.txt');
+  // Idempotent (uniquePath le réapplique).
+  for (const n of [`${long}.exe.x`, 'CON', '😀.pdf', 'a b . c']) assert.equal(safeFilename(safeFilename(n)), safeFilename(n));
+});
+
+test('Zone.Identifier : ni identifiant, ni mot de passe, ni fragment ; rien en privé', () => {
+  const z = filename.zoneIdentifier('http://jean:MotDePasse123@127.0.0.1:8080/f?token=abc#frag%0d%0a', false);
+  assert.equal(z, '[ZoneTransfer]\r\nZoneId=3\r\nHostUrl=http://127.0.0.1:8080/f?token=abc\r\n');
+  assert.equal(filename.zoneIdentifier('https://example.org/a.exe', true), '[ZoneTransfer]\r\nZoneId=3\r\n');
+  assert.equal(filename.zoneIdentifier('blob:https://example.org/x', false), '[ZoneTransfer]\r\nZoneId=3\r\n');
 });

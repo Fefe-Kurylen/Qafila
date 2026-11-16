@@ -46,8 +46,11 @@ function resolve(input, platform = process.platform) {
   if (key === 'F12') return 'devtools';
   if (mod && key === 'i' && (mac ? alt : shift)) return 'devtools';
   if (!mod) return null;
-  // Zoom par le caractère avant les chiffres : en AZERTY, « - » est sur la touche 6 (Digit6), « = » et « + » ailleurs.
-  if (!alt && (key === '-' || key === '+' || key === '=')) return key === '-' ? 'zoomOut' : 'zoomIn';
+  // Zoom par le caractère, sauf sur la rangée des chiffres (AZERTY : « - » est la touche 6, qui reste l'onglet 6 ;
+  // tchèque : « + » est la touche 1) ; et par la position de la touche « - » / « = » du QWERTY (AZERTY : « ) » et « = »).
+  const digitRow = /^Digit[0-9]$/.test(input.code || '');
+  if (!alt && !digitRow && (key === '-' || key === '+' || key === '=')) return key === '-' ? 'zoomOut' : 'zoomIn';
+  if (!alt && (input.code === 'Minus' || input.code === 'Equal') && !/^[0-9]$/.test(key)) return input.code === 'Minus' ? 'zoomOut' : 'zoomIn';
   // Chiffres par position physique (Ctrl+1…9, Ctrl+0) : indépendants de la disposition (AZERTY : « & », « é »…).
   // Pavé numérique : seulement s'il donne un chiffre (Verr. Num. éteint, Ctrl+Fin ou Ctrl+Inser restent à la page).
   const digit = /^(Digit|Numpad)([0-9])$/.exec(input.code || '');
