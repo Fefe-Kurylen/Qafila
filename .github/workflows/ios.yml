@@ -4,9 +4,9 @@ name: Qafila iOS
 on:
   push:
     branches: [main]
-    paths: ["ios-browser/**", ".github/workflows/ios.yml"]
+    paths: ["ios-browser/**", "shared/support.json", ".github/workflows/ios.yml"]
   pull_request:
-    paths: ["ios-browser/**"]
+    paths: ["ios-browser/**", "shared/support.json"]
   workflow_dispatch:
     inputs:
       lane:
@@ -51,13 +51,15 @@ jobs:
         env:
           QAFILA_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
+      # Cette compilation donne l'IPA de test hors App Store : soutien via le lien Stripe (Apple Pay dans Safari).
+      # TestFlight / App Store (fastlane) gardent l'abonnement App Store (QAFILA_SUPPORT_CHANNEL = store dans project.yml).
       - name: Compilation de vérification (appareil iOS, sans signature)
         if: ${{ (github.event.inputs.lane || 'build') == 'build' }}
         run: |
           set -o pipefail
           xcodebuild -project QafilaBrowser.xcodeproj -scheme QafilaBrowser \
             -destination 'generic/platform=iOS' -configuration Release -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee xcodebuild.log | grep -E --line-buffered "error:|warning:|BUILD|Compiling|Linking|CompileAssetCatalog" || true
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO QAFILA_SUPPORT_CHANNEL=stripe build 2>&1 | tee xcodebuild.log | grep -E --line-buffered "error:|warning:|BUILD|Compiling|Linking|CompileAssetCatalog" || true
           grep -q "BUILD SUCCEEDED" xcodebuild.log
 
       # .ipa non signée, pour tester gratuitement sur iPhone avec Sideloadly / AltStore (identifiant Apple gratuit).

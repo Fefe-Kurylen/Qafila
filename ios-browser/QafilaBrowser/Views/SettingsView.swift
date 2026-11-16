@@ -95,7 +95,10 @@ struct SettingsView: View {
     private func detail(_ r: SettingsRoute) -> String {
         let s = store.settings
         switch r {
-        case .support: return store.support.isSupporter ? L("Merci ♥") : L("%@/mois", store.support.price)
+        case .support:
+            // Mode Stripe : pas de prix (contribution libre sur la page Stripe).
+            if store.support.usesStripe { return "" }
+            return store.support.isSupporter ? L("Merci ♥") : L("%@/mois", store.support.price)
         case .appearance: return s.appearance.label
         case .toolbar: return s.toolbar.position.label
         case .address: return s.addressStyle.label
@@ -338,7 +341,7 @@ struct AppearanceSettings: View {
             Section {
                 HStack(spacing: 0) {
                     ForEach(AppIconChoice.allCases) { icon in
-                        let locked = icon.supportersOnly && !store.support.isSupporter
+                        let locked = icon.supportersOnly && !store.support.goldUnlocked
                         Button {
                             if locked { showSupport = true } else { store.settings.appIcon = icon }
                         } label: {
@@ -363,7 +366,10 @@ struct AppearanceSettings: View {
                 }
                 .padding(.vertical, 6)
             } header: { Text("Icône de l'app") } footer: {
-                Text(store.support.isSupporter ? L("Merci de soutenir Qafila ♥ L'icône Or est à vous.") : L("L'icône Or est offerte aux personnes qui soutiennent Qafila (%@/mois).", store.support.price))
+                // Mode Stripe : l'icône Or est pour tout le monde, pas de mention « réservée aux abonnés ».
+                if !store.support.usesStripe {
+                    Text(store.support.isSupporter ? L("Merci de soutenir Qafila ♥ L'icône Or est à vous.") : L("L'icône Or est offerte aux personnes qui soutiennent Qafila (%@/mois).", store.support.price))
+                }
             }
             Section { Toggle("Vibrations", isOn: $store.settings.haptics) } footer: { Text("Retour haptique discret à l'ouverture, à la fermeture et sur les boutons.") }
         }
@@ -653,15 +659,81 @@ struct AboutSettings: View {
 
 // MARK: - Soutenir Qafila
 
-/// Abonnement de soutien (0,99 €/mois) : tout Qafila reste gratuit, le soutien offre l'icône exclusive « Or ».
+/// Soutien à Qafila, tout Qafila reste gratuit.
+/// Canal `store` : abonnement (0,99 €/mois) qui offre l'icône exclusive « Or ».
+/// Canal `stripe` : contribution libre sur la page de paiement Stripe, ouverte dans Safari (Apple Pay) ; rien n'est débloqué.
 struct SupportSettings: View {
     @EnvironmentObject var store: BrowserStore
+    @Environment(\.openURL) private var openURL
     @State private var manage = false
     private var support: SupportStore { store.support }
     private let pink = Color(red: 0.93, green: 0.30, blue: 0.45)
 
     var body: some View {
         List {
+            if support.usesStripe { stripeContent } else { storeContent }
+        }
+        .navigationTitle("Soutenir")
+        .navigationBarTitleDisplayMode(.inline)
+        .manageSubscriptionsSheet(isPresented: $manage)
+        .alert(support.message ?? "", isPresented: Binding(get: { support.message != nil }, set: { if !$0 { support.message = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
+        .task { await support.load() }
+    }
+
+    /// Mode Stripe : simple remerciement + bouton vers la page Stripe dans le navigateur du système (jamais dans un onglet Qafila).
+    @ViewBuilder private var stripeContent: some View {
+        Section {
+            VStack(spacing: 10) {
+                Image(store.settings.appIcon.preview).resizable().frame(width: 92, height: 92)
+                    .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 21, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+                Text(L("Soutenir Qafila")).font(.system(size: 24, weight: .semibold, design: .serif)).padding(.top, 6)
+                Text(L("Qafila est gratuit, sans publicité ni pistage. Si vous le souhaitez, vous pouvez soutenir son développement par une contribution libre."))
+                    .font(.system(size: 15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, 8)
+            .listRowBackground(Color.clear)
+        }
+
+        Section {
+            Button {
+                guard let url = support.stripeURL else { return }
+                store.haptic(.medium)
+                openURL(url)
+            } label: {
+                VStack(spacing: 2) {
+                    Text(support.stripeURL == nil ? L("Bientôt disponible") : L("Soutenir Qafila")).font(.system(size: 17, weight: .semibold))
+                    if support.stripeURL != nil {
+                        Text(L("Apple Pay, carte bancaire")).font(.system(size: 13)).opacity(0.7)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(Color(.systemBackground))
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary))
+                .opacity(support.stripeURL == nil ? 0.4 : 1)
+            }
+            .buttonStyle(.plain)
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            .listRowBackground(Color.clear)
+            .disabled(support.stripeURL == nil)
+        }
+
+        Section {
+            Label(L("Aucune publicité, aucun pistage, pour tout le monde"), systemImage: "hand.raised")
+            Label(L("Contribution libre et volontaire, sans engagement"), systemImage: "heart")
+        } header: { Text(L("Ce que vous soutenez")) } footer: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L("Le paiement s'effectue sur la page sécurisée de Stripe. Qafila ne voit jamais vos informations de paiement."))
+                Link(L("Confidentialité"), destination: URL(string: "https://fefe-kurylen.github.io/Qafila/confidentialite.html")!)
+            }
+        }
+    }
+
+    /// Mode App Store : abonnement StoreKit (inchangé).
+    @ViewBuilder private var storeContent: some View {
             Section {
                 VStack(spacing: 10) {
                     Image("PreviewIcon-Gold").resizable().frame(width: 92, height: 92)
@@ -720,13 +792,5 @@ struct SupportSettings: View {
                     }
                 }
             }
-        }
-        .navigationTitle("Soutenir")
-        .navigationBarTitleDisplayMode(.inline)
-        .manageSubscriptionsSheet(isPresented: $manage)
-        .alert(support.message ?? "", isPresented: Binding(get: { support.message != nil }, set: { if !$0 { support.message = nil } })) {
-            Button("OK", role: .cancel) {}
-        }
-        .task { await support.load() }
     }
 }

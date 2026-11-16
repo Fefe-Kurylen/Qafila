@@ -19,6 +19,10 @@ settings:
     ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Dark AppIcon-Ink AppIcon-Desert AppIcon-Gold"
     ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    # Canal « Soutenir Qafila » : store = abonnement App Store (par défaut : App Store, TestFlight, Xcode) ;
+    # stripe = lien de paiement Stripe de shared/support.json (IPA de test hors App Store, cf. .github/workflows/ios.yml).
+    # Passer à stripe pour l'App Store seulement après inscription aux conditions de lien externe d'Apple.
+    QAFILA_SUPPORT_CHANNEL: store
 targets:
   QafilaBrowser:
     type: application
@@ -28,6 +32,9 @@ targets:
       storeKitConfiguration: Qafila.storekit
     sources:
       - path: QafilaBrowser
+      # Lien de soutien partagé par toutes les plateformes (lu au lancement, jamais recopié dans le code).
+      - path: ../shared/support.json
+        buildPhase: resources
     info:
       path: QafilaBrowser/Info.plist
       properties:
@@ -48,3 +55,4 @@ targets:
         CFBundleLocalizations: [fr, en, ar, es, de]
         CFBundleDevelopmentRegion: fr
         LSApplicationCategoryType: public.app-category.utilities
+        QafilaSupportChannel: $(QAFILA_SUPPORT_CHANNEL)

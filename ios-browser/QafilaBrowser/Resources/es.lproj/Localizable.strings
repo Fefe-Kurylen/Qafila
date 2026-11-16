@@ -308,3 +308,9 @@
 "Page inaccessible" = "Página no disponible";
 "Mode sombre" = "Modo oscuro";
 "Mode clair" = "Modo claro";
+/* Soutien via Stripe (hors App Store) */
+"Qafila est gratuit, sans publicité ni pistage. Si vous le souhaitez, vous pouvez soutenir son développement par une contribution libre." = "Qafila es gratuito, sin anuncios ni rastreo. Si quieres, puedes apoyar su desarrollo con una aportación libre.";
+"Apple Pay, carte bancaire" = "Apple Pay, tarjeta bancaria";
+"Bientôt disponible" = "Próximamente";
+"Contribution libre et volontaire, sans engagement" = "Aportación libre y voluntaria, sin compromiso";
+"Le paiement s'effectue sur la page sécurisée de Stripe. Qafila ne voit jamais vos informations de paiement." = "El pago se realiza en la página segura de Stripe. Qafila nunca ve tus datos de pago.";

@@ -44,12 +44,12 @@ final class BrowserStore: ObservableObject {
         // Progression, état de navigation… : les vues qui en ont besoin observent directement `tabManager` (pas de relais ici,
         // qui redessinerait toute l'interface à chaque tic de chargement).
         support.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &cancellables)
-        // Fin du soutien : retour à l'icône classique.
+        // Fin du soutien (abonnement App Store) : retour à l'icône classique. En mode Stripe, l'icône Or est pour tout le monde.
         support.onSupportEnded = { [weak self] in
-            guard let self, self.settings.appIcon.supportersOnly else { return }
+            guard let self, self.settings.appIcon.supportersOnly, !self.support.goldUnlocked else { return }
             self.settings.appIcon = .classic
         }
-        if settings.appIcon.supportersOnly && !support.isSupporter { settings.appIcon = .classic }
+        if settings.appIcon.supportersOnly && !support.goldUnlocked { settings.appIcon = .classic }
         $tabs.sink { [weak self] tabs in
             self?.scheduleSave()
             if !tabs.contains(where: { $0.isPrivate }) { self?.tabManager.dropPrivateData() }
