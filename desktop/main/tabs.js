@@ -10,6 +10,7 @@ const search = require('./search');
 const { safeFaviconURL } = require('./favicon');
 
 const PAGE_PRELOAD = path.join(__dirname, '..', 'preload', 'page.js');
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const INTERNAL_SCHEMES = new Set(['http:', 'https:', 'about:', 'file:', 'data:', 'blob:', 'chrome:', 'devtools:', 'chrome-error:']);
 // Applications externes : courriel et téléphone seulement, après un geste récent de l'utilisateur et sa confirmation.
 const EXTERNAL_SCHEMES = new Set(['mailto:', 'tel:']);
@@ -347,7 +348,8 @@ class TabManager extends EventEmitter {
     const patch = {};
     if (!this.isLocal(wc.getURL())) {
       patch.readingMinutes = Math.max(0, Number(info.minutes) || 0);
-      if (info.color) patch.themeColorHex = String(info.color).slice(0, 64);
+      // Seule une couleur « #rrggbb » est retenue (la barre Auto ne lit que ce format).
+      if (HEX_COLOR.test(String(info.color || ''))) patch.themeColorHex = String(info.color).toLowerCase();
       const icon = safeFaviconURL(info.icon);
       if (icon && !tab.isPrivate && !tab.faviconURL) patch.faviconURL = icon;
     }

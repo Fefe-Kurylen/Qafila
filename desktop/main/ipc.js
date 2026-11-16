@@ -141,7 +141,8 @@ function register(a) {
   handle('support:open', () => support.open());
 
   // ----- Interface -----
-  handle('ui:setChrome', (p) => a.setChrome(p.mode === 'full' ? 'full' : 'strip', Math.min(400, Math.max(40, Number(p.height) || 0))));
+  handle('ui:setChrome', (p) => a.setChrome(p.mode === 'full' ? 'full' : 'strip', Math.min(400, Math.max(40, Number(p.height) || 0)), { find: p.find === true }));
+  handle('ui:focus', (p) => a.focusUI(p.target === 'chrome' ? 'chrome' : 'page'));
   handle('ui:window', (p) => {
     const w = a.win;
     if (p.action === 'close') w.close();

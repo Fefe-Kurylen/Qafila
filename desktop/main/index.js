@@ -81,10 +81,27 @@ function layout() {
   Q.glass.refresh(30);
 }
 
-function setChrome(mode, height) {
+/**
+ * Le chrome change de géométrie. Le focus clavier natif suit : une vue qui n'a pas le focus ne le prend pas avec
+ * element.focus() dans son moteur de rendu, il faut le donner depuis le processus principal.
+ * Plein écran (menu, suggestions, écrans) → focus au chrome ; retour à la bande → focus à la page, sauf si la
+ * recherche dans la page (logée dans la bande) est ouverte.
+ */
+function setChrome(mode, height, { find = false } = {}) {
   if (height) Q.barHeight = height;
+  const was = Q.chromeMode;
   Q.chromeMode = mode;
   layout();
+  if (mode === 'full') focusChrome();
+  else if (was === 'full' && !find) Q.tabs.focus();
+}
+
+function focusChrome() { if (Q.chrome && !Q.chrome.webContents.isDestroyed()) Q.chrome.webContents.focus(); }
+
+/** Focus demandé par le chrome : 'chrome' (champ de recherche dans la page) ou 'page' (après fermeture). */
+function focusUI(target) {
+  if (target === 'chrome') focusChrome();
+  else if (Q.chromeMode !== 'full') Q.tabs.focus();
 }
 
 // ----- État poussé au chrome -----
@@ -124,7 +141,12 @@ function broadcast() {
   }, 16);
 }
 
-function command(name, data) { if (Q.chrome && !Q.chrome.webContents.isDestroyed()) Q.chrome.webContents.send('qafila:command', { name, ...data }); }
+function command(name, data) {
+  if (!Q.chrome || Q.chrome.webContents.isDestroyed()) return;
+  // Ctrl+L / Ctrl+F depuis une page : le champ d'adresse ou de recherche doit recevoir la frappe, pas la page.
+  if (name === 'focusAddress' || name === 'find' || name === 'screen') focusChrome();
+  Q.chrome.webContents.send('qafila:command', { name, ...data });
+}
 
 // ----- Actions -----
 function newTab({ url = null, isPrivate = false, select = true } = {}) {
@@ -538,7 +560,7 @@ app.whenReady().then(async () => {
   ipc.register({
     get win() { return Q.win; }, get chrome() { return Q.chrome; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
-    toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, screenshot,
+    toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, focusUI, screenshot,
     downloadFolder,
   });
 
@@ -611,6 +633,68 @@ Element.prototype.getAttribute = function () { return 'javascript:document.docum
   await wait(800);
 }
 
+/**
+ * Focus clavier : Ctrl+L et Ctrl+F frappés dans une page donnent le focus natif au chrome ; Échap le rend à la page.
+ * (Les champs sont remplis par code ailleurs dans le scénario : seul ce contrôle vérifie la vraie frappe.)
+ */
+async function focusChecks(report, wait) {
+  const fail = (m) => { report.errors.push(m); console.error('focus :', m); };
+  const sel = Q.store.selected;
+  const page = Q.tabs.contents(sel);
+  const chromeWC = Q.chrome.webContents;
+  const key = (wc, keyCode, modifiers = []) => {
+    wc.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
+    wc.sendInputEvent({ type: 'keyUp', keyCode, modifiers });
+  };
+  const active = () => chromeWC.executeJavaScript('document.hasFocus() && document.activeElement ? document.activeElement.id : ""', true).catch(() => '');
+  const mod = process.platform === 'darwin' ? 'meta' : 'control';
+  Q.tabs.focus(); await wait(400);
+  if (!page.isFocused()) fail('la page n\'a pas le focus au départ');
+  key(page, 'L', [mod]); await wait(900);
+  if (!chromeWC.isFocused()) fail('Ctrl+L : le chrome n\'a pas le focus');
+  if ((await active()) !== 'edit-input') fail('Ctrl+L : le champ d\'adresse n\'a pas le focus');
+  key(chromeWC, 'Escape'); await wait(900);
+  if (!page.isFocused()) fail('Échap après Ctrl+L : la page n\'a pas repris le focus');
+  key(page, 'F', [mod]); await wait(900);
+  if (!chromeWC.isFocused()) fail('Ctrl+F : le chrome n\'a pas le focus');
+  if ((await active()) !== 'find-input') fail('Ctrl+F : le champ de recherche n\'a pas le focus');
+  key(chromeWC, 'Escape'); await wait(900);
+  if (!page.isFocused()) fail('Échap après Ctrl+F : la page n\'a pas repris le focus');
+  key(page, ',', [mod]); await wait(900);
+  if (!chromeWC.isFocused()) fail('Ctrl+, : le chrome n\'a pas le focus');
+  key(chromeWC, 'Escape'); await wait(900);
+  if (Q.chromeMode !== 'strip') fail('Échap après Ctrl+, : réglages toujours ouverts');
+  if (!page.isFocused()) fail('fermeture des réglages : la page n\'a pas repris le focus');
+}
+
+/** Barre « Auto » : une page avec <meta name=theme-color content=#c00> donne une barre rgb(204, 0, 0). */
+async function themeColorCheck(report, wait, set) {
+  const fail = (m) => { report.errors.push(m); console.error('couleur du site :', m); };
+  const http = require('node:http');
+  const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="theme-color" content="#c00"><title>Couleur</title></head><body><p>Rouge.</p></body></html>';
+  const server = http.createServer((_q, r) => { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); r.end(html); });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const previous = Q.store.settings.barColorLight;
+  const before = Q.store.selected;
+  const tab = newTab();
+  await wait(600);
+  try {
+    await Q.tabs.contents(tab.id).loadURL(`http://127.0.0.1:${server.address().port}/`).catch(() => {});
+    await wait(1500);
+    const stored = Q.store.tabs.find((x) => x.id === tab.id)?.themeColorHex;
+    if (stored !== '#cc0000') fail(`themeColorHex = ${stored} au lieu de #cc0000`);
+    set('barColorLight', 'auto'); await wait(800);
+    const bar = await Q.chrome.webContents.executeJavaScript("getComputedStyle(document.documentElement).getPropertyValue('--bar-rgb').trim()", true).catch(() => '');
+    if (bar.replace(/\s/g, '') !== '204,0,0') fail(`barre Auto = [${bar}] au lieu de [204,0,0]`);
+  } finally {
+    set('barColorLight', previous);
+    closeTab(tab.id);
+    if (Q.store.tabs.some((x) => x.id === before)) selectTab(before);
+    server.close();
+    await wait(800);
+  }
+}
+
 /** Scénario de test : onglets de démonstration, captures (page, menu, saisie, onglets, réglages, galerie, éditeur,
  * démarrage, sombre, barre en bas), contrôle de la bande, sortie 0. */
 async function runSmoke() {
@@ -672,6 +756,8 @@ async function runSmoke() {
   demoScreen('none'); await wait(500);
   if (!describeState().rtl) report.errors.push('arabe : interface non RTL');
   set('language', 'fr'); await wait(1200);
+  await focusChecks(report, wait);
+  await themeColorCheck(report, wait, set);
   // La vue du chrome doit être revenue à la bande (barre + 2 × 12 px) une fois les surcouches fermées.
   const cb = Q.chrome.getBounds();
   if (cb.height !== Q.barHeight + 2 * BAR_MARGIN) report.errors.push(`bande : hauteur ${cb.height} au lieu de ${Q.barHeight + 2 * BAR_MARGIN}`);

@@ -6,7 +6,17 @@ const { ipcRenderer } = require('electron');
 
 function count(t) { return (t || '').split(/\s+/).filter(Boolean).length; }
 
-/** Couleur normalisée en rgb() (theme-color selon le mode, sinon fond de la page), comme Scripts.kt. */
+/** Convertit une couleur calculée « rgb(r, g, b) » / « rgba(r, g, b, a) » en « #rrggbb » ; '' si illisible ou trop transparente (alpha < 0,5). */
+function toHex(c) {
+  const m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)$/i.exec(String(c || '').trim());
+  if (!m) return '';
+  let a = m[4] === undefined ? 1 : parseFloat(m[4]);
+  if (m[4] && m[4].endsWith('%')) a /= 100;
+  if (!(a >= 0.5)) return '';
+  return '#' + [m[1], m[2], m[3]].map((v) => Math.max(0, Math.min(255, Math.round(parseFloat(v)))).toString(16).padStart(2, '0')).join('');
+}
+
+/** Couleur du site en « #rrggbb » (theme-color selon le mode, sinon fond de la page), comme Scripts.kt. */
 function pageColor() {
   function norm(c) {
     if (!c) return '';
@@ -29,7 +39,7 @@ function pageColor() {
     c = getComputedStyle(document.body).backgroundColor;
     if (empty(c)) c = getComputedStyle(document.documentElement).backgroundColor;
   }
-  return empty(c) ? '' : c;
+  return empty(c) ? '' : toHex(c);
 }
 
 let lastInfo = '';

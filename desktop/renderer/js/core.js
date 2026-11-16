@@ -138,7 +138,7 @@ export async function syncChromeMode() {
   const sig = mode + h;
   if (S.chromeMode === sig) return;
   S.chromeMode = sig;
-  await q.ui.setChrome(mode, h);
+  await q.ui.setChrome(mode, h, !!S.find);
 }
 
 /** Ouvre / ferme une surcouche : agrandit la vue AVANT d'afficher, la réduit APRÈS avoir masqué. */

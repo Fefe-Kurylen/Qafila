@@ -198,9 +198,11 @@ function editingHTML() {
 
 // ----- Recherche dans la page -----
 export function openFind() {
-  if (S.overlay !== 'none') setOverlay('none');
+  // S.find avant le retour à la bande : le processus principal laisse alors le focus au chrome.
   S.find = S.find || { text: '', matches: 0, active: 0 };
+  if (S.overlay !== 'none') setOverlay('none');
   renderNow();
+  q.ui.focus('chrome');
   const input = $('#find-input');
   if (input) { input.focus(); input.select(); }
 }
@@ -210,6 +212,8 @@ export function closeFind() {
   S.find = null;
   q.page.stopFind('clearSelection');
   renderNow();
+  // La frappe (Espace, flèches, Page suivante) revient à la page.
+  if (S.overlay === 'none') q.ui.focus('page');
 }
 
 function findHTML() {

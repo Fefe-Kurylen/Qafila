@@ -147,6 +147,7 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .edit-field svg { color: var(--bfg2); width: 16px; height: 16px; stroke-width: 1.7; }
 .edit-field input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 15px; color: var(--bfg); height: 40px; }
 .edit-field input::placeholder { color: var(--bfg2); }
+.edit-field input:focus-visible { outline: none; } /* le champ d'adresse ou de recherche est déjà la pastille active */
 .edit-field .clear { color: var(--bfg2); display: grid; }
 .edit-field .clear svg { width: 17px; height: 17px; }
 .edit-field .count { font-size: 12px; color: var(--bfg2); white-space: nowrap; font-variant-numeric: tabular-nums; }

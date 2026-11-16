@@ -90,7 +90,9 @@ contextBridge.exposeInMainWorld('qafila', {
   },
   /** Le chrome déclare sa géométrie : bande ('strip', hauteur de barre) ou plein écran ('full'). */
   ui: {
-    setChrome: (mode, height) => invoke('ui:setChrome', { mode, height }),
+    setChrome: (mode, height, find = false) => invoke('ui:setChrome', { mode, height, find: !!find }),
+    /** Focus clavier natif : 'chrome' ou 'page'. */
+    focus: (target) => invoke('ui:focus', { target }),
     onCommand: (cb) => on('command', cb),
     onTheme: (cb) => on('theme', cb),
     close: () => invoke('ui:window', { action: 'close' }),

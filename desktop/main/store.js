@@ -194,7 +194,7 @@ function normalizeTab(t) {
   return {
     id: t.id || uuid(), url: t.url || null, title: String(t.title || ''), isPrivate: false,
     createdAt: num(t.createdAt), lastVisited: num(t.lastVisited), readingMinutes: Number(t.readingMinutes) || 0,
-    faviconURL: safeFaviconURL(t.faviconURL), themeColorHex: t.themeColorHex || null,
+    faviconURL: safeFaviconURL(t.faviconURL), themeColorHex: /^#[0-9a-f]{6}$/i.test(String(t.themeColorHex || '')) ? String(t.themeColorHex).toLowerCase() : null,
   };
 }
 function num(v) { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : Date.now(); }
