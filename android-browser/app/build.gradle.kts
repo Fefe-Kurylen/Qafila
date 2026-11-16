@@ -1,3 +1,4 @@
+import groovy.json.JsonSlurper
 import java.util.Properties
 
 plugins {
@@ -14,6 +15,19 @@ val keystoreProps = Properties().apply {
 }
 fun signing(key: String): String? = keystoreProps.getProperty(key) ?: System.getenv(key)
 
+// Soutien : lien Stripe lu dans la source unique ../shared/support.json (jamais codé en dur ici).
+// Absent ou vide = « Bientôt disponible » dans l'appli ; l'URL est revalidée à l'exécution (https + hôte autorisé).
+val supportJson: Map<*, *> = rootProject.file("../shared/support.json").let { f ->
+    if (f.exists()) (JsonSlurper().parse(f) as? Map<*, *>).orEmpty() else emptyMap<Any, Any>()
+}
+val supportStripeUrl = (supportJson["stripePaymentLink"] as? String).orEmpty().trim()
+val supportAllowedHosts = (supportJson["allowedHosts"] as? List<*>).orEmpty().mapNotNull { (it as? String)?.trim()?.lowercase() }.filter { it.isNotEmpty() }
+/** Littéral Java échappé pour buildConfigField. */
+fun javaLiteral(s: String) = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "").replace("\r", "") + "\""
+// Builds Google Play : abonnement natif tant que le programme d'offres externes de l'EEE n'est pas signé.
+// Une fois inscrit : gradle bundleRelease -Pqafila.stripeInStores=true
+val stripeInStores = (findProperty("qafila.stripeInStores") as? String)?.trim() == "true"
+
 android {
     namespace = "fr.qafila.browser"
     compileSdk = 35
@@ -27,6 +41,8 @@ android {
         vectorDrawables.useSupportLibrary = true
         // Langues livrées (les ressources d'autres langues venant des bibliothèques sont écartées).
         resourceConfigurations += listOf("fr", "en", "ar", "es", "de")
+        buildConfigField("String", "SUPPORT_STRIPE_URL", javaLiteral(supportStripeUrl))
+        buildConfigField("String", "SUPPORT_ALLOWED_HOSTS", javaLiteral(supportAllowedHosts.joinToString(",")))
     }
 
     signingConfigs {
@@ -47,8 +63,14 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (signing("KEYSTORE_FILE") != null) signingConfig = signingConfigs.getByName("release")
+            // Canal de soutien : Google Play (abonnement) sauf bascule explicite qafila.stripeInStores=true.
+            buildConfigField("boolean", "SUPPORT_VIA_STRIPE", stripeInStores.toString())
         }
-        debug { applicationIdSuffix = ".debug" }
+        debug {
+            applicationIdSuffix = ".debug"
+            // APK de test gratuit (hors Google Play) : soutien par le lien Stripe.
+            buildConfigField("boolean", "SUPPORT_VIA_STRIPE", "true")
+        }
     }
 
     compileOptions {

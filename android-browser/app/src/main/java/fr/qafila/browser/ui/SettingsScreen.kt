@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -127,7 +128,12 @@ private fun RootPage(store: BrowserStore, onDismiss: () -> Unit, open: (Settings
             // Pas d'aperçu en tête : la galerie de barres d'abord (les aperçus restent dans les sous-pages), puis le soutien (seul le cœur est en couleur).
             GroupCard {
                 NavRow(stringResource(R.string.page_gallery), icon = QIcon.GRID) { open(SettingsPage.GALLERY) }; RowDivider(50.dp)
-                NavRow(stringResource(R.string.page_support), value = if (supporter) stringResource(R.string.support_thanks_short) else stringResource(R.string.price_per_month, price ?: stringResource(R.string.support_fallback_price)),
+                // Avec Stripe : pas de prix (contribution libre).
+                NavRow(stringResource(R.string.page_support), value = when {
+                    store.support.viaStripe -> null
+                    supporter -> stringResource(R.string.support_thanks_short)
+                    else -> stringResource(R.string.price_per_month, price ?: stringResource(R.string.support_fallback_price))
+                },
                     icon = QIcon.HEART, iconTint = SupportPink) { open(SettingsPage.SUPPORT) }
             }
             Spacer(Modifier.height(24.dp))
@@ -223,7 +229,7 @@ private fun AppearancePage(store: BrowserStore, open: (SettingsPage) -> Unit) {
         GroupCard {
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 AppIcon.entries.forEach { ic ->
-                    val locked = ic.supportersOnly && !supporter
+                    val locked = ic.supportersOnly && !supporter && !store.support.viaStripe
                     Column(Modifier.pressFade { if (locked) open(SettingsPage.SUPPORT) else up { it.copy(appIcon = ic) } }, horizontalAlignment = Alignment.CenterHorizontally) {
                         AppIconTile(ic, selected = s.appIcon == ic, size = 52.dp, locked = locked)
                         Spacer(Modifier.height(6.dp))
@@ -232,7 +238,11 @@ private fun AppearancePage(store: BrowserStore, open: (SettingsPage) -> Unit) {
                 }
             }
         }
-        SectionFooter(stringResource(if (supporter) R.string.app_icon_footer_supporter else R.string.app_icon_footer))
+        SectionFooter(stringResource(when {
+            store.support.viaStripe -> R.string.app_icon_footer_all
+            supporter -> R.string.app_icon_footer_supporter
+            else -> R.string.app_icon_footer
+        }))
 
         SectionHeader(stringResource(R.string.haptic_feedback))
         GroupCard { ToggleRow(stringResource(R.string.vibrations), s.haptics) { v -> up { it.copy(haptics = v) } } }
@@ -333,6 +343,57 @@ fun AppIconTile(icon: AppIcon, selected: Boolean, size: Dp = 58.dp, locked: Bool
 // ---------------------------------------------------------------- Soutenir Qafila
 @Composable
 private fun SupportPage(store: BrowserStore) {
+    if (store.support.viaStripe) StripeSupportPage(store) else StoreSupportPage(store)
+}
+
+/** Soutien hors Google Play : contribution libre sur la page Stripe, ouverte dans le navigateur du système. Rien n'est débloqué. */
+@Composable
+private fun StripeSupportPage(store: BrowserStore) {
+    val q = LocalQ.current
+    val sup = store.support
+    val message by sup.message.collectAsState()
+    val context = LocalContext.current
+    val url = sup.stripeUrl
+    Column {
+        Column(Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            AppIconTile(settingsOf(store).appIcon, selected = false, size = 96.dp)
+            Spacer(Modifier.height(14.dp))
+            Text(stringResource(R.string.page_support), color = q.text, fontSize = 24.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.support_stripe_pitch),
+                color = q.secondary, fontSize = 15.sp, lineHeight = 21.sp, textAlign = TextAlign.Center)
+        }
+        Spacer(Modifier.height(16.dp))
+        // Lien absent ou invalide : bouton inactif « Bientôt disponible ».
+        Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(14.dp))
+            .background(SupportPink.copy(alpha = if (url != null) 1f else 0.45f))
+            .pressFade(enabled = url != null) { sup.openStripe(context) }
+            .padding(horizontal = 16.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Text(stringResource(if (url != null) R.string.page_support else R.string.support_coming_soon), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            if (url != null) Text(stringResource(R.string.support_stripe_methods), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                color = Color.White.copy(alpha = 0.85f), fontSize = 12.5.sp)
+        }
+        SectionHeader(stringResource(R.string.support_what))
+        GroupCard {
+            ValueRow(stringResource(R.string.support_no_ads), stringResource(R.string.support_for_everyone)); RowDivider()
+            ValueRow(stringResource(R.string.support_all_features), stringResource(R.string.support_for_everyone))
+        }
+        if (message != null) {
+            Spacer(Modifier.height(12.dp))
+            Text(message!!, Modifier.fillMaxWidth().padding(horizontal = 32.dp).pressFade { sup.message.value = null }, color = q.text, fontSize = 14.sp, textAlign = TextAlign.Center)
+        }
+        SectionFooter(stringResource(R.string.support_stripe_terms))
+        Spacer(Modifier.height(10.dp))
+        Text(stringResource(R.string.privacy_policy), Modifier.padding(horizontal = 32.dp).pressFade {
+            store.showSettings.value = false; store.newTab(url = "https://fefe-kurylen.github.io/Qafila/confidentialite.html")
+        }, color = q.accent, fontSize = 13.sp)
+    }
+}
+
+/** Soutien Google Play : abonnement mensuel, seul avantage l'icône « Or ». */
+@Composable
+private fun StoreSupportPage(store: BrowserStore) {
     val q = LocalQ.current
     val sup = store.support
     val supporter by sup.isSupporter.collectAsState()

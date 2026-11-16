@@ -215,6 +215,13 @@
     <string name="support_play_unavailable">Google Play is unavailable on this device right now.</string>
     <string name="support_restored">Subscription restored. Thank you ♥</string>
     <string name="support_none_found">No subscription found for this Google account.</string>
+    <!-- Soutien via Stripe (builds hors Google Play) -->
+    <string name="support_stripe_pitch">Qafila is free, with no ads and no tracking. If you like, you can help keep it that way with a voluntary contribution through Stripe.</string>
+    <string name="support_stripe_methods">Google Pay, card</string>
+    <string name="support_coming_soon">Coming soon</string>
+    <string name="support_all_features">All features and icons</string>
+    <string name="support_stripe_terms">Payment happens on Stripe\'s secure page, opened in your browser. Qafila never sees your payment details. Your contribution is voluntary and unlocks nothing: everything stays free for everyone.</string>
+    <string name="support_open_failed">Couldn\'t open the payment page: no browser available.</string>
     <string name="theme">Theme</string>
     <string name="accent_color">Accent color</string>
     <string name="bar_color_light">Bar color — light mode</string>
@@ -226,6 +233,7 @@
     <string name="app_icon">App icon</string>
     <string name="app_icon_footer_supporter">Thank you for supporting Qafila ♥ The Gold icon is yours. The icon changes on the home screen after a few seconds.</string>
     <string name="app_icon_footer">The Gold icon is a gift for people who support Qafila. The icon changes on the home screen after a few seconds.</string>
+    <string name="app_icon_footer_all">The icon changes on the home screen after a few seconds.</string>
     <string name="haptic_feedback">Haptic feedback</string>
     <string name="vibrations">Vibrations</string>
     <string name="customize_bar_menu">Customize toolbar and menu</string>

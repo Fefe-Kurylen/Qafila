@@ -215,6 +215,13 @@
     <string name="support_play_unavailable">Google Play no está disponible en este dispositivo por ahora.</string>
     <string name="support_restored">Suscripción recuperada. ¡Gracias! ♥</string>
     <string name="support_none_found">No se encontró ninguna suscripción para esta cuenta de Google.</string>
+    <!-- Soutien via Stripe (builds hors Google Play) -->
+    <string name="support_stripe_pitch">Qafila es gratuito, sin publicidad ni rastreo. Si quieres, puedes ayudar a que siga así con una aportación voluntaria a través de Stripe.</string>
+    <string name="support_stripe_methods">Google Pay, tarjeta bancaria</string>
+    <string name="support_coming_soon">Próximamente</string>
+    <string name="support_all_features">Todas las funciones e iconos</string>
+    <string name="support_stripe_terms">El pago se realiza en la página segura de Stripe, que se abre en tu navegador. Qafila nunca ve tus datos de pago. La aportación es voluntaria y no desbloquea nada: todo sigue siendo gratis para todos.</string>
+    <string name="support_open_failed">No se pudo abrir la página de pago: no hay ningún navegador disponible.</string>
     <string name="theme">Tema</string>
     <string name="accent_color">Color de acento</string>
     <string name="bar_color_light">Color de la barra — modo claro</string>
@@ -226,6 +233,7 @@
     <string name="app_icon">Icono de la app</string>
     <string name="app_icon_footer_supporter">Gracias por apoyar Qafila ♥ El icono Oro es tuyo. El icono cambia en la pantalla de inicio tras unos segundos.</string>
     <string name="app_icon_footer">El icono Oro es un regalo para quienes apoyan Qafila. El icono cambia en la pantalla de inicio tras unos segundos.</string>
+    <string name="app_icon_footer_all">El icono cambia en la pantalla de inicio tras unos segundos.</string>
     <string name="haptic_feedback">Respuesta háptica</string>
     <string name="vibrations">Vibración</string>
     <string name="customize_bar_menu">Personalizar barra y menú</string>

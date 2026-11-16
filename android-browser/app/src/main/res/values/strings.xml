@@ -229,6 +229,13 @@
     <string name="support_play_unavailable">Google Play est indisponible sur cet appareil pour le moment.</string>
     <string name="support_restored">Abonnement retrouvé. Merci ♥</string>
     <string name="support_none_found">Aucun abonnement trouvé pour ce compte Google.</string>
+    <!-- Soutien via Stripe (builds hors Google Play) -->
+    <string name="support_stripe_pitch">Qafila est gratuit, sans publicité ni pistage. Si vous le souhaitez, vous pouvez aider à le garder ainsi par une contribution libre, via Stripe.</string>
+    <string name="support_stripe_methods">Google Pay, carte bancaire</string>
+    <string name="support_coming_soon">Bientôt disponible</string>
+    <string name="support_all_features">Toutes les fonctions et icônes</string>
+    <string name="support_stripe_terms">Le paiement se fait sur la page sécurisée de Stripe, ouverte dans votre navigateur. Qafila ne voit jamais vos coordonnées de paiement. La contribution est volontaire et ne débloque rien : tout reste offert à tous.</string>
+    <string name="support_open_failed">Impossible d\'ouvrir la page de paiement : aucun navigateur disponible.</string>
     <string name="theme">Thème</string>
     <string name="accent_color">Couleur d\'accent</string>
     <string name="bar_color_light">Couleur de la barre — mode clair</string>
@@ -240,6 +247,7 @@
     <string name="app_icon">Icône de l\'application</string>
     <string name="app_icon_footer_supporter">Merci de soutenir Qafila ♥ L\'icône Or est à vous. L\'icône change sur l\'écran d\'accueil après quelques secondes.</string>
     <string name="app_icon_footer">L\'icône Or est offerte aux personnes qui soutiennent Qafila. L\'icône change sur l\'écran d\'accueil après quelques secondes.</string>
+    <string name="app_icon_footer_all">L\'icône change sur l\'écran d\'accueil après quelques secondes.</string>
     <string name="haptic_feedback">Retour haptique</string>
     <string name="vibrations">Vibrations</string>
     <string name="customize_bar_menu">Personnaliser la barre et le menu</string>

@@ -83,9 +83,9 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
     }
 
     init {
-        // Fin du soutien (ou soutien jamais confirmé) : retour à l'icône classique.
-        support.onSupportEnded = { if (settings.appIcon.supportersOnly) updateSettings { it.copy(appIcon = AppIcon.CLASSIC) } }
-        if (settings.appIcon.supportersOnly && !support.isSupporter.value) updateSettings { it.copy(appIcon = AppIcon.CLASSIC) }
+        // Fin du soutien (ou soutien jamais confirmé) : retour à l'icône classique. Avec Stripe, l'icône Or est offerte à tous.
+        support.onSupportEnded = { if (!support.viaStripe && settings.appIcon.supportersOnly) updateSettings { it.copy(appIcon = AppIcon.CLASSIC) } }
+        if (!support.viaStripe && settings.appIcon.supportersOnly && !support.isSupporter.value) updateSettings { it.copy(appIcon = AppIcon.CLASSIC) }
         autoCloseOldTabs()
         if (_state.value.tabs.isEmpty()) BrowserTab(url = newTabUrl()).let { t -> _state.update { it.copy(tabs = listOf(t), selectedTabId = t.id) } }
         if (_state.value.selectedTabId == null || _state.value.tabs.none { it.id == _state.value.selectedTabId }) _state.update { it.copy(selectedTabId = it.tabs.lastOrNull()?.id) }

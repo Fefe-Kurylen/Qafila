@@ -215,6 +215,13 @@
     <string name="support_play_unavailable">Google Play غير متاح على هذا الجهاز حاليًا.</string>
     <string name="support_restored">تمت استعادة الاشتراك. شكرًا ♥</string>
     <string name="support_none_found">لم يُعثر على اشتراك لحساب Google هذا.</string>
+    <!-- Soutien via Stripe (builds hors Google Play) -->
+    <string name="support_stripe_pitch">Qafila مجاني، بلا إعلانات ولا تتبّع. إن شئت، يمكنك المساعدة في إبقائه كذلك بمساهمة طوعية عبر Stripe.</string>
+    <string name="support_stripe_methods">Google Pay، بطاقة بنكية</string>
+    <string name="support_coming_soon">قريبًا</string>
+    <string name="support_all_features">جميع الميزات والأيقونات</string>
+    <string name="support_stripe_terms">يتم الدفع على صفحة Stripe الآمنة التي تُفتح في متصفحك. لا يطّلع Qafila أبدًا على بيانات الدفع الخاصة بك. المساهمة طوعية ولا تفتح أي ميزة: كل شيء يبقى مجانيًا للجميع.</string>
+    <string name="support_open_failed">تعذّر فتح صفحة الدفع: لا يوجد متصفح متاح.</string>
     <string name="theme">السمة</string>
     <string name="accent_color">لون التمييز</string>
     <string name="bar_color_light">لون الشريط — الوضع الفاتح</string>
@@ -226,6 +233,7 @@
     <string name="app_icon">أيقونة التطبيق</string>
     <string name="app_icon_footer_supporter">شكرًا لدعمك Qafila ♥ الأيقونة الذهبية لك. تتغيّر الأيقونة على الشاشة الرئيسية بعد بضع ثوانٍ.</string>
     <string name="app_icon_footer">الأيقونة الذهبية هدية لمن يدعمون Qafila. تتغيّر الأيقونة على الشاشة الرئيسية بعد بضع ثوانٍ.</string>
+    <string name="app_icon_footer_all">تتغيّر الأيقونة على الشاشة الرئيسية بعد بضع ثوانٍ.</string>
     <string name="haptic_feedback">الاستجابة اللمسية</string>
     <string name="vibrations">الاهتزاز</string>
     <string name="customize_bar_menu">تخصيص الشريط والقائمة</string>

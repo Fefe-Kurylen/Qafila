@@ -215,6 +215,13 @@
     <string name="support_play_unavailable">Google Play ist auf diesem Gerät derzeit nicht verfügbar.</string>
     <string name="support_restored">Abo wiederhergestellt. Danke ♥</string>
     <string name="support_none_found">Für dieses Google-Konto wurde kein Abo gefunden.</string>
+    <!-- Soutien via Stripe (builds hors Google Play) -->
+    <string name="support_stripe_pitch">Qafila ist kostenlos, ohne Werbung und ohne Tracking. Wenn Sie möchten, können Sie mit einem freiwilligen Beitrag über Stripe helfen, dass es so bleibt.</string>
+    <string name="support_stripe_methods">Google Pay, Bankkarte</string>
+    <string name="support_coming_soon">Bald verfügbar</string>
+    <string name="support_all_features">Alle Funktionen und Symbole</string>
+    <string name="support_stripe_terms">Die Zahlung erfolgt auf der sicheren Seite von Stripe, die sich in Ihrem Browser öffnet. Qafila sieht Ihre Zahlungsdaten nie. Der Beitrag ist freiwillig und schaltet nichts frei: Alles bleibt für alle kostenlos.</string>
+    <string name="support_open_failed">Die Zahlungsseite konnte nicht geöffnet werden: Kein Browser verfügbar.</string>
     <string name="theme">Design</string>
     <string name="accent_color">Akzentfarbe</string>
     <string name="bar_color_light">Leistenfarbe – heller Modus</string>
@@ -226,6 +233,7 @@
     <string name="app_icon">App-Symbol</string>
     <string name="app_icon_footer_supporter">Danke, dass Sie Qafila unterstützen ♥ Das Gold-Symbol gehört Ihnen. Das Symbol ändert sich auf dem Startbildschirm nach einigen Sekunden.</string>
     <string name="app_icon_footer">Das Gold-Symbol gibt es für alle, die Qafila unterstützen. Das Symbol ändert sich auf dem Startbildschirm nach einigen Sekunden.</string>
+    <string name="app_icon_footer_all">Das Symbol ändert sich auf dem Startbildschirm nach einigen Sekunden.</string>
     <string name="haptic_feedback">Haptisches Feedback</string>
     <string name="vibrations">Vibration</string>
     <string name="customize_bar_menu">Leiste und Menü anpassen</string>
