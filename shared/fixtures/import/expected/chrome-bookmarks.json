@@ -1,0 +1,215 @@
+{
+  "format": "netscape-html",
+  "source": "chrome",
+  "title": "Bookmarks",
+  "roots": [
+    {
+      "type": "folder",
+      "name": "Bookmarks bar",
+      "toolbar": true,
+      "role": "toolbar",
+      "addedAt": 1700000000000,
+      "modifiedAt": 1763290000000,
+      "note": null,
+      "children": [
+        {
+          "type": "bookmark",
+          "title": "Aeon | a world of ideas",
+          "url": "https://aeon.co/",
+          "addedAt": 1700000001000,
+          "modifiedAt": null,
+          "note": null
+        },
+        {
+          "type": "bookmark",
+          "title": "Le Monde.fr - Actualités & Infos",
+          "url": "https://www.lemonde.fr/",
+          "addedAt": 1700000002000,
+          "modifiedAt": null,
+          "note": null
+        },
+        {
+          "type": "folder",
+          "name": "Lecture",
+          "toolbar": false,
+          "role": null,
+          "addedAt": 1700000003000,
+          "modifiedAt": 1700000010000,
+          "note": null,
+          "children": [
+            {
+              "type": "bookmark",
+              "title": "The Atlantic",
+              "url": "https://www.theatlantic.com/",
+              "addedAt": 1700000004000,
+              "modifiedAt": null,
+              "note": null
+            },
+            {
+              "type": "folder",
+              "name": "Sciences & techniques",
+              "toolbar": false,
+              "role": null,
+              "addedAt": 1700000005000,
+              "modifiedAt": 1700000006000,
+              "note": null,
+              "children": [
+                {
+                  "type": "bookmark",
+                  "title": "arXiv cs.CR",
+                  "url": "https://arxiv.org/list/cs.CR/recent",
+                  "addedAt": 1700000006000,
+                  "modifiedAt": null,
+                  "note": null
+                },
+                {
+                  "type": "bookmark",
+                  "title": "arXiv cs.CR (doublon, slash final)",
+                  "url": "https://arxiv.org/list/cs.CR/recent/",
+                  "addedAt": 1700000007000,
+                  "modifiedAt": null,
+                  "note": null
+                }
+              ]
+            },
+            {
+              "type": "bookmark",
+              "title": "The Atlantic (doublon)",
+              "url": "https://www.theatlantic.com/",
+              "addedAt": 1700000008000,
+              "modifiedAt": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "Dossier vide",
+          "toolbar": false,
+          "role": null,
+          "addedAt": 1700000011000,
+          "modifiedAt": 1700000011000,
+          "note": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "type": "bookmark",
+      "title": "Caravane (transport) — Wikipédia",
+      "url": "https://fr.wikipedia.org/wiki/Caravane_(transport)",
+      "addedAt": 1700000012000,
+      "modifiedAt": null,
+      "note": null
+    },
+    {
+      "type": "folder",
+      "name": "Voyage",
+      "toolbar": false,
+      "role": null,
+      "addedAt": 1700000014000,
+      "modifiedAt": 1700000020000,
+      "note": null,
+      "children": [
+        {
+          "type": "bookmark",
+          "title": "SNCF Connect",
+          "url": "https://www.sncf-connect.com/",
+          "addedAt": 1700000015000,
+          "modifiedAt": null,
+          "note": null
+        },
+        {
+          "type": "bookmark",
+          "title": "Booking : Tunis",
+          "url": "https://www.booking.com/searchresults.html?ss=Tunis&lang=fr",
+          "addedAt": 1700000016000,
+          "modifiedAt": null,
+          "note": null
+        },
+        {
+          "type": "bookmark",
+          "title": "Météo (IDN, http)",
+          "url": "http://www.météo.example.fr/",
+          "addedAt": 1700000017000,
+          "modifiedAt": null,
+          "note": null
+        },
+        {
+          "type": "folder",
+          "name": "Tunisie",
+          "toolbar": false,
+          "role": null,
+          "addedAt": 1700000018000,
+          "modifiedAt": 1700000019000,
+          "note": null,
+          "children": [
+            {
+              "type": "bookmark",
+              "title": "Tunisair",
+              "url": "https://www.tunisair.com/",
+              "addedAt": 1700000019000,
+              "modifiedAt": null,
+              "note": null
+            },
+            {
+              "type": "bookmark",
+              "title": "Tunisair (doublon, sans slash)",
+              "url": "https://www.tunisair.com",
+              "addedAt": 1700000020000,
+              "modifiedAt": null,
+              "note": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "bookmark",
+      "title": "Exemple avec requête",
+      "url": "https://example.com/?q=a&b=c",
+      "addedAt": 1700000021000,
+      "modifiedAt": null,
+      "note": null
+    },
+    {
+      "type": "bookmark",
+      "title": "Exemple avec requête et fragment (doublon)",
+      "url": "https://example.com/?q=a&b=c#frag",
+      "addedAt": 1700000022000,
+      "modifiedAt": null,
+      "note": null
+    },
+    {
+      "type": "bookmark",
+      "title": "Date WebKit en µs",
+      "url": "https://www.example.org/%C3%A9t%C3%A9",
+      "addedAt": 1673726400000,
+      "modifiedAt": null,
+      "note": null
+    }
+  ],
+  "skipped": [
+    {
+      "reason": "unsupported-scheme",
+      "title": "Bookmarklet",
+      "url": "javascript:(function(){window.open('https://example.com/')})()",
+      "path": [
+        "Bookmarks bar"
+      ]
+    },
+    {
+      "reason": "unsupported-scheme",
+      "title": "Mots de passe Chrome",
+      "url": "chrome://settings/passwords",
+      "path": []
+    }
+  ],
+  "counts": {
+    "bookmarks": 15,
+    "folders": 6,
+    "separators": 0,
+    "skipped": 2,
+    "maxDepth": 3
+  }
+}

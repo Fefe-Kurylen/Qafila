@@ -1,0 +1,239 @@
+{
+  "format": "netscape-html",
+  "source": "firefox",
+  "title": "Bookmarks Menu",
+  "roots": [
+    {
+      "type": "folder",
+      "name": "Bookmarks Toolbar",
+      "toolbar": true,
+      "role": "toolbar",
+      "addedAt": 1700000000000,
+      "modifiedAt": 1763290000000,
+      "note": "Add bookmarks to this folder to see them displayed on the Bookmarks Toolbar",
+      "children": [
+        {
+          "type": "bookmark",
+          "title": "Pour commencer",
+          "url": "https://www.mozilla.org/fr/firefox/central/",
+          "addedAt": 1700000001000,
+          "modifiedAt": 1700000001000,
+          "note": null
+        },
+        {
+          "type": "bookmark",
+          "title": "Aeon",
+          "url": "https://aeon.co/",
+          "addedAt": 1700000002000,
+          "modifiedAt": 1750000000000,
+          "note": "Essais longs, à lire le week-end"
+        },
+        {
+          "type": "folder",
+          "name": "Travail",
+          "toolbar": false,
+          "role": null,
+          "addedAt": 1700000003000,
+          "modifiedAt": 1760000000000,
+          "note": null,
+          "children": [
+            {
+              "type": "bookmark",
+              "title": "GitHub",
+              "url": "https://github.com/",
+              "addedAt": 1700000004000,
+              "modifiedAt": 1700000004000,
+              "note": null
+            },
+            {
+              "type": "bookmark",
+              "title": "MDN Web Docs",
+              "url": "https://developer.mozilla.org/fr/docs/Web",
+              "addedAt": 1700000005000,
+              "modifiedAt": 1700000005000,
+              "note": null
+            },
+            {
+              "type": "bookmark",
+              "title": "MDN (doublon, slash final)",
+              "url": "https://developer.mozilla.org/fr/docs/Web/",
+              "addedAt": 1700000006000,
+              "modifiedAt": 1700000006000,
+              "note": null
+            },
+            {
+              "type": "bookmark",
+              "title": "Webmail (dates en ms)",
+              "url": "https://mail.example.org/",
+              "addedAt": 1763290000000,
+              "modifiedAt": 1763290000000,
+              "note": null
+            },
+            {
+              "type": "folder",
+              "name": "Qafila",
+              "toolbar": false,
+              "role": null,
+              "addedAt": 1700000007000,
+              "modifiedAt": 1700000009000,
+              "note": null,
+              "children": [
+                {
+                  "type": "bookmark",
+                  "title": "Qafila",
+                  "url": "https://qafila.fr/",
+                  "addedAt": 1700000008000,
+                  "modifiedAt": 1700000008000,
+                  "note": null
+                },
+                {
+                  "type": "bookmark",
+                  "title": "Issues",
+                  "url": "https://github.com/qafila/qafila/issues?q=is%3Aopen",
+                  "addedAt": 1700000009000,
+                  "modifiedAt": 1700000009000,
+                  "note": null
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "Other Bookmarks",
+      "toolbar": false,
+      "role": "unfiled",
+      "addedAt": 1700000010000,
+      "modifiedAt": 1763000000000,
+      "note": null,
+      "children": [
+        {
+          "type": "bookmark",
+          "title": "Caravane (transport) — Wikipédia",
+          "url": "https://fr.wikipedia.org/wiki/Caravane_(transport)",
+          "addedAt": 1700000011000,
+          "modifiedAt": 1700000011000,
+          "note": null
+        },
+        {
+          "type": "bookmark",
+          "title": "Tajine & cie",
+          "url": "https://www.recettes.example/tajine?épices=ras-el-hanout",
+          "addedAt": 1700000012000,
+          "modifiedAt": 1700000012000,
+          "note": "Recette de la grand-mère de Sami"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "Mobile Bookmarks",
+      "toolbar": false,
+      "role": "mobile",
+      "addedAt": 1700000016000,
+      "modifiedAt": 1700000017000,
+      "note": null,
+      "children": [
+        {
+          "type": "bookmark",
+          "title": "Exemple mobile",
+          "url": "https://m.example.com/",
+          "addedAt": 1700000017000,
+          "modifiedAt": 1700000017000,
+          "note": null
+        }
+      ]
+    },
+    {
+      "type": "bookmark",
+      "title": "Le Monde",
+      "url": "https://www.lemonde.fr/",
+      "addedAt": 1700000018000,
+      "modifiedAt": 1700000018000,
+      "note": null
+    },
+    {
+      "type": "bookmark",
+      "title": "Le Monde (doublon, fragment vide)",
+      "url": "https://www.lemonde.fr/#",
+      "addedAt": 1700000019000,
+      "modifiedAt": 1700000019000,
+      "note": null
+    },
+    {
+      "type": "folder",
+      "name": "Lecture",
+      "toolbar": false,
+      "role": null,
+      "addedAt": 1700000020000,
+      "modifiedAt": 1700000022000,
+      "note": null,
+      "children": [
+        {
+          "type": "bookmark",
+          "title": "The Atlantic",
+          "url": "https://www.theatlantic.com/",
+          "addedAt": 1700000021000,
+          "modifiedAt": 1700000021000,
+          "note": null
+        },
+        {
+          "type": "bookmark",
+          "title": "L'été — billet",
+          "url": "https://blog.example.org/2026/l'%C3%A9t%C3%A9",
+          "addedAt": 1700000022000,
+          "modifiedAt": 1700000022000,
+          "note": null
+        }
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "reason": "unsupported-scheme",
+      "title": "Recent Tags",
+      "url": "place:sort=8&maxResults=10",
+      "path": []
+    },
+    {
+      "reason": "unsupported-scheme",
+      "title": "about:config",
+      "url": "about:config",
+      "path": [
+        "Other Bookmarks"
+      ]
+    },
+    {
+      "reason": "unsupported-scheme",
+      "title": "Notes locales",
+      "url": "file:///home/lina/notes.html",
+      "path": [
+        "Other Bookmarks"
+      ]
+    },
+    {
+      "reason": "unsupported-scheme",
+      "title": "Page data:",
+      "url": "data:text/html,%3Ch1%3EBonjour%3C%2Fh1%3E",
+      "path": [
+        "Other Bookmarks"
+      ]
+    },
+    {
+      "reason": "internal-folder",
+      "title": "Mozilla Firefox",
+      "url": "",
+      "path": [],
+      "bookmarks": 4
+    }
+  ],
+  "counts": {
+    "bookmarks": 15,
+    "folders": 6,
+    "separators": 3,
+    "skipped": 5,
+    "maxDepth": 3
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "format": "firefox-csv",
+  "source": "firefox",
+  "logins": [
+    {
+      "title": "aeon.co",
+      "origins": [
+        "https://aeon.co"
+      ],
+      "username": "lina@example.org",
+      "password": "Tr0ub4dour&3",
+      "note": "",
+      "formActionOrigin": "https://aeon.co",
+      "httpRealm": null,
+      "createdAt": 1700000000000,
+      "lastUsedAt": 1763290000000,
+      "passwordChangedAt": 1750000000000,
+      "importGuid": "{3f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90}",
+      "source": "firefox"
+    },
+    {
+      "title": "accounts.google.com",
+      "origins": [
+        "https://accounts.google.com"
+      ],
+      "username": "lina.ferjani@gmail.com",
+      "password": "p,ass\"word",
+      "note": "",
+      "formActionOrigin": "https://accounts.google.com",
+      "httpRealm": null,
+      "createdAt": 1690000000000,
+      "lastUsedAt": 1763200000000,
+      "passwordChangedAt": 1690000000000,
+      "importGuid": "{8a2b7c1d-0e3f-4a5b-8c6d-7e8f9a0b1c2d}",
+      "source": "firefox"
+    },
+    {
+      "title": "Authentification HTTP · routeur.example.lan:8080",
+      "origins": [
+        "https://routeur.example.lan:8080"
+      ],
+      "username": "admin",
+      "password": "admin-réseau",
+      "note": "",
+      "formActionOrigin": null,
+      "httpRealm": "Routeur Wi-Fi",
+      "createdAt": 1680000000000,
+      "lastUsedAt": 1700000000000,
+      "passwordChangedAt": 1680000000000,
+      "importGuid": "{c4d5e6f7-a8b9-4c0d-9e1f-2a3b4c5d6e7f}",
+      "source": "firefox"
+    },
+    {
+      "title": "www.example.org",
+      "origins": [
+        "http://www.example.org"
+      ],
+      "username": "lina",
+      "password": "oldpass123",
+      "note": "",
+      "formActionOrigin": "http://www.example.org",
+      "httpRealm": null,
+      "createdAt": 1560000000000,
+      "lastUsedAt": 1600000000000,
+      "passwordChangedAt": 1560000000000,
+      "importGuid": "{d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f5a}",
+      "source": "firefox"
+    },
+    {
+      "title": "www.example.org",
+      "origins": [
+        "https://www.example.org"
+      ],
+      "username": "lina",
+      "password": "newpass456",
+      "note": "",
+      "formActionOrigin": "https://www.example.org",
+      "httpRealm": null,
+      "createdAt": 1600000000000,
+      "lastUsedAt": 1763000000000,
+      "passwordChangedAt": 1600000000000,
+      "importGuid": "{e2f3a4b5-c6d7-4e8f-9a0b-1c2d3e4f5a6b}",
+      "source": "firefox"
+    },
+    {
+      "title": "banque.example.fr",
+      "origins": [
+        "https://banque.example.fr"
+      ],
+      "username": "0123456789",
+      "password": "secret-banque",
+      "note": "",
+      "formActionOrigin": "https://banque.example.fr",
+      "httpRealm": null,
+      "createdAt": 1650000000000,
+      "lastUsedAt": 1763100000000,
+      "passwordChangedAt": 1650000000000,
+      "importGuid": "{f3a4b5c6-d7e8-4f9a-8b1c-2d3e4f5a6b7c}",
+      "source": "firefox"
+    },
+    {
+      "title": "banque.example.fr",
+      "origins": [
+        "https://banque.example.fr"
+      ],
+      "username": "amine",
+      "password": "autre-compte",
+      "note": "",
+      "formActionOrigin": null,
+      "httpRealm": null,
+      "createdAt": 1650000001000,
+      "lastUsedAt": null,
+      "passwordChangedAt": 1650000001000,
+      "importGuid": "{a4b5c6d7-e8f9-4a0b-9c2d-3e4f5a6b7c8d}",
+      "source": "firefox"
+    },
+    {
+      "title": "aeon.co",
+      "origins": [
+        "https://aeon.co"
+      ],
+      "username": "Lina@example.org",
+      "password": "Tr0ub4dour&5",
+      "note": "",
+      "formActionOrigin": "https://aeon.co",
+      "httpRealm": null,
+      "createdAt": 1760000000000,
+      "lastUsedAt": null,
+      "passwordChangedAt": 1760000000000,
+      "importGuid": "{b5c6d7e8-f9a0-4b1c-8d3e-4f5a6b7c8d9e}",
+      "source": "firefox"
+    },
+    {
+      "title": "xn--mdiathque-53af.example.tn",
+      "origins": [
+        "https://xn--mdiathque-53af.example.tn"
+      ],
+      "username": "لينا",
+      "password": "été 2026 ✓",
+      "note": "",
+      "formActionOrigin": "https://xn--mdiathque-53af.example.tn",
+      "httpRealm": null,
+      "createdAt": 1720000000000,
+      "lastUsedAt": 1720000000000,
+      "passwordChangedAt": 1720000000000,
+      "importGuid": "{c6d7e8f9-a0b1-4c2d-9e4f-5a6b7c8d9e0f}",
+      "source": "firefox"
+    },
+    {
+      "title": "forum.example.org",
+      "origins": [
+        "https://forum.example.org"
+      ],
+      "username": "sami",
+      "password": "mot de passe, avec virgule",
+      "note": "",
+      "formActionOrigin": "https://forum.example.org",
+      "httpRealm": null,
+      "createdAt": 1730000000000,
+      "lastUsedAt": null,
+      "passwordChangedAt": 1730000000000,
+      "importGuid": "{d7e8f9a0-b1c2-4d3e-8f5a-6b7c8d9e0f1a}",
+      "source": "firefox"
+    },
+    {
+      "title": "aeon.co",
+      "origins": [
+        "https://aeon.co"
+      ],
+      "username": "lina@example.org",
+      "password": "Tr0ub4dour&3",
+      "note": "",
+      "formActionOrigin": "https://aeon.co",
+      "httpRealm": null,
+      "createdAt": 1700000000000,
+      "lastUsedAt": 1763290000000,
+      "passwordChangedAt": 1750000000000,
+      "importGuid": "{3f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90}",
+      "source": "firefox"
+    }
+  ],
+  "skipped": [
+    {
+      "row": 12,
+      "reason": "invalid-origin",
+      "url": "chrome://settings"
+    }
+  ],
+  "counts": {
+    "rows": 12,
+    "logins": 11,
+    "skipped": 1,
+    "androidApps": 0
+  }
+}
