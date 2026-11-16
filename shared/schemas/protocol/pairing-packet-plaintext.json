@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pairing-packet-plaintext.json",
+  "title": "Contenu déchiffré du paquet d'appairage (jamais vu par le relais)",
+  "description": "Charge déchiffrée du paquet (jamais vue par le relais ; identique à pairing-packet.schema.json#/$defs/payload). JSON canonique (clés triées, entiers seulement), bourrage 0x80 + zéros jusqu'à un multiple de 256 o, puis AES-256-GCM. `vmk` est la clé maîtresse en clair : ce paquet n'existe qu'en RAM des deux côtés. `server` est l'URL du relais que N doit utiliser (celle de E fait foi : c'est celle du coffre). `deviceName` est le nom de E, affiché sur N : « Associé à iPhone de Lina ».",
+  "type": "object",
+  "required": [
+    "v",
+    "vaultId",
+    "keyGeneration",
+    "vmk",
+    "header",
+    "server",
+    "deviceName"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "vaultId": {
+      "$ref": "common.json#/$defs/vaultId"
+    },
+    "keyGeneration": {
+      "$ref": "common.json#/$defs/keyGeneration"
+    },
+    "vmk": {
+      "$ref": "common.json#/$defs/base64url32"
+    },
+    "header": {
+      "$ref": "header-public.json"
+    },
+    "server": {
+      "$ref": "common.json#/$defs/httpsUrl"
+    },
+    "deviceName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  }
+}

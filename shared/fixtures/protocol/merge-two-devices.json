@@ -1,0 +1,521 @@
+{
+  "title": "Deux appareils modifient le même favori (et le même identifiant) hors ligne : LWW sur rev, historique du mot de passe",
+  "description": "A (iPhone, auteur d3c9a1f0) et B (PC, auteur 7b2e91cc) partent du même état (seq 2). Hors ligne, A renomme le favori, B le déplace dans un dossier. B repasse en ligne le premier. Règles PROTOCOL.md §5 : dernier écrivain gagne par enregistrement entier sur `rev` (le renommage de A est perdu, pas fusionné champ par champ) ; pour un identifiant, le mot de passe du perdant va dans passwordHistory du gagnant. Le relais applique la même règle à l'aveugle ; le client la ré-applique après déchiffrement. Les `ct` sont opaques ; le contenu déchiffré correspondant est donné dans `decrypted`.",
+  "actors": {
+    "A": "iPhone de Lina — deviceId d3c9a1f0",
+    "B": "Qafila PC — deviceId 7b2e91cc",
+    "R": "relais"
+  },
+  "rules": {
+    "order": "comparaison lexicographique des chaînes rev",
+    "bookmark": "LWW enregistrement entier",
+    "login": "LWW + mot de passe perdant ajouté à passwordHistory du gagnant (10 max)",
+    "idempotent": "appliquer deux fois la même enveloppe est sans effet"
+  },
+  "decrypted": {
+    "1763286911000-0000-06e7": {
+      "type": "bookmark",
+      "title": "Aeon",
+      "url": "https://aeon.co/",
+      "addedAt": 1763200000000,
+      "folderId": null,
+      "position": "a0V",
+      "author": "d3c9a1f0",
+      "deleted": false
+    },
+    "1763290521000-0000-c8d3": {
+      "type": "bookmark",
+      "title": "Aeon — essais",
+      "url": "https://aeon.co/",
+      "addedAt": 1763200000000,
+      "folderId": null,
+      "position": "a0V",
+      "author": "d3c9a1f0",
+      "deleted": false
+    },
+    "1763290523000-0000-834e": {
+      "type": "bookmark",
+      "title": "Aeon",
+      "url": "https://aeon.co/",
+      "addedAt": 1763200000000,
+      "folderId": "3cf16766-a332-417c-ae39-a92cd9c6ec67",
+      "position": "a0",
+      "author": "7b2e91cc",
+      "deleted": false
+    },
+    "1763286911000-0001-9cbf": {
+      "type": "login",
+      "title": "Aeon",
+      "origins": [
+        "https://aeon.co"
+      ],
+      "username": "lina@example.org",
+      "password": "ancien-mdp-1",
+      "note": "",
+      "formActionOrigin": "https://aeon.co",
+      "httpRealm": null,
+      "totp": null,
+      "folderId": null,
+      "favorite": false,
+      "tags": [],
+      "createdAt": 1763200000000,
+      "modifiedAt": 1763200000000,
+      "lastUsedAt": null,
+      "passwordChangedAt": 1763200000000,
+      "passwordHistory": [],
+      "source": "manual",
+      "importGuid": null,
+      "importBatch": null,
+      "neverSaveHere": false,
+      "author": "d3c9a1f0",
+      "deleted": false
+    },
+    "1763290531000-0000-aaf2": {
+      "type": "login",
+      "title": "Aeon",
+      "origins": [
+        "https://aeon.co"
+      ],
+      "username": "lina@example.org",
+      "password": "nouveau-depuis-iphone",
+      "note": "",
+      "formActionOrigin": "https://aeon.co",
+      "httpRealm": null,
+      "totp": null,
+      "folderId": null,
+      "favorite": false,
+      "tags": [],
+      "createdAt": 1763200000000,
+      "modifiedAt": 1763290531000,
+      "lastUsedAt": null,
+      "passwordChangedAt": 1763290531000,
+      "passwordHistory": [
+        {
+          "password": "ancien-mdp-1",
+          "changedAt": 1763200000000
+        }
+      ],
+      "source": "manual",
+      "importGuid": null,
+      "importBatch": null,
+      "neverSaveHere": false,
+      "author": "d3c9a1f0",
+      "deleted": false
+    },
+    "1763290531000-0000-e921": {
+      "type": "login",
+      "title": "Aeon",
+      "origins": [
+        "https://aeon.co"
+      ],
+      "username": "lina@example.org",
+      "password": "nouveau-depuis-pc",
+      "note": "",
+      "formActionOrigin": "https://aeon.co",
+      "httpRealm": null,
+      "totp": null,
+      "folderId": null,
+      "favorite": false,
+      "tags": [],
+      "createdAt": 1763200000000,
+      "modifiedAt": 1763290531000,
+      "lastUsedAt": null,
+      "passwordChangedAt": 1763290531000,
+      "passwordHistory": [
+        {
+          "password": "ancien-mdp-1",
+          "changedAt": 1763200000000
+        }
+      ],
+      "source": "manual",
+      "importGuid": null,
+      "importBatch": null,
+      "neverSaveHere": false,
+      "author": "7b2e91cc",
+      "deleted": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "bookmark",
+      "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+      "base": {
+        "v": 1,
+        "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763286911000-0000-06e7",
+        "del": false,
+        "n": "YsgYnSdr5Omi1ebU",
+        "ct": "LX3cWOhLMP4t94VKev2ydvhY9LQJSPM2Z__5LDTpVCFUI8jzpdiNlVlbmrQKOYksFk3Hzn7R7w0GWOA-jUBOWQIdzL6qOWgz_JLHHllXd1vOjvnZV4mtm2c0a55baY1jXneVcZvsqOlLNrZSBuYe0UA5N3DZ8OGbP6oA15BcRFQ87QICD5iclxKbq1bAGMtp7zLZcBlCzlIvQa28ZjooJsnBp08uPE01a1t5p_UzRKAbhhXAZN7zf5MDYv8RQxyhs06BsT9WBtjY1epV5t0qFsCIlmFZFyWynWcP1g2iAOW4L05dgxcSiba7sTwkZAMzkbWCqG2febZxcZzmSyJu6BqELgjuR3lkp-azScjssIs"
+      },
+      "edits": {
+        "A": {
+          "v": 1,
+          "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+          "tier": 2,
+          "kg": 3,
+          "rev": "1763290521000-0000-c8d3",
+          "del": false,
+          "n": "JVw7UstWsgPZze-y",
+          "ct": "Gd5RCcMXBgyZzVgO9HltxjvUH42OGoUvp0y73lJiSJd70-or7rRf4u67-hrT9P0zAsG9hCZgS6053JWiAAwsO36IhJRD9pmjIsFjPqUZakl38RCIxeWjAnsIu47xfSPlW35arj4ClXA38YUwC-klFQv4aK4E-8MaZNBGpgmwNJ44ijPlngU1wbihBxtUtT3rfpCpSPtMuxkEu51emZXvI6uvAHwoHdMdCV7EVJTJzXaxrMGS8OVR6A7zoqmSw3LENjzAJAUpfQ2DiI2QXkuCtekt5njpccYH7yw95UdXUxOzqeG_7dbWrk4UvVsAmn2I-aj0ZtGdmJLfJ6o68ms0T3Mv-bXDCF8F0wL74fCHDyA"
+        },
+        "B": {
+          "v": 1,
+          "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+          "tier": 2,
+          "kg": 3,
+          "rev": "1763290523000-0000-834e",
+          "del": false,
+          "n": "djOtyfRWK35YMaNz",
+          "ct": "O2Xz5c82_O-YkYpx5vPvAr1Z6FfzNDLJTJNQaGSNSnqLX7fRz4opBlW5Ev25ky2g_R5FyyrWWEPOW1WrBvDTGtGA4aQmvjs-I8ENGX-etkfyXDhzsoua21vv2KhCjCrx7jMV-ZWPBhFCI3KDp43yxTgaE1b2J2hqnAw6oxI_rIkoaNkjI_jAGohU6IlUxTH38aV7F6IuAxNHCTBoB9-r_mvsd7td7UQCkXaW19EueHZQ5EzWDcFLeqVkeKLJRKHo5ctFg8JJYvsqpkmI0wLWqO60t6CvVn-K5-O_Orm-0gJbnY58DISk5O1OSYnAhIBAeiloqe28dsGme6ZY6DigfWBPIjO_b13QgFcd5iORFkw"
+        }
+      },
+      "arrivalOrder": [
+        "B",
+        "A"
+      ],
+      "expected": {
+        "winner": "B",
+        "record": {
+          "type": "bookmark",
+          "title": "Aeon",
+          "url": "https://aeon.co/",
+          "addedAt": 1763200000000,
+          "folderId": "3cf16766-a332-417c-ae39-a92cd9c6ec67",
+          "position": "a0",
+          "author": "7b2e91cc",
+          "deleted": false
+        },
+        "lostEdit": "title",
+        "hlcAfterPullOnA": {
+          "lastMsAtLeast": 1763290523000
+        }
+      }
+    },
+    {
+      "name": "login",
+      "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+      "base": {
+        "v": 1,
+        "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763286911000-0001-9cbf",
+        "del": false,
+        "n": "CpqHghRHtlIeuVNq",
+        "ct": "dJ1ALLb-FuuwPsSzOubJDqVxm8sAO1sxKImVOdGnmR8vTl8YiOiqubJx66Yu1I8BNt_jgHOceQNM_l7LoMjS_PzSjKULLKAZsAj_W-SMTlgBM-5VNTIEIV6AsmsYzEb-k9gjWjbS9iw6inzvY9eAoQF52yqWqlJJHPs4aOd4da4dWLXsOA2vHRGZ0kpsZ2e2JusEXpu4-0r0X0Kqpmgq5bsEJqjpCmFlJS1CpTykbXKphtw2FV9gcP7iYRxID_d2aKTgQ7aavoNf8dhJdIjH80gaQr_uZuDQn54IN6Jdl7xeEYwylE6DswZ2SVW6lHdlySBduD_ErFwoZ9ap_e-L20s1rDxnbaoKxTuH4iMmolR_7XQqm5P0bOH19tUpUJCbJ6VUeLlDPP9qf_rYvkmkJc_KAQTiYF7IbApZWxy8r-IMhEws0uoJI5_7msYyXIQ6y6mBf0zKZ5ZoV6RxPc3Eo7cNJnbMg0mERbLfvPZNTVIohgQHVLTjgoo3mVS2fNAKuaCdQCWMJUhHiMC0SLr2aum-Ouz1f2DX_2xagGF4T-Z6A1fm_S9b_X3L4NEoguAxrRLs1yE6f1XbsTzUtGhkNLvhjhJFWZtNMPfmrS7VmkI86WOTmJ1d0ouaKW_5lvZeImHGkgUB1p0Z7P8kbKYsVs-xMSgfw2zCYA56LY9sQzUzzMVCRrNmX96bkhqYEGIi"
+      },
+      "edits": {
+        "A": {
+          "v": 1,
+          "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+          "tier": 1,
+          "kg": 3,
+          "rev": "1763290531000-0000-aaf2",
+          "del": false,
+          "n": "dwH1PMOoONCXIgYG",
+          "ct": "R_V7AyZeq4RcuQ-UfvZaoPUF41CIb5IIbRM8YemwJExS-NZ8wr1KHj1WHjjyHiUxhs6mIv5u0JRAJUtrG_YI3yrfkxrQZgaKduzybgqppzgwu_0avhMjnZnzosMqhXMvOAdGw9mxcORaDVmbu7ilFZgn4-CeCTevDYJkWGcbsaj4shrrTAS0wTOmTaAjlWXY8bbnB-svLIamCU09T7dp_7q4z1ijpf_KDG4cfiBsbIa9odIixn-mNZ-zbspqpScTOLnp-l3uHaD3pLcptwVOOPw3Xzmq5if8IOP23sqaiqZwPMZnzbpG609IhtdTAQu3ZM7Q9Iv5aHKzlT9LdgaaHGrdkFM-XeBYQt7qyDDePkLU_NZ_i9Nn7pgzGFlaDs8i8RZ33iVkSUJmh0I0qDk_-SKagK6OXWqL6wN3Q9vKEySXoS4s3o34B1KHNhUcZUYhvbg6sBjaETs9p15wXAnIL0WaTu1zfPcXe_0ShLqmMAuvJNgYh2PG-uoS-FGDkZb77ddoskEm-0dfXTz3gEZfEdYsbncX92g-tSW8DV6r6KcJ9V9uIOtV6RGLi03FRkUY9Io-bbksloIB6mSvz0ddDPv_db0RJ8nx7ASNjl7qWCpAZrSEg_iWNAg6ckxft7qC9sewtgpSK7vuYBex_6X9xtlgocKGfhppW2wHRGJeEUsTKNZKv5sI4NbRWWFZPhOf"
+        },
+        "B": {
+          "v": 1,
+          "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+          "tier": 1,
+          "kg": 3,
+          "rev": "1763290531000-0000-e921",
+          "del": false,
+          "n": "sjlqBuEXdaBCHy_I",
+          "ct": "8KqvJ4aCIRjpWRPcw3X8TV0-I3qcThflNuWyltaJUX6yaqGv7PFxWsY1sDAGESkuMa0CmUUh9lbSaAqH4ls57Yl2YHaxnI3gPqbUkuTek1FMBcTiNiZ15ArPhA6CnH3xn0-Zue7Ol48EaW4gg6apIp9cl-FGPyyfaJIz9zdRN6EmNKBLeE4G35BSSse52tsSz3ivYz8uXEDBucWAHsCvXw_9qAZhL9rIJRdqDOG_9-k1T0UTplTimIA4YkI9k3QwmN0AKnAWvgAE8YV4mSlpr_rxy-SFfVN_mACD9PJEPayG3fqMW33G8v8JRkToMFQKYhv9UWh1nUftFz87Cu6I_PqUpabdXmISfRD0fZ_BSGcqBkc3Q3liqsU5woo_il53O4royLcvenzoizAZLNxjEh84JonuIARyAesXP5mqYo-9CRFQAG03Ka5J0e3sp9CUrf4P1SuWA2faZOVbozkFA3ERZhlCILQLangcq3HNptG3FsL8UO84WlzRXEwKFxOFjqr477vyS1ZAMxdM3cej7toOXXTVdDd8njJGwl9WW5pbE0neEan-FYhLzCo1GV3CY1z8bvBryNz41w3_3RIl_6jOowT9r9fhftF-_ww7v_1r9cIZyaClzB94VkhIdYWcq_2LZsfsG_rPDQiGZpHhHgGoYXMLuPiVrFRcRTTcvfXzOiFhggdldZO5IT3zhSen"
+        }
+      },
+      "arrivalOrder": [
+        "A",
+        "B"
+      ],
+      "expected": {
+        "winner": "B",
+        "record": {
+          "type": "login",
+          "title": "Aeon",
+          "origins": [
+            "https://aeon.co"
+          ],
+          "username": "lina@example.org",
+          "password": "nouveau-depuis-pc",
+          "note": "",
+          "formActionOrigin": "https://aeon.co",
+          "httpRealm": null,
+          "totp": null,
+          "folderId": null,
+          "favorite": false,
+          "tags": [],
+          "createdAt": 1763200000000,
+          "modifiedAt": 1763290531000,
+          "lastUsedAt": null,
+          "passwordChangedAt": 1763290531000,
+          "passwordHistory": [
+            {
+              "password": "ancien-mdp-1",
+              "changedAt": 1763200000000
+            },
+            {
+              "password": "nouveau-depuis-iphone",
+              "changedAt": 1763290531000
+            }
+          ],
+          "source": "manual",
+          "importGuid": null,
+          "importBatch": null,
+          "neverSaveHere": false,
+          "author": "7b2e91cc",
+          "deleted": false
+        },
+        "historyGrowsBy": 1
+      }
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "actor": "B",
+      "name": "B revient en ligne : tire d'abord (rien de neuf), puis pousse son déplacement et son mot de passe",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=2&limit=500",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-get-response.json",
+        "body": {
+          "changes": [],
+          "nextSeq": 2,
+          "more": false
+        }
+      }
+    },
+    {
+      "step": 2,
+      "actor": "B",
+      "name": "Poussée de B : acceptée, seq 3 et 4",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290523000-0000-834e",
+              "del": false,
+              "n": "djOtyfRWK35YMaNz",
+              "ct": "O2Xz5c82_O-YkYpx5vPvAr1Z6FfzNDLJTJNQaGSNSnqLX7fRz4opBlW5Ev25ky2g_R5FyyrWWEPOW1WrBvDTGtGA4aQmvjs-I8ENGX-etkfyXDhzsoua21vv2KhCjCrx7jMV-ZWPBhFCI3KDp43yxTgaE1b2J2hqnAw6oxI_rIkoaNkjI_jAGohU6IlUxTH38aV7F6IuAxNHCTBoB9-r_mvsd7td7UQCkXaW19EueHZQ5EzWDcFLeqVkeKLJRKHo5ctFg8JJYvsqpkmI0wLWqO60t6CvVn-K5-O_Orm-0gJbnY58DISk5O1OSYnAhIBAeiloqe28dsGme6ZY6DigfWBPIjO_b13QgFcd5iORFkw"
+            },
+            {
+              "v": 1,
+              "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+              "tier": 1,
+              "kg": 3,
+              "rev": "1763290531000-0000-e921",
+              "del": false,
+              "n": "sjlqBuEXdaBCHy_I",
+              "ct": "8KqvJ4aCIRjpWRPcw3X8TV0-I3qcThflNuWyltaJUX6yaqGv7PFxWsY1sDAGESkuMa0CmUUh9lbSaAqH4ls57Yl2YHaxnI3gPqbUkuTek1FMBcTiNiZ15ArPhA6CnH3xn0-Zue7Ol48EaW4gg6apIp9cl-FGPyyfaJIz9zdRN6EmNKBLeE4G35BSSse52tsSz3ivYz8uXEDBucWAHsCvXw_9qAZhL9rIJRdqDOG_9-k1T0UTplTimIA4YkI9k3QwmN0AKnAWvgAE8YV4mSlpr_rxy-SFfVN_mACD9PJEPayG3fqMW33G8v8JRkToMFQKYhv9UWh1nUftFz87Cu6I_PqUpabdXmISfRD0fZ_BSGcqBkc3Q3liqsU5woo_il53O4royLcvenzoizAZLNxjEh84JonuIARyAesXP5mqYo-9CRFQAG03Ka5J0e3sp9CUrf4P1SuWA2faZOVbozkFA3ERZhlCILQLangcq3HNptG3FsL8UO84WlzRXEwKFxOFjqr477vyS1ZAMxdM3cej7toOXXTVdDd8njJGwl9WW5pbE0neEan-FYhLzCo1GV3CY1z8bvBryNz41w3_3RIl_6jOowT9r9fhftF-_ww7v_1r9cIZyaClzB94VkhIdYWcq_2LZsfsG_rPDQiGZpHhHgGoYXMLuPiVrFRcRTTcvfXzOiFhggdldZO5IT3zhSen"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-post-response.json",
+        "body": {
+          "results": [
+            {
+              "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+              "status": "accepted",
+              "rev": "1763290523000-0000-834e",
+              "seq": 3
+            },
+            {
+              "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+              "status": "accepted",
+              "rev": "1763290531000-0000-e921",
+              "seq": 4
+            }
+          ],
+          "nextSeq": 4,
+          "usage": {
+            "bytes": 1351,
+            "records": 2
+          }
+        }
+      }
+    },
+    {
+      "step": 3,
+      "actor": "A",
+      "name": "A revient en ligne et tire d'abord : reçoit les versions de B",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=2&limit=500",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-get-response.json",
+        "body": {
+          "changes": [
+            {
+              "seq": 3,
+              "envelope": {
+                "v": 1,
+                "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+                "tier": 2,
+                "kg": 3,
+                "rev": "1763290523000-0000-834e",
+                "del": false,
+                "n": "djOtyfRWK35YMaNz",
+                "ct": "O2Xz5c82_O-YkYpx5vPvAr1Z6FfzNDLJTJNQaGSNSnqLX7fRz4opBlW5Ev25ky2g_R5FyyrWWEPOW1WrBvDTGtGA4aQmvjs-I8ENGX-etkfyXDhzsoua21vv2KhCjCrx7jMV-ZWPBhFCI3KDp43yxTgaE1b2J2hqnAw6oxI_rIkoaNkjI_jAGohU6IlUxTH38aV7F6IuAxNHCTBoB9-r_mvsd7td7UQCkXaW19EueHZQ5EzWDcFLeqVkeKLJRKHo5ctFg8JJYvsqpkmI0wLWqO60t6CvVn-K5-O_Orm-0gJbnY58DISk5O1OSYnAhIBAeiloqe28dsGme6ZY6DigfWBPIjO_b13QgFcd5iORFkw"
+              }
+            },
+            {
+              "seq": 4,
+              "envelope": {
+                "v": 1,
+                "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+                "tier": 1,
+                "kg": 3,
+                "rev": "1763290531000-0000-e921",
+                "del": false,
+                "n": "sjlqBuEXdaBCHy_I",
+                "ct": "8KqvJ4aCIRjpWRPcw3X8TV0-I3qcThflNuWyltaJUX6yaqGv7PFxWsY1sDAGESkuMa0CmUUh9lbSaAqH4ls57Yl2YHaxnI3gPqbUkuTek1FMBcTiNiZ15ArPhA6CnH3xn0-Zue7Ol48EaW4gg6apIp9cl-FGPyyfaJIz9zdRN6EmNKBLeE4G35BSSse52tsSz3ivYz8uXEDBucWAHsCvXw_9qAZhL9rIJRdqDOG_9-k1T0UTplTimIA4YkI9k3QwmN0AKnAWvgAE8YV4mSlpr_rxy-SFfVN_mACD9PJEPayG3fqMW33G8v8JRkToMFQKYhv9UWh1nUftFz87Cu6I_PqUpabdXmISfRD0fZ_BSGcqBkc3Q3liqsU5woo_il53O4royLcvenzoizAZLNxjEh84JonuIARyAesXP5mqYo-9CRFQAG03Ka5J0e3sp9CUrf4P1SuWA2faZOVbozkFA3ERZhlCILQLangcq3HNptG3FsL8UO84WlzRXEwKFxOFjqr477vyS1ZAMxdM3cej7toOXXTVdDd8njJGwl9WW5pbE0neEan-FYhLzCo1GV3CY1z8bvBryNz41w3_3RIl_6jOowT9r9fhftF-_ww7v_1r9cIZyaClzB94VkhIdYWcq_2LZsfsG_rPDQiGZpHhHgGoYXMLuPiVrFRcRTTcvfXzOiFhggdldZO5IT3zhSen"
+              }
+            }
+          ],
+          "nextSeq": 4,
+          "more": false
+        }
+      }
+    },
+    {
+      "step": 4,
+      "actor": "A",
+      "name": "A fusionne localement (favori : B gagne ; identifiant : le plus grand rev gagne, l'autre mot de passe archivé) puis pousse son outbox tel quel",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290521000-0000-c8d3",
+              "del": false,
+              "n": "JVw7UstWsgPZze-y",
+              "ct": "Gd5RCcMXBgyZzVgO9HltxjvUH42OGoUvp0y73lJiSJd70-or7rRf4u67-hrT9P0zAsG9hCZgS6053JWiAAwsO36IhJRD9pmjIsFjPqUZakl38RCIxeWjAnsIu47xfSPlW35arj4ClXA38YUwC-klFQv4aK4E-8MaZNBGpgmwNJ44ijPlngU1wbihBxtUtT3rfpCpSPtMuxkEu51emZXvI6uvAHwoHdMdCV7EVJTJzXaxrMGS8OVR6A7zoqmSw3LENjzAJAUpfQ2DiI2QXkuCtekt5njpccYH7yw95UdXUxOzqeG_7dbWrk4UvVsAmn2I-aj0ZtGdmJLfJ6o68ms0T3Mv-bXDCF8F0wL74fCHDyA"
+            },
+            {
+              "v": 1,
+              "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+              "tier": 1,
+              "kg": 3,
+              "rev": "1763290531000-0000-aaf2",
+              "del": false,
+              "n": "dwH1PMOoONCXIgYG",
+              "ct": "R_V7AyZeq4RcuQ-UfvZaoPUF41CIb5IIbRM8YemwJExS-NZ8wr1KHj1WHjjyHiUxhs6mIv5u0JRAJUtrG_YI3yrfkxrQZgaKduzybgqppzgwu_0avhMjnZnzosMqhXMvOAdGw9mxcORaDVmbu7ilFZgn4-CeCTevDYJkWGcbsaj4shrrTAS0wTOmTaAjlWXY8bbnB-svLIamCU09T7dp_7q4z1ijpf_KDG4cfiBsbIa9odIixn-mNZ-zbspqpScTOLnp-l3uHaD3pLcptwVOOPw3Xzmq5if8IOP23sqaiqZwPMZnzbpG609IhtdTAQu3ZM7Q9Iv5aHKzlT9LdgaaHGrdkFM-XeBYQt7qyDDePkLU_NZ_i9Nn7pgzGFlaDs8i8RZ33iVkSUJmh0I0qDk_-SKagK6OXWqL6wN3Q9vKEySXoS4s3o34B1KHNhUcZUYhvbg6sBjaETs9p15wXAnIL0WaTu1zfPcXe_0ShLqmMAuvJNgYh2PG-uoS-FGDkZb77ddoskEm-0dfXTz3gEZfEdYsbncX92g-tSW8DV6r6KcJ9V9uIOtV6RGLi03FRkUY9Io-bbksloIB6mSvz0ddDPv_db0RJ8nx7ASNjl7qWCpAZrSEg_iWNAg6ckxft7qC9sewtgpSK7vuYBex_6X9xtlgocKGfhppW2wHRGJeEUsTKNZKv5sI4NbRWWFZPhOf"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-post-response.json",
+        "body": {
+          "results": [
+            {
+              "id": "993069ca-7ed4-4784-a85b-bd18a4b26e36",
+              "status": "superseded",
+              "rev": "1763290523000-0000-834e"
+            },
+            {
+              "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+              "status": "superseded",
+              "rev": "1763290531000-0000-e921"
+            }
+          ],
+          "nextSeq": 4,
+          "usage": {
+            "bytes": 1351,
+            "records": 2
+          }
+        }
+      }
+    },
+    {
+      "step": 5,
+      "actor": "A",
+      "name": "A écrit l'identifiant fusionné (historique enrichi) avec un rev neuf, strictement supérieur à tout rev vu",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+              "tier": 1,
+              "kg": 3,
+              "rev": "1763290531000-0001-6a31",
+              "del": false,
+              "n": "ArlWr8BSkj7hgqXb",
+              "ct": "Q90f2N-sGKfpHBFQWu-j0DczJHuKvsjzP8VVt1BEWu79-lwoRe4ntaon_gXzSJMt2Og7BF1pp39C15G07zibhjelkbQCm9Cua44e6PClBLjKEqaYVx6r0YF-_u4LZuOGkDBMnuMEjM8bgTnS_T2MiY_wn_CXrOgGYE_EBXYbprM8PKKNxlZBwfrB5O8784ZLAKiTZ-3x2dQaDQfyq8nycN_IeRSMccNgTsfJUd7IsN8Tgps-9Slw9UcZrUxP-Xmq9_yKw8bUZoxCXKYGD6C3KMgJqr5113B98m5eoopB7U1ocwciX7XqUTREeRbzREGPkWdYlxJRROqMfKwIhavs9YqKgKkyU1y3jaBkmJ2Xbcm8RlVv5OqdzkmlihBcmCVwb3szo2OgfKdhpedFEG6pxFcqRj8LUFCnHzRcuHA4fkxkP5Jmd-gpGMH_tV3FqTEI5J0KKf1qU3KUvEUR_pOb6y4A3NFxJFrg1O3oWJHMK4Nk0QdbH2mxrDtEzc8qOqKCHs4qmfRZFS8iEOUnx2yEDBCCJWtSGo1AtXkAW4F0_qFmTqgodfdc-Yl9ePFIGrvSqmvk0p_zUlDghU5DKfjuOe6Qxql4nYG2ck_v163X4sH4bn9yNh0_FbLxJyLmJ7gY1wqOMEmUfb_9lTwtltEzOG2QIXKJyJTGqkL_Z1oJbWeSjpQjazByQavDiJnqZoLe"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-post-response.json",
+        "body": {
+          "results": [
+            {
+              "id": "46c92d1e-595b-47fe-8e15-93b83c46bf48",
+              "status": "accepted",
+              "rev": "1763290531000-0001-6a31",
+              "seq": 5
+            }
+          ],
+          "nextSeq": 5,
+          "usage": {
+            "bytes": 1351,
+            "records": 2
+          }
+        }
+      }
+    }
+  ]
+}

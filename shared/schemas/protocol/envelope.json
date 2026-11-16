@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "envelope.json",
+  "title": "Enveloppe AEAD d'un enregistrement (partie en clair, telle que vue par le relais)",
+  "description": "Format fixé par COFFRE-SYNC.md §3.4 et CRYPTO.md (identique à shared/schemas/record-envelope.schema.json ; recopié ici pour que le dossier protocol/ soit autonome). Le relais ne stocke et ne renvoie rien d'autre que ces huit champs ; toute propriété supplémentaire est refusée (minimisation des métadonnées). AAD = \"qafila/v1|<vaultId>|<id>|<tier>|<kg>|<rev>\" ; le vaultId vient du chemin, jamais du corps. `ct` = chiffré || tag (16 o) ; le chiffré a la taille du contenu bourré (multiple de 256 o, ≥ 256), donc décodé(ct) − 16 est un multiple de 256.",
+  "type": "object",
+  "required": [
+    "v",
+    "id",
+    "tier",
+    "kg",
+    "rev",
+    "del",
+    "n",
+    "ct"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "common.json#/$defs/uuid"
+    },
+    "tier": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "kg": {
+      "$ref": "common.json#/$defs/keyGeneration"
+    },
+    "rev": {
+      "$ref": "common.json#/$defs/rev"
+    },
+    "del": {
+      "type": "boolean",
+      "description": "Indice de ménage pour le relais uniquement ; le client lit `deleted` dans le chiffré."
+    },
+    "n": {
+      "$ref": "common.json#/$defs/nonce96"
+    },
+    "ct": {
+      "$ref": "common.json#/$defs/ciphertext"
+    }
+  }
+}

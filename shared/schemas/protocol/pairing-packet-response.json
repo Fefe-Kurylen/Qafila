@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pairing-packet-response.json",
+  "title": "GET /sync/v1/pairing/{slot} avec en-tête X-Qafila-Pair-Proof — lecture unique du paquet",
+  "description": "Renvoyé une seule fois ; la boîte passe à l'état `consumed` (410 ensuite). `packet` est exactement le paquet scellé par E (shared/schemas/pairing-packet.schema.json) : N vérifie pkN, mac, puis déchiffre ct ; le contenu suit pairing-packet-plaintext.json.",
+  "type": "object",
+  "required": [
+    "state",
+    "expiresAt",
+    "packet"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "state": {
+      "const": "opened"
+    },
+    "expiresAt": {
+      "$ref": "common.json#/$defs/millis"
+    },
+    "packet": {
+      "type": "object",
+      "required": [
+        "v",
+        "pkN",
+        "pkE",
+        "n",
+        "ct",
+        "mac"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "pkN": {
+          "$ref": "common.json#/$defs/base64url32"
+        },
+        "pkE": {
+          "$ref": "common.json#/$defs/base64url32"
+        },
+        "n": {
+          "$ref": "common.json#/$defs/nonce96"
+        },
+        "ct": {
+          "allOf": [
+            {
+              "$ref": "common.json#/$defs/ciphertext"
+            },
+            {
+              "maxLength": 43700
+            }
+          ]
+        },
+        "mac": {
+          "$ref": "common.json#/$defs/base64url32"
+        }
+      }
+    }
+  }
+}

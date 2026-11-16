@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "header-put-request.json",
+  "title": "PUT /sync/v1/vaults/{vaultId}/header — mise à jour de l'en-tête public",
+  "description": "Porteur : jeton de synchro uniquement. Sert au changement de clé de secours (nouvel emplacement `recovery`, nouveau hash du jeton de récupération). keyGeneration doit égaler celle du coffre : un changement de génération est un nouveau coffre (PROTOCOL.md §8).",
+  "type": "object",
+  "required": ["header"],
+  "additionalProperties": false,
+  "properties": {
+    "header": { "$ref": "header-public.json" },
+    "recoveryTokenHash": { "$ref": "common.json#/$defs/hex64" }
+  }
+}

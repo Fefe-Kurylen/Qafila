@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "header-public.json",
+  "title": "En-tête public d'un coffre (ce que le relais stocke)",
+  "description": "Sous-ensemble de l'en-tête local (COFFRE-SYNC.md §3.5, CRYPTO.md ; identique à vault-header.schema.json#/$defs/public) : v, vaultId, createdAt, keyGeneration et le seul emplacement `recovery`. Ni emplacement mot de passe, ni emplacement appareil, ni paramètres KDF, ni previousKeys. AAD de l'emplacement : \"qafila/v1/slot|<vaultId>|recovery|<keyGeneration>\". Taille sérialisée ≤ 4 096 o.",
+  "type": "object",
+  "required": [
+    "v",
+    "vaultId",
+    "keyGeneration",
+    "createdAt",
+    "slots"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "vaultId": {
+      "$ref": "common.json#/$defs/vaultId"
+    },
+    "keyGeneration": {
+      "$ref": "common.json#/$defs/keyGeneration"
+    },
+    "createdAt": {
+      "$ref": "common.json#/$defs/millis"
+    },
+    "slots": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "n",
+          "ct"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "const": "recovery"
+          },
+          "n": {
+            "$ref": "common.json#/$defs/nonce96"
+          },
+          "ct": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{64}$",
+            "description": "VMK (32 o) + tag (16 o) = 48 o → 64 caractères base64url."
+          }
+        }
+      }
+    }
+  }
+}

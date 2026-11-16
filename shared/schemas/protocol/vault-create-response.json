@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vault-create-response.json",
+  "title": "Réponse 201 (créé) ou 200 (déjà créé avec ce même jeton) à PUT /sync/v1/vaults/{vaultId}",
+  "type": "object",
+  "required": ["vaultId", "keyGeneration", "seq", "expiresAt", "usage"],
+  "additionalProperties": false,
+  "properties": {
+    "vaultId": { "$ref": "common.json#/$defs/vaultId" },
+    "keyGeneration": { "$ref": "common.json#/$defs/keyGeneration" },
+    "seq": { "$ref": "common.json#/$defs/seq" },
+    "expiresAt": { "$ref": "common.json#/$defs/millis", "description": "Minuit UTC du jour de dernière activité + 180 jours." },
+    "usage": { "$ref": "usage.json" }
+  }
+}

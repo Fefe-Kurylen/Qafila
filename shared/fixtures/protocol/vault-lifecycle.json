@@ -1,0 +1,737 @@
+{
+  "title": "Cycle de vie d'un coffre : création, en-tête par jeton de récupération, poussée, tirage, erreurs, effacement",
+  "description": "Exemple d'échanges HTTP complets sur un coffre. Les enveloppes sont des blocs opaques de la bonne taille (256 o de contenu bourré + 16 o de tag), pas des chiffrés réels : le relais ne distingue pas. Les jetons sont des vecteurs de test, pas des dérivations CRYPTO.md.",
+  "actors": {
+    "A": "iPhone de Lina (crée le coffre)",
+    "R": "nouvel appareil qui récupère par kit de secours"
+  },
+  "vectors": {
+    "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+    "syncToken": "75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+    "syncTokenHash": "77bead7705c7be7ef3b2dd1042778437a7c39f662cc8e7cebea51605279af27e",
+    "recoveryToken": "dd022677258a749dbf398ec6da89785561f0324046ced2032c339d2df43930b2",
+    "recoveryTokenHash": "2041774cc267e69eef98e262af6c1e78a6238678af967eff40ea83a6ee3204d5"
+  },
+  "qr": {
+    "schema": "qr-recover.json",
+    "uri": "qafila://recover?v=1&s=https%3A%2F%2Fsync.qafila.fr&id=1FHQHH1B3MWF6TB20ZV2R0KD42&rk=CmEJx6RjrUK2p2YroZy3MNY7eisNqmdv1l4CpXInCW4",
+    "parsed": {
+      "scheme": "qafila",
+      "action": "recover",
+      "v": 1,
+      "s": "https://sync.qafila.fr",
+      "id": "1FHQHH1B3MWF6TB20ZV2R0KD42",
+      "rk": "CmEJx6RjrUK2p2YroZy3MNY7eisNqmdv1l4CpXInCW4"
+    },
+    "vaultCode": "1FHQHH-1B3MW-F6TB2-0ZV2R-0KD42",
+    "note": "Le kit de secours : 24 mots (RK), ce QR et le code du coffre. rk est ici une valeur de test sans lien avec recoveryToken (en pratique recoveryToken = HKDF(RK, \"qafila/v1/recovery-auth\"))."
+  },
+  "steps": [
+    {
+      "step": 1,
+      "actor": "A",
+      "name": "Carte d'identité du relais (validation de l'URL saisie)",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/"
+      },
+      "response": {
+        "status": 200,
+        "schema": "service-info.json",
+        "body": {
+          "service": "qafila-relay",
+          "protocol": 1,
+          "limits": {
+            "envelopeBytes": 65536,
+            "vaultBytes": 20971520,
+            "vaultRecords": 10000,
+            "devices": 5,
+            "batchEnvelopes": 100,
+            "pairingTtlSeconds": 600,
+            "inactiveDays": 180,
+            "tombstoneDays": 90
+          }
+        }
+      }
+    },
+    {
+      "step": 2,
+      "actor": "A",
+      "name": "Création du coffre (premier arrivé gagne)",
+      "request": {
+        "method": "PUT",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "vault-create-request.json",
+        "body": {
+          "header": {
+            "v": 1,
+            "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+            "keyGeneration": 3,
+            "createdAt": 1763290000000,
+            "slots": [
+              {
+                "id": "recovery",
+                "n": "q8YqwFLb-VXbQjPu",
+                "ct": "-M2Q7gWTW7JNf4jedm2jMcJQOyPfpHSQx_gsypcGvOocAO4OkO52LeyhjDLwB8hD"
+              }
+            ]
+          },
+          "recoveryTokenHash": "2041774cc267e69eef98e262af6c1e78a6238678af967eff40ea83a6ee3204d5"
+        }
+      },
+      "response": {
+        "status": 201,
+        "schema": "vault-create-response.json",
+        "body": {
+          "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+          "keyGeneration": 3,
+          "seq": 0,
+          "expiresAt": 1778803200000,
+          "usage": {
+            "bytes": 0,
+            "records": 0
+          }
+        }
+      }
+    },
+    {
+      "step": 3,
+      "actor": "A",
+      "name": "Rejeu réseau du PUT avec le même jeton : idempotent",
+      "request": {
+        "method": "PUT",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "vault-create-request.json",
+        "body": {
+          "header": {
+            "v": 1,
+            "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+            "keyGeneration": 3,
+            "createdAt": 1763290000000,
+            "slots": [
+              {
+                "id": "recovery",
+                "n": "q8YqwFLb-VXbQjPu",
+                "ct": "-M2Q7gWTW7JNf4jedm2jMcJQOyPfpHSQx_gsypcGvOocAO4OkO52LeyhjDLwB8hD"
+              }
+            ]
+          },
+          "recoveryTokenHash": "2041774cc267e69eef98e262af6c1e78a6238678af967eff40ea83a6ee3204d5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "vault-create-response.json",
+        "body": {
+          "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+          "keyGeneration": 3,
+          "seq": 0,
+          "expiresAt": 1778803200000,
+          "usage": {
+            "bytes": 0,
+            "records": 0
+          }
+        }
+      }
+    },
+    {
+      "step": 4,
+      "actor": "X",
+      "name": "Un inconnu tente de créer le même vaultId avec un autre jeton",
+      "request": {
+        "method": "PUT",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482",
+        "headers": {
+          "Authorization": "Bearer 901cfde47ce8f9269b1b16f59d6dfa04897bb970644451ce307756b8d72331b7",
+          "Content-Type": "application/json"
+        },
+        "schema": "vault-create-request.json",
+        "body": {
+          "header": {
+            "v": 1,
+            "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+            "keyGeneration": 3,
+            "createdAt": 1763290000000,
+            "slots": [
+              {
+                "id": "recovery",
+                "n": "q8YqwFLb-VXbQjPu",
+                "ct": "-M2Q7gWTW7JNf4jedm2jMcJQOyPfpHSQx_gsypcGvOocAO4OkO52LeyhjDLwB8hD"
+              }
+            ]
+          },
+          "recoveryTokenHash": "1d911f785b93a52585f0d279987a7f871d1e0a4b58574bb0c73f7ea954428705"
+        }
+      },
+      "response": {
+        "status": 409,
+        "schema": "error.json",
+        "body": {
+          "error": "vault_exists",
+          "message": "Ce coffre existe déjà."
+        }
+      }
+    },
+    {
+      "step": 5,
+      "actor": "A",
+      "name": "Première poussée : un favori, un identifiant (2 blocs), un tombstone",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290512000-0000-328e",
+              "del": false,
+              "n": "p5LsQt-hz7sUI8u8",
+              "ct": "otUKgnvwtwIw-6IbJZV4sUVJiEcu7lCMmuqL_FqIoy67kP6ExsJS2XWDZE44eOz7QXIIJqGazqIJmN-dxbtV8K6kd9aGDelbGqf3q4yU56Yio2_U8OnzFQR6oTKhAN6OFLnxnSCmdOJqGpZ5mVJPQ6eacgL3nhXK995drBBW2DjbZSTKWGV-CE_3xlRWBeLR36x-k4uScATdAdop-67M-BN47AOsZNAGpT1r6sDwLXUwXmnZt8cBEClczW0cQiJ23vqYLMf0s6DBugFDn_3OHiZBNbY1tmFhNSXJQZqVV15cL7Hvf29npOAsLYUJjKSJWIJrmtF9SMTbimU-BJxglzFKHxRKpP2UWp4ibr_mVB8"
+            },
+            {
+              "v": 1,
+              "id": "56d65a63-6938-4fcc-ad88-eb716b725030",
+              "tier": 1,
+              "kg": 3,
+              "rev": "1763290512000-0001-4974",
+              "del": false,
+              "n": "BeWaHBMHMvGoSJXF",
+              "ct": "iMycWJDLnB599Aix4ojGW_nCVZTiNtknXPv5Q7Te0nAAdOEVtFvsQ-5Fgyyn2vt0294YWvpjuQudd528uZpsh41RNioCGJkDD7sT70dmARMT0Hb-aZQs-TYJtUhNBXWsHJfhkPBt_M3Nghlts4RbhiPUwEm7G3obQ15aJKaZ2A1avSBILKpCuByRj_LyF4DbMFkbsR8vSw3JFe2ynydSBY2hQp-O4lHAYI-vfAQ3XdL4pjq8zRJ86hiYnfAjp6d-VAGa8-Xk3N4Ip97jzQi_25RED28X_8JCXGsl6_7iKp2mK8rQwa0SY54cPwZ-Yxwpn6DLE1d-2xpszyj1Kh8xPNo2-63Ei1m9UIlDlp_EFt2r94NO2M62W5cFyLosPOkVxT0_VFip7j8KoLyDuuThohcdIi9pE8-bNFbf-vhr8XGF_Sh-97j4FUwMur7QnlZ3e_eVD0vnWdQyE_fu72bUyI58s9KAgxjmqp3aErH0uqWg4Lau7E8N4h1qhBkkfPoH-ilVqRoRHvWSO5i8ZJEifdX_LUsvp6YORDHNHoC23AByof09zuWhc32a8jnefh7xOgYbn46LEBsorTdzXTt-TWmLYsvZm4JJ0v9OfkgND6-qBqAEZRG_0MBzR1yUmm-GG7I1gGr3lQsgA6vAm5rpyAZkpfYspbh_dCflkVhY-dUwXEqhfaCZhUfkM6PUJC0Q"
+            },
+            {
+              "v": 1,
+              "id": "57cbe4fb-cfa0-4d50-b230-b647acdc397a",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290513000-0000-5eb7",
+              "del": true,
+              "n": "o8k88HBgiQbso3Zp",
+              "ct": "g36IGBEONNlhoqQ9XvFNaZJqGsG-I6Sg-xuTY7E1CznLNT1-PP3-S3ZJv8kJxq_B9SEsi2g_uSa3FUF4PWaAajo9wMWG0G4YKU9jwRKO20tnbOomsKwkAcX4FuIYUpBJY1s1ke_4II79Vh-YOeOOd3UwNcdD7wWPh6YVsCfkG3tZOV9oISslwrpSKIyZLuRXovWgc7otNjl8ZZgCfW1W5x6M1VP8EUvM0MOOku1tCwyT7RHcyapmcUKM7ozisio4Hv_9jbomlNQQrrgECmzyXGxX5oRrOjSiR9jVada9DTsu0OuKMceqCItLQNYb1Ghc5dLstvnvleENYY8GdpOdZHT-2BbGOkolfPt1WGiF_FA"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-post-response.json",
+        "body": {
+          "results": [
+            {
+              "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+              "status": "accepted",
+              "rev": "1763290512000-0000-328e",
+              "seq": 1
+            },
+            {
+              "id": "56d65a63-6938-4fcc-ad88-eb716b725030",
+              "status": "accepted",
+              "rev": "1763290512000-0001-4974",
+              "seq": 2
+            },
+            {
+              "id": "57cbe4fb-cfa0-4d50-b230-b647acdc397a",
+              "status": "accepted",
+              "rev": "1763290513000-0000-5eb7",
+              "seq": 3
+            }
+          ],
+          "nextSeq": 3,
+          "usage": {
+            "bytes": 1855,
+            "records": 3
+          }
+        }
+      }
+    },
+    {
+      "step": 6,
+      "actor": "A",
+      "name": "Rejeu de la même poussée (coupure réseau avant la réponse) : duplicate, rien n'est écrit",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290512000-0000-328e",
+              "del": false,
+              "n": "p5LsQt-hz7sUI8u8",
+              "ct": "otUKgnvwtwIw-6IbJZV4sUVJiEcu7lCMmuqL_FqIoy67kP6ExsJS2XWDZE44eOz7QXIIJqGazqIJmN-dxbtV8K6kd9aGDelbGqf3q4yU56Yio2_U8OnzFQR6oTKhAN6OFLnxnSCmdOJqGpZ5mVJPQ6eacgL3nhXK995drBBW2DjbZSTKWGV-CE_3xlRWBeLR36x-k4uScATdAdop-67M-BN47AOsZNAGpT1r6sDwLXUwXmnZt8cBEClczW0cQiJ23vqYLMf0s6DBugFDn_3OHiZBNbY1tmFhNSXJQZqVV15cL7Hvf29npOAsLYUJjKSJWIJrmtF9SMTbimU-BJxglzFKHxRKpP2UWp4ibr_mVB8"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-post-response.json",
+        "body": {
+          "results": [
+            {
+              "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+              "status": "duplicate",
+              "rev": "1763290512000-0000-328e"
+            }
+          ],
+          "nextSeq": 3,
+          "usage": {
+            "bytes": 1855,
+            "records": 3
+          }
+        }
+      }
+    },
+    {
+      "step": 7,
+      "actor": "A",
+      "name": "Tirage après poussée : rien de nouveau au-delà de seq 3 (long-poll PC, 25 s écoulées)",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=3&limit=500&wait=25",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-get-response.json",
+        "body": {
+          "changes": [],
+          "nextSeq": 3,
+          "more": false
+        }
+      }
+    },
+    {
+      "step": 8,
+      "actor": "R",
+      "name": "Récupération par kit : en-tête contre le jeton de récupération (le relais compare SHA-256)",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/header",
+        "headers": {
+          "Authorization": "Bearer dd022677258a749dbf398ec6da89785561f0324046ced2032c339d2df43930b2",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "header-get-response.json",
+        "body": {
+          "header": {
+            "v": 1,
+            "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+            "keyGeneration": 3,
+            "createdAt": 1763290000000,
+            "slots": [
+              {
+                "id": "recovery",
+                "n": "q8YqwFLb-VXbQjPu",
+                "ct": "-M2Q7gWTW7JNf4jedm2jMcJQOyPfpHSQx_gsypcGvOocAO4OkO52LeyhjDLwB8hD"
+              }
+            ]
+          },
+          "seq": 3,
+          "expiresAt": 1778803200000,
+          "usage": {
+            "bytes": 1855,
+            "records": 3
+          },
+          "via": "recovery"
+        }
+      }
+    },
+    {
+      "step": 9,
+      "actor": "R",
+      "name": "Le jeton de récupération ne donne rien d'autre que l'en-tête",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=0",
+        "headers": {
+          "Authorization": "Bearer dd022677258a749dbf398ec6da89785561f0324046ced2032c339d2df43930b2",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 403,
+        "schema": "error.json",
+        "body": {
+          "error": "forbidden",
+          "message": "Le jeton de récupération ne donne accès qu'à l'en-tête."
+        }
+      }
+    },
+    {
+      "step": 10,
+      "actor": "R",
+      "name": "VMK désenveloppée, K_sync dérivée : premier tirage complet, pagination",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=0&limit=2",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-get-response.json",
+        "body": {
+          "changes": [
+            {
+              "seq": 1,
+              "envelope": {
+                "v": 1,
+                "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+                "tier": 2,
+                "kg": 3,
+                "rev": "1763290512000-0000-328e",
+                "del": false,
+                "n": "p5LsQt-hz7sUI8u8",
+                "ct": "otUKgnvwtwIw-6IbJZV4sUVJiEcu7lCMmuqL_FqIoy67kP6ExsJS2XWDZE44eOz7QXIIJqGazqIJmN-dxbtV8K6kd9aGDelbGqf3q4yU56Yio2_U8OnzFQR6oTKhAN6OFLnxnSCmdOJqGpZ5mVJPQ6eacgL3nhXK995drBBW2DjbZSTKWGV-CE_3xlRWBeLR36x-k4uScATdAdop-67M-BN47AOsZNAGpT1r6sDwLXUwXmnZt8cBEClczW0cQiJ23vqYLMf0s6DBugFDn_3OHiZBNbY1tmFhNSXJQZqVV15cL7Hvf29npOAsLYUJjKSJWIJrmtF9SMTbimU-BJxglzFKHxRKpP2UWp4ibr_mVB8"
+              }
+            },
+            {
+              "seq": 2,
+              "envelope": {
+                "v": 1,
+                "id": "56d65a63-6938-4fcc-ad88-eb716b725030",
+                "tier": 1,
+                "kg": 3,
+                "rev": "1763290512000-0001-4974",
+                "del": false,
+                "n": "BeWaHBMHMvGoSJXF",
+                "ct": "iMycWJDLnB599Aix4ojGW_nCVZTiNtknXPv5Q7Te0nAAdOEVtFvsQ-5Fgyyn2vt0294YWvpjuQudd528uZpsh41RNioCGJkDD7sT70dmARMT0Hb-aZQs-TYJtUhNBXWsHJfhkPBt_M3Nghlts4RbhiPUwEm7G3obQ15aJKaZ2A1avSBILKpCuByRj_LyF4DbMFkbsR8vSw3JFe2ynydSBY2hQp-O4lHAYI-vfAQ3XdL4pjq8zRJ86hiYnfAjp6d-VAGa8-Xk3N4Ip97jzQi_25RED28X_8JCXGsl6_7iKp2mK8rQwa0SY54cPwZ-Yxwpn6DLE1d-2xpszyj1Kh8xPNo2-63Ei1m9UIlDlp_EFt2r94NO2M62W5cFyLosPOkVxT0_VFip7j8KoLyDuuThohcdIi9pE8-bNFbf-vhr8XGF_Sh-97j4FUwMur7QnlZ3e_eVD0vnWdQyE_fu72bUyI58s9KAgxjmqp3aErH0uqWg4Lau7E8N4h1qhBkkfPoH-ilVqRoRHvWSO5i8ZJEifdX_LUsvp6YORDHNHoC23AByof09zuWhc32a8jnefh7xOgYbn46LEBsorTdzXTt-TWmLYsvZm4JJ0v9OfkgND6-qBqAEZRG_0MBzR1yUmm-GG7I1gGr3lQsgA6vAm5rpyAZkpfYspbh_dCflkVhY-dUwXEqhfaCZhUfkM6PUJC0Q"
+              }
+            }
+          ],
+          "nextSeq": 2,
+          "more": true
+        }
+      }
+    },
+    {
+      "step": 11,
+      "actor": "R",
+      "name": "Page suivante",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=2&limit=2",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-get-response.json",
+        "body": {
+          "changes": [
+            {
+              "seq": 3,
+              "envelope": {
+                "v": 1,
+                "id": "57cbe4fb-cfa0-4d50-b230-b647acdc397a",
+                "tier": 2,
+                "kg": 3,
+                "rev": "1763290513000-0000-5eb7",
+                "del": true,
+                "n": "o8k88HBgiQbso3Zp",
+                "ct": "g36IGBEONNlhoqQ9XvFNaZJqGsG-I6Sg-xuTY7E1CznLNT1-PP3-S3ZJv8kJxq_B9SEsi2g_uSa3FUF4PWaAajo9wMWG0G4YKU9jwRKO20tnbOomsKwkAcX4FuIYUpBJY1s1ke_4II79Vh-YOeOOd3UwNcdD7wWPh6YVsCfkG3tZOV9oISslwrpSKIyZLuRXovWgc7otNjl8ZZgCfW1W5x6M1VP8EUvM0MOOku1tCwyT7RHcyapmcUKM7ozisio4Hv_9jbomlNQQrrgECmzyXGxX5oRrOjSiR9jVada9DTsu0OuKMceqCItLQNYb1Ghc5dLstvnvleENYY8GdpOdZHT-2BbGOkolfPt1WGiF_FA"
+              }
+            }
+          ],
+          "nextSeq": 3,
+          "more": false
+        }
+      }
+    },
+    {
+      "step": 12,
+      "actor": "A",
+      "name": "A choisit « Nouvelle clé de secours » : nouvel emplacement recovery, nouveau hash du jeton de récupération, même génération",
+      "request": {
+        "method": "PUT",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/header",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "header-put-request.json",
+        "body": {
+          "header": {
+            "v": 1,
+            "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+            "keyGeneration": 3,
+            "createdAt": 1763290000000,
+            "slots": [
+              {
+                "id": "recovery",
+                "n": "7A4daWYv4v4jSZFH",
+                "ct": "rZYsXYjddwV86-20GNY1oQU0eGo3eqhbYByxMfxPzVkaJ10fV71JKvePo4OBhTGp"
+              }
+            ]
+          },
+          "recoveryTokenHash": "a25620574e7629802fd8f1474173aee144c494b343ecd6c7a3398e48a0fcf0ee"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "header-get-response.json",
+        "body": {
+          "header": {
+            "v": 1,
+            "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+            "keyGeneration": 3,
+            "createdAt": 1763290000000,
+            "slots": [
+              {
+                "id": "recovery",
+                "n": "7A4daWYv4v4jSZFH",
+                "ct": "rZYsXYjddwV86-20GNY1oQU0eGo3eqhbYByxMfxPzVkaJ10fV71JKvePo4OBhTGp"
+              }
+            ]
+          },
+          "seq": 3,
+          "expiresAt": 1778803200000,
+          "usage": {
+            "bytes": 1855,
+            "records": 3
+          },
+          "via": "sync"
+        }
+      }
+    },
+    {
+      "step": 13,
+      "actor": "A",
+      "name": "Mauvais jeton sur un coffre existant",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=0",
+        "headers": {
+          "Authorization": "Bearer 901cfde47ce8f9269b1b16f59d6dfa04897bb970644451ce307756b8d72331b7",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 401,
+        "schema": "error.json",
+        "body": {
+          "error": "unauthorized",
+          "message": "Jeton refusé."
+        }
+      }
+    },
+    {
+      "step": 14,
+      "actor": "A",
+      "name": "Enveloppe dont le rev est à plus de 24 h dans le futur",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "44aeaffc-1ac6-4643-a338-df62c4e1972d",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763549711000-0000-105f",
+              "del": false,
+              "n": "5f-2Uwef5XxPPejG",
+              "ct": "0CqJ8_tzDlbAao5GBvgopbcjAQmZQNDiuADMwp6a3K7JGqKxtd7ZRYYGJcox2E85h8v35gDVHREx2P1E8yPOAb1FL7YUqkf-4NMzM1uoxfjZEvijVCvUdkU75am99KCXH98QADuFCejjA5vszzk0p699ezd_9g9MFQMIDTy7ygEL2odheBy5KoZLCCIxyyZRwUDOyvbOdzqyhDbmTlg6DEMLJem_4id0ng1VGBDooYBEhcM19tqZJ7wdW87XMloSrDRdoUeDTRe-Bkky1JTY59j5xj45WYMAdnICjgrP6eFeIDa2JSOd8u3S4SzGIHZpPCBQcL3wl27U2xwcibay6nHHWq0P92FvnX1K_Oereh8"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 400,
+        "schema": "error.json",
+        "body": {
+          "error": "rev_in_future",
+          "message": "Horodatage de révision trop loin dans le futur.",
+          "details": {
+            "index": 0
+          }
+        }
+      }
+    },
+    {
+      "step": 15,
+      "actor": "A",
+      "name": "Enveloppe avec une propriété en trop (métadonnée interdite)",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290512000-0000-328e",
+              "del": false,
+              "n": "p5LsQt-hz7sUI8u8",
+              "ct": "otUKgnvwtwIw-6IbJZV4sUVJiEcu7lCMmuqL_FqIoy67kP6ExsJS2XWDZE44eOz7QXIIJqGazqIJmN-dxbtV8K6kd9aGDelbGqf3q4yU56Yio2_U8OnzFQR6oTKhAN6OFLnxnSCmdOJqGpZ5mVJPQ6eacgL3nhXK995drBBW2DjbZSTKWGV-CE_3xlRWBeLR36x-k4uScATdAdop-67M-BN47AOsZNAGpT1r6sDwLXUwXmnZt8cBEClczW0cQiJ23vqYLMf0s6DBugFDn_3OHiZBNbY1tmFhNSXJQZqVV15cL7Hvf29npOAsLYUJjKSJWIJrmtF9SMTbimU-BJxglzFKHxRKpP2UWp4ibr_mVB8",
+              "deviceName": "iPhone de Lina"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 400,
+        "schema": "error.json",
+        "body": {
+          "error": "invalid_envelope",
+          "message": "Enveloppe invalide.",
+          "details": {
+            "index": 0,
+            "reason": "additional property: deviceName"
+          }
+        }
+      }
+    },
+    {
+      "step": 16,
+      "actor": "A",
+      "name": "Quota de 20 Mo atteint : lot refusé en bloc",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "69b7a780-3420-48e7-a5dd-17aeb036b669",
+              "tier": 1,
+              "kg": 3,
+              "rev": "1763290516000-0000-5485",
+              "del": false,
+              "n": "OK1Rg0yeamjyof1o",
+              "ct": "MZAsYT0dyV9REcAzndw2Yy_X0BbA9M508FxG1cDEvWmSe6o4VSY33UTo_dX2KDp3bhfpQl9hkeHRAv16dnny1gUo2_jAZ_WTZHpM7BQ69qQr0j0joCf70Ulykae3-wSPFR1HW27DsRNhqObxOCSD17IZOga4MXaj0AB0ipjV_anDQzyh5K7b7eEIft0oaQnY5vtXPB0R5-0f5HJFUuqWulzOFdYmeYGEnioQhNm8JSipt-p-SQD6udFkMZSJHlxaUcaH2JVS9rz2ZBzQlTKJun_eAskFO0WwN24FWaciVMGNkjeKgC2afS3CBKy-WcNUDy0trzTxNr9RM_VL1KLNZq6WaZaD4Og94hTpWtKYQntA5_DIMpH1KfRlo5von83RZpaQARdNJM6mwY92u9ExZKCoNPOO2IGhhGDZljX5tp1XYndNFWPTa3q2sFnuTLLFk3HeGT_J22X6TZMMuzw7kZAM3pxMrcRebhCrJ4C0mtQD-6BUWqIbafNIq0ja0LRE-PFm1QCE1642vTbVf8mXhrcXKIH5yYhl6yxbZT9jjHZIGXBWb4NHYSVvwSdx9WAdhuWKTXU_jkc8zlMafITrZOXN_sCAnjavXUC2ZKFmZVPfPkc6ppxryhaEwh1JIafz8AZouldsvgnoI6Jtbd0widgMTX0nVxHqYIIZi_V2o7zSFj8HRAXnly3_jIfxV3TiKWKhBLQKB1MzgG3t5we4C-d-GFtiQUxgBwvh3ogsOkz0YSEp4HvdGkNCkruBImpL6Gd7aVP9Xou8oULqj37C_TjbShBq4GW6-iDHevodfBAY_1mgXv7yCTXi9XJerrmf8JuwOPtnIKraxpZcfgV1SPxdI4s1ffzBzdeA1jMlz20Kcyy3fsN72NEoWxTosUJLwHArKMkFHsc2tBctEFKopmnvzqODzfKlkOk_pY2hGGkg0AKr6GiolBbU1Yz7XPon7-qRkKBY1dYQY0ycDeT8tgp9bKDzqJNiBXpVMXjItPup8oqSyoUnQOtzIJA9m_7fWqtyTFDy_72ynxGYxYzO_-kSlCk-lT5VNmYmB-XaodRvaTlSKfJwWi8E00oCwpidJvvkQlQy9CRQ9sN9TgrXLNkoeUqOXgArXMzVeVzepy3TL2-HfHpajVqy2ZuKCGloqoPq2uAPFXlYMOPUuDfCDeuZlYO914HEexNAghsuw7eLwb1vJwcptilVF94ZQ2NN5Ub9YTauoV-JKmX17iHy7F9UUvU_e1beQ8qPUJzE_CYLIAht6xWY5XILXb5t-eG8CYoWUIcbiaOXTgHm-AQ_CFMc0VxD856eKrTy8u90vGPv62j1z1CZU1suWetu_ri170EEPDaZlhPZPRSydb6fss66fwvCkPs5VKkR07jKKUs"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 413,
+        "schema": "error.json",
+        "body": {
+          "error": "quota_exceeded",
+          "message": "Quota du coffre atteint.",
+          "details": {
+            "quota": "bytes",
+            "limit": 20971520,
+            "current": 20970800
+          }
+        }
+      }
+    },
+    {
+      "step": 17,
+      "actor": "A",
+      "name": "Plus de 60 requêtes dans la minute pour ce jeton",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=3",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 429,
+        "headers": {
+          "Retry-After": "17"
+        },
+        "schema": "error.json",
+        "body": {
+          "error": "rate_limited",
+          "message": "Trop de requêtes, réessayez dans 17 s.",
+          "details": {
+            "retryAfter": 17
+          }
+        }
+      }
+    },
+    {
+      "step": 18,
+      "actor": "A",
+      "name": "« Désactiver la synchronisation et effacer du serveur »",
+      "request": {
+        "method": "DELETE",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 204
+      }
+    },
+    {
+      "step": 19,
+      "actor": "R",
+      "name": "Tout autre appareil voit le coffre disparaître",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=3",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 404,
+        "schema": "error.json",
+        "body": {
+          "error": "vault_not_found",
+          "message": "Coffre inconnu."
+        }
+      }
+    }
+  ]
+}

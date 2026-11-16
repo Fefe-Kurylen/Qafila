@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pairing-open-request.json",
+  "title": "PUT /sync/v1/pairing/{slot} — tour 2 : dépôt du paquet après confirmation du SAS sur E",
+  "description": "Sans jeton. Le relais exige l'état `answered` et hex(SHA-256(décodé(ct))) = commit du tour 1. `ct` = AES-256-GCM(K_pair, n, AAD \"qafila/v1/pair|<slot>\", pad256(JSON canonique de la charge)) ; `mac` = HMAC-SHA256(K_mac, pkN || pkE || ct) sur les octets bruts (CRYPTO.md fait foi pour ces dérivations). Taille du corps ≤ 48 Kio (ct ≤ 32 Kio décodés).",
+  "type": "object",
+  "required": [
+    "n",
+    "ct",
+    "mac"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "n": {
+      "$ref": "common.json#/$defs/nonce96"
+    },
+    "ct": {
+      "allOf": [
+        {
+          "$ref": "common.json#/$defs/ciphertext"
+        },
+        {
+          "maxLength": 43700
+        }
+      ]
+    },
+    "mac": {
+      "$ref": "common.json#/$defs/base64url32"
+    }
+  }
+}

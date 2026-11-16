@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.json",
+  "title": "Définitions communes du protocole de synchronisation Qafila (v1)",
+  "description": "Types de base réutilisés par tous les schémas de shared/schemas/protocol/. Voir shared/PROTOCOL.md.",
+  "$defs": {
+    "vaultId": {
+      "description": "Identifiant de coffre : 128 bits sans structure, 32 caractères hexadécimaux minuscules. Pour le relais c'est une valeur opaque et imprévisible ; le client le dérive de K_sync (HKDF(K_sync, \"qafila/v1/vault-id\", 16), CRYPTO.md), ce qui en fait un nouvel identifiant à chaque génération de clé.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "hex64": {
+      "description": "32 octets en hexadécimal minuscule : jetons porteurs, SHA-256, engagements, preuves.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid": {
+      "description": "UUID v4 minuscule.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "rev": {
+      "description": "Horloge logique hybride : <ms Unix, 13 chiffres>-<compteur, 4 hex>-<aléa, 4 hex>. Ordre total = ordre lexicographique des octets ASCII.",
+      "type": "string",
+      "pattern": "^[0-9]{13}-[0-9a-f]{4}-[0-9a-f]{4}$"
+    },
+    "base64url": {
+      "description": "base64url sans bourrage (RFC 4648 §5), décodage strict : alphabet url seul, pas de =, bits de queue canoniques. Tout binaire du protocole utilise cet encodage (aligné sur CRYPTO.md).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]*$"
+    },
+    "nonce96": {
+      "description": "Nonce AES-GCM de 12 octets en base64url (16 caractères).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{16}$"
+    },
+    "base64url32": {
+      "description": "32 octets en base64url sans bourrage, 43 caractères : clés publiques X25519, HMAC, VMK.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "ciphertext": {
+      "description": "Chiffré AES-GCM d'un contenu bourré à 256·k octets, suivi du tag de 16 o : (256·k + 16) octets, k ≥ 1, en base64url ; 363 caractères minimum (272 o), 87 400 maximum (≈ 64 Kio).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{363,}$",
+      "maxLength": 87400
+    },
+    "millis": {
+      "description": "Horodatage : entier, millisecondes Unix.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "seq": {
+      "description": "Numéro de séquence serveur (serverSeq), strictement croissant par coffre, 0 = coffre vide.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "keyGeneration": {
+      "description": "Génération de clé (kg), ≥ 1.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "httpsUrl": {
+      "description": "URL https du relais, sans barre oblique finale ni chemin /sync/v1.",
+      "type": "string",
+      "pattern": "^https://[A-Za-z0-9.-]+(?::[0-9]{1,5})?(?:/[A-Za-z0-9._~%-]+)*$"
+    },
+    "errorCode": {
+      "description": "Codes d'erreur stables du relais (PROTOCOL.md §9).",
+      "type": "string",
+      "enum": [
+        "bad_request",
+        "invalid_envelope",
+        "rev_in_future",
+        "unauthorized",
+        "forbidden",
+        "vault_not_found",
+        "vault_exists",
+        "key_generation_mismatch",
+        "pairing_not_found",
+        "pairing_slot_taken",
+        "pairing_slot_mismatch",
+        "pairing_commit_mismatch",
+        "pairing_not_open",
+        "pairing_proof_invalid",
+        "pairing_gone",
+        "payload_too_large",
+        "quota_exceeded",
+        "rate_limited",
+        "creation_limited",
+        "internal_error",
+        "unavailable"
+      ]
+    }
+  }
+}

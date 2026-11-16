@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sync-state.json",
+  "title": "Fichier client sync-state.json",
+  "description": "État de synchronisation d'un appareil (vault/sync-state.json, COFFRE-SYNC.md §3.4). Les plus grands `rev` connus par id vivent dans records.jsonl, pas ici. `checkpoints` : les 10 derniers points de contrôle anti-rejeu (PROTOCOL.md §5.4). `hlc` : état de l'horloge logique hybride (§4). `paused` : raison d'une pause (null si la synchro tourne).",
+  "type": "object",
+  "required": ["v", "server", "vaultId", "deviceId", "serverSeq", "lastSync", "hlc", "checkpoints", "paused"],
+  "additionalProperties": false,
+  "properties": {
+    "v": { "const": 1 },
+    "server": { "$ref": "common.json#/$defs/httpsUrl" },
+    "vaultId": { "$ref": "common.json#/$defs/vaultId" },
+    "deviceId": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
+    "serverSeq": { "$ref": "common.json#/$defs/seq" },
+    "lastSync": { "oneOf": [ { "$ref": "common.json#/$defs/millis" }, { "type": "null" } ] },
+    "lastPush": { "oneOf": [ { "$ref": "common.json#/$defs/millis" }, { "type": "null" } ] },
+    "expiresAt": { "oneOf": [ { "$ref": "common.json#/$defs/millis" }, { "type": "null" } ] },
+    "hlc": {
+      "type": "object",
+      "required": ["lastMs", "counter"],
+      "additionalProperties": false,
+      "properties": {
+        "lastMs": { "$ref": "common.json#/$defs/millis" },
+        "counter": { "type": "integer", "minimum": 0, "maximum": 65535 }
+      }
+    },
+    "checkpoints": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["seq", "records", "at"],
+        "additionalProperties": false,
+        "properties": {
+          "seq": { "$ref": "common.json#/$defs/seq" },
+          "records": { "type": "integer", "minimum": 0, "description": "Nombre d'identifiants connus localement après ce tirage." },
+          "at": { "$ref": "common.json#/$defs/millis" }
+        }
+      }
+    },
+    "paused": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["reason", "since"],
+          "additionalProperties": false,
+          "properties": {
+            "reason": { "type": "string", "enum": ["vault_not_found", "unauthorized", "quota_exceeded", "stale_server", "user"] },
+            "since": { "$ref": "common.json#/$defs/millis" }
+          }
+        }
+      ]
+    }
+  }
+}

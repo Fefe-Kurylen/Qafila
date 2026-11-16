@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "service-info.json",
+  "title": "GET /sync/v1/ — carte d'identité du relais",
+  "description": "Seul endpoint sans jeton. Sert à valider l'URL saisie dans « Serveur de synchronisation » et à afficher les quotas du relais choisi. Les limites sont celles de PROTOCOL.md §7 ; un auto-hébergeur peut les relever, jamais les abaisser sous ces valeurs.",
+  "type": "object",
+  "required": ["service", "protocol", "limits"],
+  "additionalProperties": false,
+  "properties": {
+    "service": { "const": "qafila-relay" },
+    "protocol": { "const": 1 },
+    "limits": {
+      "type": "object",
+      "required": ["envelopeBytes", "vaultBytes", "vaultRecords", "devices", "batchEnvelopes", "pairingTtlSeconds", "inactiveDays", "tombstoneDays"],
+      "additionalProperties": false,
+      "properties": {
+        "envelopeBytes": { "type": "integer", "minimum": 65536 },
+        "vaultBytes": { "type": "integer", "minimum": 20971520 },
+        "vaultRecords": { "type": "integer", "minimum": 10000 },
+        "devices": { "type": "integer", "minimum": 5 },
+        "batchEnvelopes": { "type": "integer", "minimum": 100 },
+        "pairingTtlSeconds": { "const": 600 },
+        "inactiveDays": { "type": "integer", "minimum": 180 },
+        "tombstoneDays": { "const": 90 }
+      }
+    }
+  }
+}

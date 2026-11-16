@@ -6,7 +6,7 @@
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test",
     "vectors": "node vectors/gen.mjs"
   },
   "devDependencies": {

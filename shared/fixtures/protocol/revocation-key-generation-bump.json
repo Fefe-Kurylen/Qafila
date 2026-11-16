@@ -1,0 +1,334 @@
+{
+  "title": "Révocation d'un appareil = nouvelle génération de clé, nouveau coffre, ancien coffre effacé",
+  "description": "E (déverrouillé) retire l'appareil X. Il génère VMK₂ (kg 4), ré-chiffre tout, dérive K_sync₂, choisit un vaultId₂ aléatoire, crée le nouveau coffre, pousse tout, puis efface l'ancien. X, qui ne détient que VMK₁ et K_sync₁, reçoit 404 et affiche « Ce coffre a été renouvelé depuis un autre appareil ». Aucun pont VMK₁ → VMK₂ n'existe nulle part. Les autres appareils légitimes se ré-associent par QR ou par kit.",
+  "actors": {
+    "E": "iPhone de Lina (déverrouillé, déclenche la révocation)",
+    "X": "appareil révoqué (détient K_sync₁ et VMK₁)",
+    "L": "autre appareil légitime, hors ligne pendant l'opération"
+  },
+  "vectors": {
+    "oldVaultId": "2f8de310ac74e3cda5881fd8b009b482",
+    "oldSyncToken": "75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+    "newVaultId": "0f54fbd2f9ec6d6153dd500b930c794f",
+    "newSyncToken": "f0e349899e84148d427ccedfc38788cd93199e679f3d34853f641bdba0f3331b",
+    "newSyncTokenHash": "18e82f4a47d0015e3f7c82d30654468d023c616b58e251efa7f90c22310f15ca",
+    "newRecoveryTokenHash": "50065153d3f974d801d96bf982136180fbcd231175e58c2858ab54f75e3d065d",
+    "oldKeyGeneration": 3,
+    "newKeyGeneration": 4
+  },
+  "steps": [
+    {
+      "step": 1,
+      "actor": "E",
+      "name": "Création du nouveau coffre sous K_sync₂ (en-tête kg 4, emplacement recovery ré-enveloppé sous VMK₂)",
+      "request": {
+        "method": "PUT",
+        "path": "/sync/v1/vaults/0f54fbd2f9ec6d6153dd500b930c794f",
+        "headers": {
+          "Authorization": "Bearer f0e349899e84148d427ccedfc38788cd93199e679f3d34853f641bdba0f3331b",
+          "Content-Type": "application/json"
+        },
+        "schema": "vault-create-request.json",
+        "body": {
+          "header": {
+            "v": 1,
+            "vaultId": "0f54fbd2f9ec6d6153dd500b930c794f",
+            "keyGeneration": 4,
+            "createdAt": 1763290000000,
+            "slots": [
+              {
+                "id": "recovery",
+                "n": "FI41Jo4er6SkjIxP",
+                "ct": "amSTzaPZ-i2G7Tdju3R_yLfl0hT5TyIPWU6bkVKyjtipsIrdV9edh6M1bzfiXroi"
+              }
+            ]
+          },
+          "recoveryTokenHash": "50065153d3f974d801d96bf982136180fbcd231175e58c2858ab54f75e3d065d"
+        }
+      },
+      "response": {
+        "status": 201,
+        "schema": "vault-create-response.json",
+        "body": {
+          "vaultId": "0f54fbd2f9ec6d6153dd500b930c794f",
+          "keyGeneration": 4,
+          "seq": 0,
+          "expiresAt": 1778803200000,
+          "usage": {
+            "bytes": 0,
+            "records": 0
+          }
+        }
+      }
+    },
+    {
+      "step": 2,
+      "actor": "E",
+      "name": "Poussée de tous les enregistrements ré-chiffrés (kg 4, rev neufs)",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/0f54fbd2f9ec6d6153dd500b930c794f/changes",
+        "headers": {
+          "Authorization": "Bearer f0e349899e84148d427ccedfc38788cd93199e679f3d34853f641bdba0f3331b",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+              "tier": 2,
+              "kg": 4,
+              "rev": "1763290611000-0000-53d9",
+              "del": false,
+              "n": "QOolokOkgkJyE04s",
+              "ct": "f5GzKpgWErhFGxfbfk9yG7Fb81F8vW13YmvOdcfYOaJoByJuiRmgl1P21DO8jgU3GfK-K7mVAYGQ9D-DyC0sy_UBptFW6h99QgzjD3hX6tHfDRj9en1-heH7gNUp5AQuXRoBtlYiMphVBaNTr76Y1zliNJfJMfJ9SIr2m_IhJoplJnQ84h8TOTR2j7T3T5EVvgCfdNVqOSGuPswwHVd5sHoTy6rr0gGziZvXqehRiUtkBKSX2fru2AqMuy2f3nfVaIHvPBqG1WgsLMnqLrkq4VPd_NSyNti2e5QDonyuQwU2cbJxTdgGj3mjuxS2HKkqus6SsTUPUkrKpkn2K8iP4LPtbZAM7KjNtkfFYHS0S-g"
+            },
+            {
+              "v": 1,
+              "id": "56d65a63-6938-4fcc-ad88-eb716b725030",
+              "tier": 1,
+              "kg": 4,
+              "rev": "1763290611000-0001-6b17",
+              "del": false,
+              "n": "j9grnIcpBZTcxlgL",
+              "ct": "WcllfLAFqhi_ehMjMdHtt3txQ4kVA11F8_9vGJ6wYMgoR0LypcOU9KRlDJnu3F3ztCTfsOezyIIS_mzH1-NhEdVkZM3rkUaPYJBR8QF7lFXUhdXJjUj9VKkRip0Jmrzc3CXo_EmmBERKErfrH23fjQSAm4I2JTbSx0ytJGDrBzgobzD0kY4mG0o77zD7esjN_dN6PcfwkkBZ_mBtNRtXZyHRBv9Ag-wEUr3xE5_pSGxFZQhF3WjkkZ1S49dl9PK05Y1pL7b4bNkwL92rsV_3AxcQR7dvKGnOjEEdagE4XlpoL0bjL3ZV-ZomVMAqoV3HGO5jYKGvLxRYq0h_e6wnZyJbqI-v6ctjh5ZY5b24mDhSwN2P2YaCJEKo3HGMRKv7IuRbu5Fh0M2tT7xZv302ZLQRfujJIbXdlAfKT7Dc-uGks-UhWE4UtZNQIy3qh6gDF6ZEGN6C-86B_nr7YCt6xWhDby8Im7ZEzl1VsvjEo1KPn3PXvnbxE7CU66mhgrjOs395gryQtKQpOii90IqS5hdeImHELN3wl7Cgl-gz0kJU1kwjtP13UFaO4Jn5gCY9e_YcUuaFqdguQvzaVFq8sM5Ix2m2-yQdtCtuc4nb4tlhvnsAEawJp_9e_vsev2ArT5InevntDHyVHA1JDhYRbPRqp_29f706WST_zBh8bH5DUrsaf6mZjq6CS6d97wCr"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-post-response.json",
+        "body": {
+          "results": [
+            {
+              "id": "a5ab54fe-7491-4436-b0fe-6b33445865f2",
+              "status": "accepted",
+              "rev": "1763290611000-0000-53d9",
+              "seq": 1
+            },
+            {
+              "id": "56d65a63-6938-4fcc-ad88-eb716b725030",
+              "status": "accepted",
+              "rev": "1763290611000-0001-6b17",
+              "seq": 2
+            }
+          ],
+          "nextSeq": 2,
+          "usage": {
+            "bytes": 1351,
+            "records": 2
+          }
+        }
+      }
+    },
+    {
+      "step": 3,
+      "actor": "E",
+      "name": "Une enveloppe retardataire encore en kg 3 est refusée sur le nouveau coffre",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/0f54fbd2f9ec6d6153dd500b930c794f/changes",
+        "headers": {
+          "Authorization": "Bearer f0e349899e84148d427ccedfc38788cd93199e679f3d34853f641bdba0f3331b",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "417ca312-bc3e-4112-9992-dcbfdf030d43",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290611500-0000-8592",
+              "del": false,
+              "n": "0YSnL7PjgGZ_LvAh",
+              "ct": "STqrPy8gxKuTRdMePGP5EITS8HTSM8RJAongrj34v_orWDPGecZJOafG0kEYdHhUc_wGFQeLCBBbboMwvLIcTuS7U2VnQbe0au3bEp9AaTKrNLGNthOCJrlKoKFJE0_Es5M3pDm1D6lAqVWSeXdYGU7lUM6un3fpZl_D7QR0vxr4Iab8hRNIf-dM1tFSefMdyRplBE_5JkS6F6PnKUkdwSlFxwqO45yrDRGyyExXPud0ZeigJvIExwb8TnI5fZ-oWDxmEmuI3-YRnwNm-6d9PEwAYNQAmwPeJkxIz6oRtLrFNgqePuNlNf_v6a_S8Z0MD0kOZo7c6Ab9y_c-Y5dFGgbUHjDoI9tdPl-GrD0O3CM"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 409,
+        "schema": "error.json",
+        "body": {
+          "error": "key_generation_mismatch",
+          "message": "Génération de clé différente de celle du coffre.",
+          "details": {
+            "index": 0,
+            "expected": 4,
+            "received": 3
+          }
+        }
+      }
+    },
+    {
+      "step": 4,
+      "actor": "E",
+      "name": "Effacement de l'ancien coffre avec l'ancien jeton",
+      "request": {
+        "method": "DELETE",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 204
+      }
+    },
+    {
+      "step": 5,
+      "actor": "X",
+      "name": "L'appareil révoqué tire : 404 → « Ce coffre a été renouvelé depuis un autre appareil »",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=3",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 404,
+        "schema": "error.json",
+        "body": {
+          "error": "vault_not_found",
+          "message": "Coffre inconnu."
+        }
+      }
+    },
+    {
+      "step": 6,
+      "actor": "X",
+      "name": "X tente de pousser vers l'ancien coffre : même réponse, rien n'est recréé (le PUT exigerait un nouveau coffre vide et son propre jeton)",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        },
+        "schema": "changes-post-request.json",
+        "body": {
+          "changes": [
+            {
+              "v": 1,
+              "id": "7eee423d-28c8-4e69-ac61-d8f45a56a70b",
+              "tier": 2,
+              "kg": 3,
+              "rev": "1763290711000-0000-effa",
+              "del": false,
+              "n": "ehP69RL3au1IudL5",
+              "ct": "-yIa7q6e885gcljqyHiNZGIyxK43ohvaKeTgDX7A4AXln1fHSYpmBA-kYDMzVbOUYBtxTLdFwbrIJyxtdhiOZl61QdWEFaKOUIfW2iXiElOPM4yRSryVqbadx3oaTgsscHuKTQ2h0gswWNQM04pOy0eeeVhSWgo1Npa8qAqTKaPmWU_ivpEKFK-Zn4VHuuKDaWB-_sKIkT5fp0MFBZnYBH-YGJ5wEoX9pOUpZx3VCDiHBVijqgmxchTK2kEuBBbwoDSTtHdxY9uTmQ4Rg7oo4E3I-jAGNjm57rWhSNRqf66bXsHVTjXKhISCxb_OTNtdpq-zQIhwu5Rm8WIaVfv2MMlFwjwe9yaGUJ3mcQWgZAI"
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 404,
+        "schema": "error.json",
+        "body": {
+          "error": "vault_not_found",
+          "message": "Coffre inconnu."
+        }
+      }
+    },
+    {
+      "step": 7,
+      "actor": "X",
+      "name": "X ne peut pas deviner le nouveau coffre : son ancien jeton y est refusé même s'il en connaissait l'identifiant",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/0f54fbd2f9ec6d6153dd500b930c794f/changes?since=0",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 401,
+        "schema": "error.json",
+        "body": {
+          "error": "unauthorized",
+          "message": "Jeton refusé."
+        }
+      }
+    },
+    {
+      "step": 8,
+      "actor": "L",
+      "name": "L, resté hors ligne, rencontre 404 à son prochain tirage : pause « vault_not_found », écran de ré-association",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/2f8de310ac74e3cda5881fd8b009b482/changes?since=3",
+        "headers": {
+          "Authorization": "Bearer 75548075d16989457cc4bad5037cac47671fa8f366098ade5652a21ceee0c60c",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 404,
+        "schema": "error.json",
+        "body": {
+          "error": "vault_not_found",
+          "message": "Coffre inconnu."
+        }
+      }
+    }
+  ],
+  "clientStateAfter": {
+    "schema": "sync-state.json",
+    "L": {
+      "v": 1,
+      "server": "https://sync.qafila.fr",
+      "vaultId": "2f8de310ac74e3cda5881fd8b009b482",
+      "deviceId": "a1b2c3d4",
+      "serverSeq": 3,
+      "lastSync": 1763290516000,
+      "lastPush": 1763290515000,
+      "expiresAt": 1778803200000,
+      "hlc": {
+        "lastMs": 1763290516000,
+        "counter": 0
+      },
+      "checkpoints": [
+        {
+          "seq": 3,
+          "records": 3,
+          "at": 1763290516000
+        }
+      ],
+      "paused": {
+        "reason": "vault_not_found",
+        "since": 1763290811000
+      }
+    },
+    "E": {
+      "v": 1,
+      "server": "https://sync.qafila.fr",
+      "vaultId": "0f54fbd2f9ec6d6153dd500b930c794f",
+      "deviceId": "d3c9a1f0",
+      "serverSeq": 2,
+      "lastSync": 1763290611600,
+      "lastPush": 1763290611600,
+      "expiresAt": 1778803200000,
+      "hlc": {
+        "lastMs": 1763290611500,
+        "counter": 0
+      },
+      "checkpoints": [
+        {
+          "seq": 2,
+          "records": 2,
+          "at": 1763290611600
+        }
+      ],
+      "paused": null
+    }
+  }
+}

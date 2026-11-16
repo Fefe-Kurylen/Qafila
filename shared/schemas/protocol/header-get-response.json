@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "header-get-response.json",
+  "title": "GET /sync/v1/vaults/{vaultId}/header — en-tête public et état du coffre",
+  "description": "Porteur : jeton de synchro ou jeton de récupération (réponse identique dans les deux cas ; `via` dit lequel a été reconnu, pour que le client de récupération sache qu'il doit encore dériver K_sync).",
+  "type": "object",
+  "required": ["header", "seq", "expiresAt", "usage", "via"],
+  "additionalProperties": false,
+  "properties": {
+    "header": { "$ref": "header-public.json" },
+    "seq": { "$ref": "common.json#/$defs/seq" },
+    "expiresAt": { "$ref": "common.json#/$defs/millis" },
+    "usage": { "$ref": "usage.json" },
+    "via": { "type": "string", "enum": ["sync", "recovery"] }
+  }
+}

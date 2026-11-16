@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pairing-answer-request.json",
+  "title": "POST /sync/v1/pairing/{slot} — tour 1 : l'appareil existant répond au QR",
+  "description": "Sans jeton. slot = hex(SHA-256(pkN)) ; le relais vérifie cette égalité et refuse un second dépôt. `commit` = hex(SHA-256(ct)) du paquet que E déposera au tour 2 après confirmation du SAS : il lie le tour 2 au même déposant sans que le relais connaisse aucun secret. `readProofHash` = hex(SHA-256(readProof)), readProof = HMAC-SHA256(K_read, SHA-256(pkN)) avec K_read = HKDF(S, \"qafila/v1/pair-read\") (CRYPTO.md) : seul un détenteur de S (N ou E) pourra lire le paquet.",
+  "type": "object",
+  "required": [
+    "v",
+    "pkN",
+    "pkE",
+    "commit",
+    "readProofHash"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "pkN": {
+      "$ref": "common.json#/$defs/base64url32"
+    },
+    "pkE": {
+      "$ref": "common.json#/$defs/base64url32"
+    },
+    "commit": {
+      "$ref": "common.json#/$defs/hex64"
+    },
+    "readProofHash": {
+      "$ref": "common.json#/$defs/hex64"
+    }
+  }
+}

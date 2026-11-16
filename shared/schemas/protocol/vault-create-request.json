@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vault-create-request.json",
+  "title": "PUT /sync/v1/vaults/{vaultId} — création d'un coffre",
+  "description": "Porteur : le nouveau jeton de synchro K_sync (le relais n'en garde que SHA-256). Le corps porte l'en-tête public et le SHA-256 du jeton de récupération HKDF(RK, \"recovery-auth\") : le relais ne voit jamais ce jeton avant qu'il serve. header.vaultId doit égaler le vaultId du chemin.",
+  "type": "object",
+  "required": ["header", "recoveryTokenHash"],
+  "additionalProperties": false,
+  "properties": {
+    "header": { "$ref": "header-public.json" },
+    "recoveryTokenHash": { "$ref": "common.json#/$defs/hex64" }
+  }
+}

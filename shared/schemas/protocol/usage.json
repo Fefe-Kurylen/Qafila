@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "usage.json",
+  "title": "Occupation d'un coffre sur le relais",
+  "description": "`bytes` = somme des tailles comptées des enveloppes stockées (PROTOCOL.md §7.2) ; `records` = nombre d'identifiants stockés, tombstones compris.",
+  "type": "object",
+  "required": ["bytes", "records"],
+  "additionalProperties": false,
+  "properties": {
+    "bytes": { "type": "integer", "minimum": 0 },
+    "records": { "type": "integer", "minimum": 0 }
+  }
+}

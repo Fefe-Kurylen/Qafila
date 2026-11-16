@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "changes-get-response.json",
+  "title": "GET /sync/v1/vaults/{vaultId}/changes?since=&limit=[&wait=] — enveloppes depuis un numéro de séquence",
+  "description": "Flux d'état courant : chaque identifiant apparaît au plus une fois, à son dernier `seq`. `changes` est trié par `seq` strictement croissant ; `nextSeq` = seq du dernier élément, ou `since` si vide ; `more` = il reste des enveloppes au-delà de `limit`.",
+  "type": "object",
+  "required": ["changes", "nextSeq", "more"],
+  "additionalProperties": false,
+  "properties": {
+    "changes": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "required": ["seq", "envelope"],
+        "additionalProperties": false,
+        "properties": {
+          "seq": { "type": "integer", "minimum": 1 },
+          "envelope": { "$ref": "envelope.json" }
+        }
+      }
+    },
+    "nextSeq": { "$ref": "common.json#/$defs/seq" },
+    "more": { "type": "boolean" }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pairing-status.json",
+  "title": "État d'une boîte d'appairage",
+  "description": "Réponse 201 au tour 1, 200 au tour 2, et 200 à GET /sync/v1/pairing/{slot} sans preuve. `pkE` permet à N de calculer S et le SAS dès l'état `answered`. `expiresAt` = dépôt du tour 1 + 600 s, en ms, arrondi à la seconde.",
+  "type": "object",
+  "required": ["state", "pkE", "expiresAt"],
+  "additionalProperties": false,
+  "properties": {
+    "state": { "type": "string", "enum": ["answered", "opened"] },
+    "pkE": { "$ref": "common.json#/$defs/base64url32" },
+    "expiresAt": { "$ref": "common.json#/$defs/millis" }
+  }
+}

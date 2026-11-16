@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "qr-recover.json",
+  "title": "QR du kit de secours, forme analysée",
+  "description": "URI : qafila://recover?v=1&s=<serveur>&id=<vaultId en base32 Crockford, 26 caractères>&rk=<clé de secours, 32 o base64url>. Contient la clé de secours : le kit est un document à garder hors ligne, jamais affiché ailleurs que dans l'écran protégé et le PDF. Le scanner distingue `pair` et `recover` par le chemin de l'URI.",
+  "type": "object",
+  "required": [
+    "scheme",
+    "action",
+    "v",
+    "s",
+    "id",
+    "rk"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "scheme": {
+      "const": "qafila"
+    },
+    "action": {
+      "const": "recover"
+    },
+    "v": {
+      "const": 1
+    },
+    "s": {
+      "$ref": "common.json#/$defs/httpsUrl"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+      "description": "vaultId (16 o) en base32 Crockford : 2 bits de tête nuls + 128 bits, MSB d'abord, 26 symboles majuscules (le premier vaut donc 0 à 7). Affiché en groupes 6-5-5-5-5 séparés par des tirets ; le décodeur ignore les tirets et la casse et corrige O→0, I/L→1."
+    },
+    "rk": {
+      "$ref": "common.json#/$defs/base64url32"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "qr-pair.json",
+  "title": "QR d'appairage, forme analysée",
+  "description": "URI : qafila://pair?v=1&s=<serveur percent-encodé>&pk=<pkN base64url>. L'objet décrit le résultat de l'analyse (PROTOCOL.md §6.2). Aucun secret : pkN est une clé publique éphémère ; une photo du QR est inoffensive. L'ordre des paramètres dans l'URI est fixe (v, s, pk) ; un paramètre inconnu rend le QR invalide.",
+  "type": "object",
+  "required": ["scheme", "action", "v", "s", "pk"],
+  "additionalProperties": false,
+  "properties": {
+    "scheme": { "const": "qafila" },
+    "action": { "const": "pair" },
+    "v": { "const": 1 },
+    "s": { "$ref": "common.json#/$defs/httpsUrl" },
+    "pk": { "$ref": "common.json#/$defs/base64url32" }
+  }
+}

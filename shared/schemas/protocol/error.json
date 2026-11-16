@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "error.json",
+  "title": "Réponse d'erreur du relais",
+  "description": "Corps JSON de toute réponse 4xx/5xx. `error` est un code stable (contrat), `message` un texte français destiné aux journaux de développement, jamais affiché tel quel. `details` est optionnel et borné (PROTOCOL.md §9).",
+  "type": "object",
+  "required": ["error", "message"],
+  "additionalProperties": false,
+  "properties": {
+    "error": { "$ref": "common.json#/$defs/errorCode" },
+    "message": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": { "type": "string", "maxLength": 64 },
+        "index": { "type": "integer", "minimum": 0 },
+        "reason": { "type": "string", "maxLength": 120 },
+        "quota": { "type": "string", "enum": ["bytes", "records", "envelope", "batch", "body"] },
+        "limit": { "type": "integer", "minimum": 0 },
+        "current": { "type": "integer", "minimum": 0 },
+        "retryAfter": { "type": "integer", "minimum": 0 },
+        "expected": { "type": "integer", "minimum": 1 },
+        "received": { "type": "integer", "minimum": 0 },
+        "state": { "type": "string", "enum": ["answered", "opened", "consumed", "expired", "burned"] }
+      }
+    }
+  }
+}

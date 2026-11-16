@@ -1,0 +1,313 @@
+{
+  "title": "Appairage par QR, chemin heureux : N affiche, E scanne, SAS confirmé sur E, paquet lu une fois par N",
+  "description": "Vecteur réel et reproductible : clés X25519 fixes, dérivations HKDF, SAS, AES-256-GCM et HMAC calculés exactement comme PROTOCOL.md §6 le fixe (à reprendre à l'identique dans CRYPTO.md). Le relais ne voit que pkN, pkE, des hachés et un chiffré ; il ne peut ni lire le paquet ni le remplacer.",
+  "actors": {
+    "N": "Nouvel appareil (Qafila PC), affiche le QR",
+    "E": "Appareil existant déverrouillé (iPhone de Lina), scanne"
+  },
+  "vectors": {
+    "nN": "feeadab3156e30b7ddea94b540457bd50b084e520fd143748393d17d7b48ad33",
+    "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+    "nE": "ec8957b9637743f75d409499b47a8524a20a00cc88d028cda62ef50f7326b205",
+    "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+    "S": "39fadae932ea62f99d8a6b04138e52dc454afadca8b5f3e27cbd57cc29d62d26",
+    "slot": "864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+    "kPair": "e60917616dc9e4e728b8b544db30ecc8c122335aaec652b1dac31924aad01899",
+    "kMac": "1e6ba50c510053cfe19a1ae0d4dee30bfd4865471c9ee472fda8e34a50cb5848",
+    "kRead": "1f7a5083ca5efed32c001d7aff162e21a8cbbc4842bee7d4655a595b7de2c09d",
+    "sasBytes": "758bd8cbdbd77997b32c5a2d871438cc894cf555a6baf6911c1546bab4e6b85e",
+    "sas": "099275",
+    "sasDisplay": "099 275",
+    "vmk": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+    "hkdfSalt": "",
+    "hkdfInfo": {
+      "kPair": "qafila/v1/pair || pkN || pkE",
+      "kMac": "qafila/v1/pair-mac || pkN || pkE",
+      "kRead": "qafila/v1/pair-read || pkN || pkE",
+      "sas": "qafila/v1/pair-sas || pkN || pkE"
+    },
+    "packetPlaintext": {
+      "v": 1,
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 3,
+      "vmk": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "header": {
+        "v": 1,
+        "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+        "createdAt": 1763290000000,
+        "keyGeneration": 3,
+        "slots": [
+          {
+            "id": "recovery",
+            "n": "FpP_WcrRgafPTtWF",
+            "ct": "E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj"
+          }
+        ]
+      },
+      "server": "https://sync.qafila.fr",
+      "deviceName": "iPhone de Lina"
+    },
+    "packetCanonical": "{\"deviceName\":\"iPhone de Lina\",\"header\":{\"createdAt\":1763290000000,\"keyGeneration\":3,\"slots\":[{\"ct\":\"E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj\",\"id\":\"recovery\",\"n\":\"FpP_WcrRgafPTtWF\"}],\"v\":1,\"vaultId\":\"19fb3adb8ccb193b8d782ab67cbbccdd\"},\"keyGeneration\":3,\"server\":\"https://sync.qafila.fr\",\"v\":1,\"vaultId\":\"19fb3adb8ccb193b8d782ab67cbbccdd\",\"vmk\":\"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8\"}",
+    "paddedLength": 512,
+    "macInput": "pkN || pkE || ct",
+    "aad": "qafila/v1/pair|864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+    "n": "3Io5Mmepdc44Z3Gd",
+    "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHH",
+    "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7M",
+    "commit": "b1dd7a92b82f41ec8ae1181007192e8e5e4bab6779b41cc428d89d101f228b47",
+    "readProof": "d8c0c3c90b4cdde0c56a6e36764ce21296acac91cb6e59686a0160a323a8ad32",
+    "readProofHash": "e61a7fa53a1f6d530a53da99ef12280853b0fbbf5e527b688a5dbbcd20cf21b7"
+  },
+  "qr": {
+    "uri": "qafila://pair?v=1&s=https%3A%2F%2Fsync.qafila.fr&pk=4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+    "parsed": {
+      "scheme": "qafila",
+      "action": "pair",
+      "v": 1,
+      "s": "https://sync.qafila.fr",
+      "pk": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI"
+    },
+    "schema": "qr-pair.json"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "actor": "N",
+      "name": "N génère (nN, pkN), affiche le QR et commence à interroger la boîte toutes les 2 s : vide",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd"
+      },
+      "response": {
+        "status": 404,
+        "schema": "error.json",
+        "body": {
+          "error": "pairing_not_found",
+          "message": "Aucune réponse pour l'instant."
+        }
+      }
+    },
+    {
+      "step": 2,
+      "actor": "E",
+      "name": "E scanne, génère (nE, pkE), calcule S, K_pair, le paquet chiffré, puis répond (tour 1)",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "schema": "pairing-answer-request.json",
+        "body": {
+          "v": 1,
+          "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+          "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+          "commit": "b1dd7a92b82f41ec8ae1181007192e8e5e4bab6779b41cc428d89d101f228b47",
+          "readProofHash": "e61a7fa53a1f6d530a53da99ef12280853b0fbbf5e527b688a5dbbcd20cf21b7"
+        }
+      },
+      "response": {
+        "status": 201,
+        "schema": "pairing-status.json",
+        "body": {
+          "state": "answered",
+          "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+          "expiresAt": 1763291111000
+        }
+      }
+    },
+    {
+      "step": 3,
+      "actor": "X",
+      "name": "Quiconque a photographié le QR tente de déposer à son tour : refusé, la boîte est prise",
+      "request": {
+        "method": "POST",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "schema": "pairing-answer-request.json",
+        "body": {
+          "v": 1,
+          "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+          "pkE": "-wQS5zglXxehUCAKv93e5SWPGiA-IIwFI1Z49ndKoUA",
+          "commit": "baa49a52a309ac70928670d418f365900b126972fcf96d820b5ca8a6b442d38d",
+          "readProofHash": "34aca2282fff22bb9ae17261b799d60490ab658af8124a2383287c52192251e3"
+        }
+      },
+      "response": {
+        "status": 409,
+        "schema": "error.json",
+        "body": {
+          "error": "pairing_slot_taken",
+          "message": "Cette boîte a déjà reçu une réponse."
+        }
+      }
+    },
+    {
+      "step": 4,
+      "actor": "N",
+      "name": "N lit pkE, calcule S et le même SAS ; les deux écrans affichent « 099 275 »",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd"
+      },
+      "response": {
+        "status": 200,
+        "schema": "pairing-status.json",
+        "body": {
+          "state": "answered",
+          "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+          "expiresAt": 1763291111000
+        }
+      }
+    },
+    {
+      "step": 5,
+      "actor": "N",
+      "name": "Preuve présentée trop tôt (avant la confirmation sur E)",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+        "headers": {
+          "X-Qafila-Pair-Proof": "d8c0c3c90b4cdde0c56a6e36764ce21296acac91cb6e59686a0160a323a8ad32"
+        }
+      },
+      "response": {
+        "status": 409,
+        "schema": "error.json",
+        "body": {
+          "error": "pairing_not_open",
+          "message": "Le paquet n'a pas encore été déposé.",
+          "details": {
+            "state": "answered"
+          }
+        }
+      }
+    },
+    {
+      "step": 6,
+      "actor": "E",
+      "name": "L'utilisateur confirme « Même code ? » sur E : dépôt du paquet (tour 2), lié par commit",
+      "request": {
+        "method": "PUT",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "schema": "pairing-open-request.json",
+        "body": {
+          "n": "3Io5Mmepdc44Z3Gd",
+          "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHH",
+          "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7M"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "pairing-status.json",
+        "body": {
+          "state": "opened",
+          "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+          "expiresAt": 1763291111000
+        }
+      }
+    },
+    {
+      "step": 7,
+      "actor": "N",
+      "name": "N voit l'état opened et lit le paquet avec sa preuve : lecture unique",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+        "headers": {
+          "X-Qafila-Pair-Proof": "d8c0c3c90b4cdde0c56a6e36764ce21296acac91cb6e59686a0160a323a8ad32"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "pairing-packet-response.json",
+        "body": {
+          "state": "opened",
+          "expiresAt": 1763291111000,
+          "packet": {
+            "v": 1,
+            "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+            "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+            "n": "3Io5Mmepdc44Z3Gd",
+            "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHH",
+            "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7M"
+          }
+        }
+      }
+    },
+    {
+      "step": 8,
+      "actor": "X",
+      "name": "Toute relecture, même avec la bonne preuve, échoue : la boîte est consommée",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/pairing/864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+        "headers": {
+          "X-Qafila-Pair-Proof": "d8c0c3c90b4cdde0c56a6e36764ce21296acac91cb6e59686a0160a323a8ad32"
+        }
+      },
+      "response": {
+        "status": 410,
+        "schema": "error.json",
+        "body": {
+          "error": "pairing_gone",
+          "message": "Boîte consommée ou expirée.",
+          "details": {
+            "state": "consumed"
+          }
+        }
+      }
+    },
+    {
+      "step": 9,
+      "actor": "N",
+      "name": "N vérifie mac, déchiffre, pose ses emplacements, écrit son record device, puis tire tout le coffre",
+      "request": {
+        "method": "GET",
+        "path": "/sync/v1/vaults/19fb3adb8ccb193b8d782ab67cbbccdd/changes?since=0&limit=500",
+        "headers": {
+          "Authorization": "Bearer a43f81811e0427a7d269730627d99affc83f913d38ea471aabc0c19f4920dc01",
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "schema": "changes-get-response.json",
+        "body": {
+          "changes": [],
+          "nextSeq": 0,
+          "more": false
+        }
+      }
+    }
+  ],
+  "decrypted": {
+    "schema": "pairing-packet-plaintext.json",
+    "packet": {
+      "v": 1,
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 3,
+      "vmk": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "header": {
+        "v": 1,
+        "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+        "createdAt": 1763290000000,
+        "keyGeneration": 3,
+        "slots": [
+          {
+            "id": "recovery",
+            "n": "FpP_WcrRgafPTtWF",
+            "ct": "E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj"
+          }
+        ]
+      },
+      "server": "https://sync.qafila.fr",
+      "deviceName": "iPhone de Lina"
+    }
+  }
+}
