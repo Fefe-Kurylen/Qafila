@@ -1,0 +1,40 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "Jeton porteur = 64 hex minuscules de la clé ; le relais stocke hex(SHA-256(UTF-8 du jeton tel que reçu)).",
+  "positive": [
+    {
+      "name": "jeton de synchronisation (K_sync)",
+      "key": "d49cf8b7585a2e927b083be8101f4edc04e749828c3beb67d88f68fc878485a7",
+      "token": "d49cf8b7585a2e927b083be8101f4edc04e749828c3beb67d88f68fc878485a7",
+      "tokenHash": "adb99eb1cf3d51e77f7e2cf964ae3a3533eb98974644b0d7fb1327c0cbfffe97",
+      "authorizationHeader": "Bearer d49cf8b7585a2e927b083be8101f4edc04e749828c3beb67d88f68fc878485a7"
+    },
+    {
+      "name": "jeton de récupération (HKDF(RK, recovery-auth))",
+      "key": "3f5b0520b74f0f127107be9b2b5d7be8cd95398dc9acbdbf7c685fdfcdb64d29",
+      "token": "3f5b0520b74f0f127107be9b2b5d7be8cd95398dc9acbdbf7c685fdfcdb64d29",
+      "tokenHash": "4522508da8da0671b992db30871438aab2008dd453e1b29588252ab8c14d12d5",
+      "authorizationHeader": "Bearer 3f5b0520b74f0f127107be9b2b5d7be8cd95398dc9acbdbf7c685fdfcdb64d29"
+    }
+  ],
+  "negative": [
+    {
+      "name": "hex majuscule refusé",
+      "operation": "tokenHash",
+      "token": "D49CF8B7585A2E927B083BE8101F4EDC04E749828C3BEB67D88F68FC878485A7",
+      "error": "E_TOKEN"
+    },
+    {
+      "name": "longueur incorrecte",
+      "operation": "tokenHash",
+      "token": "d49cf8b7585a2e927b083be8101f4edc04e749828c3beb67d88f68fc878485a",
+      "error": "E_TOKEN"
+    },
+    {
+      "name": "hachage des 32 octets bruts (interdit) différent du hachage du jeton ASCII",
+      "operation": "compare",
+      "rawHash": "1be6fef2cccb5c8f21402228f7babed769b7e288e9e8ddf0b7174b25f358bfcf",
+      "tokenHash": "adb99eb1cf3d51e77f7e2cf964ae3a3533eb98974644b0d7fb1327c0cbfffe97"
+    }
+  ]
+}

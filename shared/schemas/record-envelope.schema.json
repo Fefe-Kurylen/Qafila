@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/record-envelope.schema.json",
+  "title": "Enveloppe d'enregistrement",
+  "description": "Partie en clair d'un enregistrement (ce que voient le disque et le relais). Chaque enveloppe est son propre message AES-256-GCM : AAD = \"qafila/v1|<vaultId>|<id>|<tier>|<kg>|<rev>\" (le vaultId vient du contexte, pas de l'enveloppe). ct = chiffré du contenu bourré à 256 o || tag 16 o. Les suppressions sont des enveloppes normales dont le contenu déchiffré est {\"type\":…,\"deleted\":true} : il n'existe AUCUNE suppression en clair, et `del` n'est qu'un indice de ménage pour le relais que le client confronte au contenu (incohérence = rejet). Voir shared/CRYPTO.md §7.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "id", "tier", "kg", "rev", "del", "n", "ct"],
+  "properties": {
+    "v": { "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/uuid" },
+    "tier": {
+      "description": "1 = K_secrets (login) · 2 = K_data (bookmark, folder, setting, device, tabs). Doit correspondre au type déchiffré.",
+      "enum": [1, 2]
+    },
+    "kg": { "$ref": "common.schema.json#/$defs/keyGeneration" },
+    "rev": { "$ref": "common.schema.json#/$defs/rev" },
+    "del": {
+      "description": "Indice de suppression pour la purge côté relais (90 jours). Égal à `deleted` du contenu, sinon l'enveloppe est rejetée. Jamais lu pour fusionner.",
+      "type": "boolean"
+    },
+    "n": { "$ref": "common.schema.json#/$defs/nonce" },
+    "ct": {
+      "description": "(256·k + 16) octets en base64url sans padding, k ≥ 1 ; au plus 64 Kio une fois décodé.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{363,}$",
+      "maxLength": 87400
+    }
+  }
+}

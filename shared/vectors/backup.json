@@ -1,0 +1,136 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "Sauvegarde .qafila minimale : emplacement export (Argon2id sur la phrase d'export) + enveloppes + mac HMAC-SHA256(K_export, JSON canonique sans mac).",
+  "passphrase": "sauvegarde-vecteur-test",
+  "exportKek": "ec0118603bbe3a8b7cf4d8c06a9057558ae046e43e8d67753bc1d2ca25118e8b",
+  "exportSalt": "78b59b2b2f8e99e637eace8fd9493ce4",
+  "exportNonce": "f364ce93eb7bd6b87c18c30b",
+  "exportSlotAad": "qafila/v1/slot|19fb3adb8ccb193b8d782ab67cbbccdd|export|3",
+  "kExport": "5f297b7f77f15c5c995fbb1c3d37c146dd3035b4202c6d608b17ad5a477b90f1",
+  "backup": {
+    "format": "qafila-backup",
+    "v": 1,
+    "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+    "keyGeneration": 3,
+    "kdf": {
+      "alg": "argon2id",
+      "salt": "eLWbKy-OmeY36s6P2Uk85A",
+      "m": 65536,
+      "t": 3,
+      "p": 1
+    },
+    "slot": {
+      "id": "export",
+      "n": "82TOk-t71rh8GMML",
+      "ct": "qQTNYm1aOX9jx2mNoLiKvfozuReCsB_4rDVt-7Q-aTuN3-Txlx2jdwgSlZRRvrAl"
+    },
+    "records": [
+      {
+        "v": 1,
+        "id": "2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763290511123-0003-11aa",
+        "del": false,
+        "n": "L26hQZe3cwOsdLIo",
+        "ct": "ipitS3wCbJS32R1y4AaAEHGvXCF_xl99HMrtMI7JpAUPVUYdGQtDbgE9ugyKleoeXIgOIfVm75WJ6sMPXFDZE_1EsBpyOQee_5TBxPJ-r-bmjXwXgVVYHqD2nY6w8xm4ALwK8Gb9tfg4fX0OuzTulPUbpurjqIW-_qKjP_jKLIdG6rQgdv3G54WyAqhi51yZJ-mlVkLMfCJx_VsajPxvBPiQFLCk2I1ZPVYMWXrmcR-D6qVaFyCIEZ8AXidPoz_6l-oSU3wJ6fFNPMQObz70JVseCMqHd9ImWEQ3_G41-cFzwXomzLOJX681UbNtGvWp3lfzv-pOPUoFHjPrE9zMOGSWZoOC0nvpeKTMi1-wwAc"
+      },
+      {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      }
+    ],
+    "mac": "xeBHY04f69gGWm6yysVttL8KYZWV1-TA48XeVxxxlK8"
+  },
+  "macInputCanonical": "{\"format\":\"qafila-backup\",\"kdf\":{\"alg\":\"argon2id\",\"m\":65536,\"p\":1,\"salt\":\"eLWbKy-OmeY36s6P2Uk85A\",\"t\":3},\"keyGeneration\":3,\"records\":[{\"ct\":\"ipitS3wCbJS32R1y4AaAEHGvXCF_xl99HMrtMI7JpAUPVUYdGQtDbgE9ugyKleoeXIgOIfVm75WJ6sMPXFDZE_1EsBpyOQee_5TBxPJ-r-bmjXwXgVVYHqD2nY6w8xm4ALwK8Gb9tfg4fX0OuzTulPUbpurjqIW-_qKjP_jKLIdG6rQgdv3G54WyAqhi51yZJ-mlVkLMfCJx_VsajPxvBPiQFLCk2I1ZPVYMWXrmcR-D6qVaFyCIEZ8AXidPoz_6l-oSU3wJ6fFNPMQObz70JVseCMqHd9ImWEQ3_G41-cFzwXomzLOJX681UbNtGvWp3lfzv-pOPUoFHjPrE9zMOGSWZoOC0nvpeKTMi1-wwAc\",\"del\":false,\"id\":\"2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e\",\"kg\":3,\"n\":\"L26hQZe3cwOsdLIo\",\"rev\":\"1763290511123-0003-11aa\",\"tier\":2,\"v\":1},{\"ct\":\"ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw\",\"del\":false,\"id\":\"6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90\",\"kg\":3,\"n\":\"N5Pli9auQhtdNaoH\",\"rev\":\"1763290511123-0002-9af3\",\"tier\":1,\"v\":1}],\"slot\":{\"ct\":\"qQTNYm1aOX9jx2mNoLiKvfozuReCsB_4rDVt-7Q-aTuN3-Txlx2jdwgSlZRRvrAl\",\"id\":\"export\",\"n\":\"82TOk-t71rh8GMML\"},\"v\":1,\"vaultId\":\"19fb3adb8ccb193b8d782ab67cbbccdd\"}",
+  "negative": [
+    {
+      "name": "enregistrement retiré : mac invalide",
+      "operation": "verifyBackupMac",
+      "backup": {
+        "format": "qafila-backup",
+        "v": 1,
+        "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+        "keyGeneration": 3,
+        "kdf": {
+          "alg": "argon2id",
+          "salt": "eLWbKy-OmeY36s6P2Uk85A",
+          "m": 65536,
+          "t": 3,
+          "p": 1
+        },
+        "slot": {
+          "id": "export",
+          "n": "82TOk-t71rh8GMML",
+          "ct": "qQTNYm1aOX9jx2mNoLiKvfozuReCsB_4rDVt-7Q-aTuN3-Txlx2jdwgSlZRRvrAl"
+        },
+        "records": [
+          {
+            "v": 1,
+            "id": "2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e",
+            "tier": 2,
+            "kg": 3,
+            "rev": "1763290511123-0003-11aa",
+            "del": false,
+            "n": "L26hQZe3cwOsdLIo",
+            "ct": "ipitS3wCbJS32R1y4AaAEHGvXCF_xl99HMrtMI7JpAUPVUYdGQtDbgE9ugyKleoeXIgOIfVm75WJ6sMPXFDZE_1EsBpyOQee_5TBxPJ-r-bmjXwXgVVYHqD2nY6w8xm4ALwK8Gb9tfg4fX0OuzTulPUbpurjqIW-_qKjP_jKLIdG6rQgdv3G54WyAqhi51yZJ-mlVkLMfCJx_VsajPxvBPiQFLCk2I1ZPVYMWXrmcR-D6qVaFyCIEZ8AXidPoz_6l-oSU3wJ6fFNPMQObz70JVseCMqHd9ImWEQ3_G41-cFzwXomzLOJX681UbNtGvWp3lfzv-pOPUoFHjPrE9zMOGSWZoOC0nvpeKTMi1-wwAc"
+          }
+        ],
+        "mac": "xeBHY04f69gGWm6yysVttL8KYZWV1-TA48XeVxxxlK8"
+      },
+      "error": "E_BACKUP"
+    },
+    {
+      "name": "mac altéré",
+      "operation": "verifyBackupMac",
+      "backup": {
+        "format": "qafila-backup",
+        "v": 1,
+        "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+        "keyGeneration": 3,
+        "kdf": {
+          "alg": "argon2id",
+          "salt": "eLWbKy-OmeY36s6P2Uk85A",
+          "m": 65536,
+          "t": 3,
+          "p": 1
+        },
+        "slot": {
+          "id": "export",
+          "n": "82TOk-t71rh8GMML",
+          "ct": "qQTNYm1aOX9jx2mNoLiKvfozuReCsB_4rDVt-7Q-aTuN3-Txlx2jdwgSlZRRvrAl"
+        },
+        "records": [
+          {
+            "v": 1,
+            "id": "2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e",
+            "tier": 2,
+            "kg": 3,
+            "rev": "1763290511123-0003-11aa",
+            "del": false,
+            "n": "L26hQZe3cwOsdLIo",
+            "ct": "ipitS3wCbJS32R1y4AaAEHGvXCF_xl99HMrtMI7JpAUPVUYdGQtDbgE9ugyKleoeXIgOIfVm75WJ6sMPXFDZE_1EsBpyOQee_5TBxPJ-r-bmjXwXgVVYHqD2nY6w8xm4ALwK8Gb9tfg4fX0OuzTulPUbpurjqIW-_qKjP_jKLIdG6rQgdv3G54WyAqhi51yZJ-mlVkLMfCJx_VsajPxvBPiQFLCk2I1ZPVYMWXrmcR-D6qVaFyCIEZ8AXidPoz_6l-oSU3wJ6fFNPMQObz70JVseCMqHd9ImWEQ3_G41-cFzwXomzLOJX681UbNtGvWp3lfzv-pOPUoFHjPrE9zMOGSWZoOC0nvpeKTMi1-wwAc"
+          },
+          {
+            "v": 1,
+            "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+            "tier": 1,
+            "kg": 3,
+            "rev": "1763290511123-0002-9af3",
+            "del": false,
+            "n": "N5Pli9auQhtdNaoH",
+            "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+          }
+        ],
+        "mac": "xeBHY04f69gGWm6yysVttL8KYZWV1-TA48XeVxxxlK4"
+      },
+      "error": "E_BACKUP"
+    }
+  ]
+}

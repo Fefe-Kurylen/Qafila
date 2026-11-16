@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/record-setting.schema.json",
+  "title": "setting (niveau 2 — K_data)",
+  "description": "Un enregistrement par clé de réglage ; l'id de l'enveloppe est aléatoire, la clé logique est DANS le chiffré. Deux enregistrements pour la même key : le client garde le rev le plus grand et pose un tombstone sur les autres. Liste blanche des clés et de leurs valeurs : shared/SETTINGS_SYNC_KEYS.md ; une clé inconnue d'une plateforme est conservée et ignorée. Enveloppe : tier = 2.",
+  "type": "object",
+  "required": ["type", "key", "value", "scope", "author", "deleted"],
+  "properties": {
+    "type": { "const": "setting" },
+    "key": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z][A-Za-z0-9_.]*$" },
+    "value": {
+      "description": "Valeur brute (rawValue Swift = nom d'enum Kotlin), ou objet JSON pour les réglages composés (toolbar). Nombres entiers seulement (JSON canonique).",
+      "type": ["string", "number", "boolean", "null", "object", "array"]
+    },
+    "scope": {
+      "description": "all = toutes les plateformes. Une plateforme ignore les clés sans sens chez elle (toolbar.position sur PC).",
+      "enum": ["all", "mobile", "desktop"]
+    },
+    "author": { "$ref": "common.schema.json#/$defs/deviceId" },
+    "deleted": { "const": false }
+  }
+}

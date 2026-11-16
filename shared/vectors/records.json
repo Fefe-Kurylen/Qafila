@@ -1,0 +1,436 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "Enveloppes AEAD par enregistrement. AAD = \"qafila/v1|<vaultId>|<id>|<tier>|<kg>|<rev>\". Contenu = JSON canonique bourré à 256.",
+  "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+  "keyGeneration": 3,
+  "keys": {
+    "secrets": "eac38bb2c454fbe086e63da93583d359bb75cb9d7e63e1964b91c8d9d37da562",
+    "data": "5b8a8b57c5e2e80c383e2d21ddf921007c1ad9cb1a3e056a88b310ef217f297a"
+  },
+  "keysPrevious": {
+    "kg": 2,
+    "secrets": "e64bb95aaf7f3691597a8ea2334e9fad16226aa96abec4f12c0e978846d85d39",
+    "data": "b99425431c383c19c8e613fe41052f77d38ae4890fa2a033338166747e53606c"
+  },
+  "positive": [
+    {
+      "name": "login (niveau 1)",
+      "content": {
+        "type": "login",
+        "title": "Aeon",
+        "origins": [
+          "https://aeon.co",
+          "https://login.aeon.co"
+        ],
+        "username": "lina@example.org",
+        "password": "Zéphyr-2026!🔑",
+        "note": "",
+        "formActionOrigin": "https://aeon.co",
+        "httpRealm": null,
+        "totp": null,
+        "folderId": null,
+        "favorite": false,
+        "tags": [],
+        "createdAt": 1763290000000,
+        "modifiedAt": 1763290000000,
+        "lastUsedAt": null,
+        "passwordChangedAt": 1763290000000,
+        "passwordHistory": [
+          {
+            "password": "ancien",
+            "changedAt": 1750000000000
+          }
+        ],
+        "source": "firefox",
+        "importGuid": "{a1b2c3d4-0000-4000-8000-000000000000}",
+        "importBatch": "b7e1f2a3-5c6d-4e7f-8a9b-0c1d2e3f4a5b",
+        "neverSaveHere": false,
+        "author": "d3c9a1f0",
+        "deleted": false
+      },
+      "contentCanonical": "{\"author\":\"d3c9a1f0\",\"createdAt\":1763290000000,\"deleted\":false,\"favorite\":false,\"folderId\":null,\"formActionOrigin\":\"https://aeon.co\",\"httpRealm\":null,\"importBatch\":\"b7e1f2a3-5c6d-4e7f-8a9b-0c1d2e3f4a5b\",\"importGuid\":\"{a1b2c3d4-0000-4000-8000-000000000000}\",\"lastUsedAt\":null,\"modifiedAt\":1763290000000,\"neverSaveHere\":false,\"note\":\"\",\"origins\":[\"https://aeon.co\",\"https://login.aeon.co\"],\"password\":\"Zéphyr-2026!🔑\",\"passwordChangedAt\":1763290000000,\"passwordHistory\":[{\"changedAt\":1750000000000,\"password\":\"ancien\"}],\"source\":\"firefox\",\"tags\":[],\"title\":\"Aeon\",\"totp\":null,\"type\":\"login\",\"username\":\"lina@example.org\"}",
+      "paddedHex": "7b22617574686f72223a226433633961316630222c22637265617465644174223a313736333239303030303030302c2264656c65746564223a66616c73652c226661766f72697465223a66616c73652c22666f6c6465724964223a6e756c6c2c22666f726d416374696f6e4f726967696e223a2268747470733a2f2f61656f6e2e636f222c22687474705265616c6d223a6e756c6c2c22696d706f72744261746368223a2262376531663261332d356336642d346537662d386139622d306331643265336634613562222c22696d706f727447756964223a227b61316232633364342d303030302d343030302d383030302d3030303030303030303030307d222c226c617374557365644174223a6e756c6c2c226d6f6469666965644174223a313736333239303030303030302c226e657665725361766548657265223a66616c73652c226e6f7465223a22222c226f726967696e73223a5b2268747470733a2f2f61656f6e2e636f222c2268747470733a2f2f6c6f67696e2e61656f6e2e636f225d2c2270617373776f7264223a225ac3a9706879722d3230323621f09f9491222c2270617373776f72644368616e6765644174223a313736333239303030303030302c2270617373776f7264486973746f7279223a5b7b226368616e6765644174223a313735303030303030303030302c2270617373776f7264223a22616e6369656e227d5d2c22736f75726365223a2266697265666f78222c2274616773223a5b5d2c227469746c65223a2241656f6e222c22746f7470223a6e756c6c2c2274797065223a226c6f67696e222c22757365726e616d65223a226c696e61406578616d706c652e6f7267227d8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "key": "eac38bb2c454fbe086e63da93583d359bb75cb9d7e63e1964b91c8d9d37da562",
+      "nonce": "3793e58bd6ae421b5d35aa07",
+      "aad": "qafila/v1|19fb3adb8ccb193b8d782ab67cbbccdd|6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90|1|3|1763290511123-0002-9af3",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "envelopeCanonical": "{\"ct\":\"ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw\",\"del\":false,\"id\":\"6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90\",\"kg\":3,\"n\":\"N5Pli9auQhtdNaoH\",\"rev\":\"1763290511123-0002-9af3\",\"tier\":1,\"v\":1}"
+    },
+    {
+      "name": "tombstone login (niveau 1, del=true)",
+      "content": {
+        "type": "login",
+        "deleted": true
+      },
+      "contentCanonical": "{\"deleted\":true,\"type\":\"login\"}",
+      "paddedHex": "7b2264656c65746564223a747275652c2274797065223a226c6f67696e227d800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "key": "eac38bb2c454fbe086e63da93583d359bb75cb9d7e63e1964b91c8d9d37da562",
+      "nonce": "85d9335d1dd7067d39b504b1",
+      "aad": "qafila/v1|19fb3adb8ccb193b8d782ab67cbbccdd|6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90|1|3|1763290600000-0000-0c41",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290600000-0000-0c41",
+        "del": true,
+        "n": "hdkzXR3XBn05tQSx",
+        "ct": "SwAW0YPYqzxhOoHLq1dkJhJImq7iRP9PJN7p8i6a4npYnWwNsIFWlDHyjecuYrlCEgfVw8ChhIGNG3lSvZCCp4mutgi843k7ZRuzPyXWLi6qYDh3g3b_kxtCH8DWu5RZyHkHCh2zNN2sAtKd9A80_Ci8F7MAnzmNGTcC70NAlaaQJSJSTxxUyXIr0I-LRYFmdSqhijuGf91Hh2HQo3InFvGc-zhsh6GCWXdx9t3uXWXzjwV7cb3Sdsm9QRBXVyfXWlYEwXhOCGhQ5ASpKY0ds-t1YF6MBCiNYGrJLTYcZ_0Av0zTrcjzg3ZWjA356zqOWXa8Tuum74AP9GOqNwFwOM31mhUb-9ujt1MmSguuTeI"
+      },
+      "envelopeCanonical": "{\"ct\":\"SwAW0YPYqzxhOoHLq1dkJhJImq7iRP9PJN7p8i6a4npYnWwNsIFWlDHyjecuYrlCEgfVw8ChhIGNG3lSvZCCp4mutgi843k7ZRuzPyXWLi6qYDh3g3b_kxtCH8DWu5RZyHkHCh2zNN2sAtKd9A80_Ci8F7MAnzmNGTcC70NAlaaQJSJSTxxUyXIr0I-LRYFmdSqhijuGf91Hh2HQo3InFvGc-zhsh6GCWXdx9t3uXWXzjwV7cb3Sdsm9QRBXVyfXWlYEwXhOCGhQ5ASpKY0ds-t1YF6MBCiNYGrJLTYcZ_0Av0zTrcjzg3ZWjA356zqOWXa8Tuum74AP9GOqNwFwOM31mhUb-9ujt1MmSguuTeI\",\"del\":true,\"id\":\"6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90\",\"kg\":3,\"n\":\"hdkzXR3XBn05tQSx\",\"rev\":\"1763290600000-0000-0c41\",\"tier\":1,\"v\":1}"
+    },
+    {
+      "name": "bookmark (niveau 2)",
+      "content": {
+        "type": "bookmark",
+        "title": "Aeon",
+        "url": "https://aeon.co/",
+        "addedAt": 1763290000000,
+        "folderId": null,
+        "position": "a0V",
+        "author": "d3c9a1f0",
+        "deleted": false
+      },
+      "contentCanonical": "{\"addedAt\":1763290000000,\"author\":\"d3c9a1f0\",\"deleted\":false,\"folderId\":null,\"position\":\"a0V\",\"title\":\"Aeon\",\"type\":\"bookmark\",\"url\":\"https://aeon.co/\"}",
+      "paddedHex": "7b2261646465644174223a313736333239303030303030302c22617574686f72223a226433633961316630222c2264656c65746564223a66616c73652c22666f6c6465724964223a6e756c6c2c22706f736974696f6e223a22613056222c227469746c65223a2241656f6e222c2274797065223a22626f6f6b6d61726b222c2275726c223a2268747470733a2f2f61656f6e2e636f2f227d8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "key": "5b8a8b57c5e2e80c383e2d21ddf921007c1ad9cb1a3e056a88b310ef217f297a",
+      "nonce": "2f6ea14197b77303ac74b228",
+      "aad": "qafila/v1|19fb3adb8ccb193b8d782ab67cbbccdd|2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e|2|3|1763290511123-0003-11aa",
+      "envelope": {
+        "v": 1,
+        "id": "2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763290511123-0003-11aa",
+        "del": false,
+        "n": "L26hQZe3cwOsdLIo",
+        "ct": "ipitS3wCbJS32R1y4AaAEHGvXCF_xl99HMrtMI7JpAUPVUYdGQtDbgE9ugyKleoeXIgOIfVm75WJ6sMPXFDZE_1EsBpyOQee_5TBxPJ-r-bmjXwXgVVYHqD2nY6w8xm4ALwK8Gb9tfg4fX0OuzTulPUbpurjqIW-_qKjP_jKLIdG6rQgdv3G54WyAqhi51yZJ-mlVkLMfCJx_VsajPxvBPiQFLCk2I1ZPVYMWXrmcR-D6qVaFyCIEZ8AXidPoz_6l-oSU3wJ6fFNPMQObz70JVseCMqHd9ImWEQ3_G41-cFzwXomzLOJX681UbNtGvWp3lfzv-pOPUoFHjPrE9zMOGSWZoOC0nvpeKTMi1-wwAc"
+      },
+      "envelopeCanonical": "{\"ct\":\"ipitS3wCbJS32R1y4AaAEHGvXCF_xl99HMrtMI7JpAUPVUYdGQtDbgE9ugyKleoeXIgOIfVm75WJ6sMPXFDZE_1EsBpyOQee_5TBxPJ-r-bmjXwXgVVYHqD2nY6w8xm4ALwK8Gb9tfg4fX0OuzTulPUbpurjqIW-_qKjP_jKLIdG6rQgdv3G54WyAqhi51yZJ-mlVkLMfCJx_VsajPxvBPiQFLCk2I1ZPVYMWXrmcR-D6qVaFyCIEZ8AXidPoz_6l-oSU3wJ6fFNPMQObz70JVseCMqHd9ImWEQ3_G41-cFzwXomzLOJX681UbNtGvWp3lfzv-pOPUoFHjPrE9zMOGSWZoOC0nvpeKTMi1-wwAc\",\"del\":false,\"id\":\"2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e\",\"kg\":3,\"n\":\"L26hQZe3cwOsdLIo\",\"rev\":\"1763290511123-0003-11aa\",\"tier\":2,\"v\":1}"
+    },
+    {
+      "name": "setting avec valeur imbriquée et clé non ASCII (niveau 2)",
+      "content": {
+        "type": "setting",
+        "key": "toolbar",
+        "value": {
+          "actions": [
+            "back",
+            "forward",
+            "share",
+            "newTab",
+            "tabs",
+            "menu"
+          ],
+          "position": "bottom",
+          "é": "tri UTF-16 : é (U+00E9) après z"
+        },
+        "scope": "all",
+        "author": "d3c9a1f0",
+        "deleted": false
+      },
+      "contentCanonical": "{\"author\":\"d3c9a1f0\",\"deleted\":false,\"key\":\"toolbar\",\"scope\":\"all\",\"type\":\"setting\",\"value\":{\"actions\":[\"back\",\"forward\",\"share\",\"newTab\",\"tabs\",\"menu\"],\"position\":\"bottom\",\"é\":\"tri UTF-16 : é (U+00E9) après z\"}}",
+      "paddedHex": "7b22617574686f72223a226433633961316630222c2264656c65746564223a66616c73652c226b6579223a22746f6f6c626172222c2273636f7065223a22616c6c222c2274797065223a2273657474696e67222c2276616c7565223a7b22616374696f6e73223a5b226261636b222c22666f7277617264222c227368617265222c226e6577546162222c2274616273222c226d656e75225d2c22706f736974696f6e223a22626f74746f6d222c22c3a9223a22747269205554462d3136203a20c3a92028552b303045392920617072c3a873207a227d7d8000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "key": "5b8a8b57c5e2e80c383e2d21ddf921007c1ad9cb1a3e056a88b310ef217f297a",
+      "nonce": "95e9e017bac09a5cfef114f2",
+      "aad": "qafila/v1|19fb3adb8ccb193b8d782ab67cbbccdd|9a8b7c6d-5e4f-4a3b-8c9d-0e1f2a3b4c5d|2|3|1763290511124-0000-ffff",
+      "envelope": {
+        "v": 1,
+        "id": "9a8b7c6d-5e4f-4a3b-8c9d-0e1f2a3b4c5d",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763290511124-0000-ffff",
+        "del": false,
+        "n": "lengF7rAmlz-8RTy",
+        "ct": "8AkzugAazOkMoE5A4-lZAlpuQOza45oYe4Re2QmAJmKcAVkojv4ajn0o29Ik8tH6-C82q7VX_DUkReNbAFM9PNWQKtRv_dX0bneXqyisZFY45nc_uPm8fUsjDR6Xwa0YjOwrXRw1LOC9fyZGdo16cD7rWfZ-pdLiLb1JygUslmang3ZlHy59VMyZh0ahdNfUHqBDo7yXNZFxI8lRkfL-mqx7Y874NY-AvJwz6SiodUGWuMiaYTjYxcOfMMvZAvcWzyem3RLkCHxDxpgv2WFJZltAZFicFhflSaDGkzLyTLmMKKmg7diXiP7aKfCUWgNC1f6n040U1pFA0BLO4CvzAUvN1fMH2QuxUUIaL6-LKBE"
+      },
+      "envelopeCanonical": "{\"ct\":\"8AkzugAazOkMoE5A4-lZAlpuQOza45oYe4Re2QmAJmKcAVkojv4ajn0o29Ik8tH6-C82q7VX_DUkReNbAFM9PNWQKtRv_dX0bneXqyisZFY45nc_uPm8fUsjDR6Xwa0YjOwrXRw1LOC9fyZGdo16cD7rWfZ-pdLiLb1JygUslmang3ZlHy59VMyZh0ahdNfUHqBDo7yXNZFxI8lRkfL-mqx7Y874NY-AvJwz6SiodUGWuMiaYTjYxcOfMMvZAvcWzyem3RLkCHxDxpgv2WFJZltAZFicFhflSaDGkzLyTLmMKKmg7diXiP7aKfCUWgNC1f6n040U1pFA0BLO4CvzAUvN1fMH2QuxUUIaL6-LKBE\",\"del\":false,\"id\":\"9a8b7c6d-5e4f-4a3b-8c9d-0e1f2a3b4c5d\",\"kg\":3,\"n\":\"lengF7rAmlz-8RTy\",\"rev\":\"1763290511124-0000-ffff\",\"tier\":2,\"v\":1}"
+    },
+    {
+      "name": "folder (niveau 2)",
+      "content": {
+        "type": "folder",
+        "name": "Firefox · 16 nov. 2026",
+        "kind": "bookmark",
+        "parentId": null,
+        "position": "a1",
+        "createdAt": 1763290000000,
+        "toolbar": false,
+        "author": "d3c9a1f0",
+        "deleted": false
+      },
+      "contentCanonical": "{\"author\":\"d3c9a1f0\",\"createdAt\":1763290000000,\"deleted\":false,\"kind\":\"bookmark\",\"name\":\"Firefox · 16 nov. 2026\",\"parentId\":null,\"position\":\"a1\",\"toolbar\":false,\"type\":\"folder\"}",
+      "paddedHex": "7b22617574686f72223a226433633961316630222c22637265617465644174223a313736333239303030303030302c2264656c65746564223a66616c73652c226b696e64223a22626f6f6b6d61726b222c226e616d65223a2246697265666f7820c2b7203136206e6f762e2032303236222c22706172656e744964223a6e756c6c2c22706f736974696f6e223a226131222c22746f6f6c626172223a66616c73652c2274797065223a22666f6c646572227d800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "key": "5b8a8b57c5e2e80c383e2d21ddf921007c1ad9cb1a3e056a88b310ef217f297a",
+      "nonce": "c21e766c2c2693e9a912224f",
+      "aad": "qafila/v1|19fb3adb8ccb193b8d782ab67cbbccdd|1e2d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b|2|3|1763290511125-0000-0001",
+      "envelope": {
+        "v": 1,
+        "id": "1e2d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763290511125-0000-0001",
+        "del": false,
+        "n": "wh52bCwmk-mpEiJP",
+        "ct": "rXSUGTbc-B8xVl5c5-G0n0gmeWIEw-lhptP1BdTFJhRwHrmbdcgmrvCYom0cdeVewTRrtDJIHD1pzEA34AMHYoRFkDjvirECa-vVGB5ynYIr89BfqZLo1pvHgU5sAaSaOFXXJfbndKfICRmiorPA0XfMd4iIIdiZCGy6LX861N14JrGPMUnlHnX2BY3rx-PB0hUkLXZ3XI7M3yD3_Gh8hejqaRKgvB5KLtFuIQUfxXxmS9fcuEa89NjD7tF4v_DiiVRcceh0GOL5-HKJGM7BZAqHKq9I8TL4RQEfuR7BV1xovx2LLG4qUp_6CbSzv_NuBoynXlB33uOBJ65gBb9XDRchZ-BOYd3pC-2gJb6jMYA"
+      },
+      "envelopeCanonical": "{\"ct\":\"rXSUGTbc-B8xVl5c5-G0n0gmeWIEw-lhptP1BdTFJhRwHrmbdcgmrvCYom0cdeVewTRrtDJIHD1pzEA34AMHYoRFkDjvirECa-vVGB5ynYIr89BfqZLo1pvHgU5sAaSaOFXXJfbndKfICRmiorPA0XfMd4iIIdiZCGy6LX861N14JrGPMUnlHnX2BY3rx-PB0hUkLXZ3XI7M3yD3_Gh8hejqaRKgvB5KLtFuIQUfxXxmS9fcuEa89NjD7tF4v_DiiVRcceh0GOL5-HKJGM7BZAqHKq9I8TL4RQEfuR7BV1xovx2LLG4qUp_6CbSzv_NuBoynXlB33uOBJ65gBb9XDRchZ-BOYd3pC-2gJb6jMYA\",\"del\":false,\"id\":\"1e2d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b\",\"kg\":3,\"n\":\"wh52bCwmk-mpEiJP\",\"rev\":\"1763290511125-0000-0001\",\"tier\":2,\"v\":1}"
+    },
+    {
+      "name": "device (niveau 2)",
+      "content": {
+        "type": "device",
+        "deviceId": "d3c9a1f0",
+        "name": "iPhone de Lina",
+        "platform": "ios",
+        "appVersion": "1.4.0",
+        "createdAt": 1763290000000,
+        "lastSeenAt": 1763290511123,
+        "author": "d3c9a1f0",
+        "deleted": false
+      },
+      "contentCanonical": "{\"appVersion\":\"1.4.0\",\"author\":\"d3c9a1f0\",\"createdAt\":1763290000000,\"deleted\":false,\"deviceId\":\"d3c9a1f0\",\"lastSeenAt\":1763290511123,\"name\":\"iPhone de Lina\",\"platform\":\"ios\",\"type\":\"device\"}",
+      "paddedHex": "7b2261707056657273696f6e223a22312e342e30222c22617574686f72223a226433633961316630222c22637265617465644174223a313736333239303030303030302c2264656c65746564223a66616c73652c226465766963654964223a226433633961316630222c226c6173745365656e4174223a313736333239303531313132332c226e616d65223a226950686f6e65206465204c696e61222c22706c6174666f726d223a22696f73222c2274797065223a22646576696365227d800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "key": "5b8a8b57c5e2e80c383e2d21ddf921007c1ad9cb1a3e056a88b310ef217f297a",
+      "nonce": "b49dfb8f89a20889ceb2b930",
+      "aad": "qafila/v1|19fb3adb8ccb193b8d782ab67cbbccdd|c0ffee00-1234-4abc-8def-0123456789ab|2|3|1763290511126-0000-0002",
+      "envelope": {
+        "v": 1,
+        "id": "c0ffee00-1234-4abc-8def-0123456789ab",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763290511126-0000-0002",
+        "del": false,
+        "n": "tJ37j4miCInOsrkw",
+        "ct": "Rf2GbsX4BzwujLVAOCA7BzZ-nZ1Q6Np6uwVcg-5zutgm2nj2N_AWB1spgn7S88TcHnkK7JG1etcZtHsc1lCofszE5APv5o7JI9VakICq0fx7Ne-yqxpcrfXFOflj4XMp0VeFQ69VWolMEW5pFuHf13X1uIzxe3OVLaUrjoPBkDg1LxQ1bMKXkC1VxVfyVYb9Nqk83anyplKprEiTM_jpQNgfRdCWBakwfRmpk0PfPTbZTLyoSDfT_Ora_kaEA4pGjzIXoDFWI4LZQTvOeURdLDyuRC6vt6eodlfhHJskj86piXjFg7x4e2HgibPIouNL2DebxgNa3wZeW36CadG6-iLul2_3euNgDIB7NX5zYes"
+      },
+      "envelopeCanonical": "{\"ct\":\"Rf2GbsX4BzwujLVAOCA7BzZ-nZ1Q6Np6uwVcg-5zutgm2nj2N_AWB1spgn7S88TcHnkK7JG1etcZtHsc1lCofszE5APv5o7JI9VakICq0fx7Ne-yqxpcrfXFOflj4XMp0VeFQ69VWolMEW5pFuHf13X1uIzxe3OVLaUrjoPBkDg1LxQ1bMKXkC1VxVfyVYb9Nqk83anyplKprEiTM_jpQNgfRdCWBakwfRmpk0PfPTbZTLyoSDfT_Ora_kaEA4pGjzIXoDFWI4LZQTvOeURdLDyuRC6vt6eodlfhHJskj86piXjFg7x4e2HgibPIouNL2DebxgNa3wZeW36CadG6-iLul2_3euNgDIB7NX5zYes\",\"del\":false,\"id\":\"c0ffee00-1234-4abc-8def-0123456789ab\",\"kg\":3,\"n\":\"tJ37j4miCInOsrkw\",\"rev\":\"1763290511126-0000-0002\",\"tier\":2,\"v\":1}"
+    }
+  ],
+  "negative": [
+    {
+      "name": "tag altéré",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1ag"
+      },
+      "error": "E_AEAD"
+    },
+    {
+      "name": "texte chiffré altéré",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "o4L94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_AEAD"
+    },
+    {
+      "name": "AAD : autre id",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "2b7d0c4e-8f1a-4c3b-9d5e-6f7a8b9c0d1e",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_AEAD"
+    },
+    {
+      "name": "AAD : autre vaultId",
+      "operation": "decryptRecord",
+      "vaultId": "dfcba490406f35a5afde0b7ad5fbd869",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_AEAD"
+    },
+    {
+      "name": "AAD : autre kg (2, clés de la génération 2 connues)",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 2,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_AEAD"
+    },
+    {
+      "name": "kg inconnu (9)",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 9,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_KEYGEN"
+    },
+    {
+      "name": "AAD : rev modifié",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af4",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_AEAD"
+    },
+    {
+      "name": "AAD : autre tier (clé de niveau 2)",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_AEAD"
+    },
+    {
+      "name": "bourrage invalide (pas de 0x80), AEAD valide",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290700000-0000-0000",
+        "del": true,
+        "n": "V-fLs62K1yIxzreX",
+        "ct": "pUNvvbZb7eV_a5TJ1lQRqcd2n15WIaw9cyZpgi_0gZnBgCFyPd9pzCJW1ReEkskJpaevu0EV29GezfrKHsOOu0rIJicfVxkZ5EqQD46qC7OSGB55RtuCnELIpKQfYOlAxyIcTtGMoh_DDJe0RlAUBbddiaCtH-8NArJotbZ6djMIQxOmeV91iQSeHKTSMmZRwvXbhWvQQh_yB6BjCcqMnH8-K7aBoIVzgRrbfv1y265oOW08EvP2MMcVidXpgaS89DJgCNRDPJA9KRon6U9JWpOUaMHT-GBahLY_qdW7vk3hVf485wthTN6gme4Li20jCCPzJk6rqVStn1XEJQIwGVSNn8hE2hiVSkI13rIRBhs"
+      },
+      "error": "E_PADDING"
+    },
+    {
+      "name": "indice del=true mais contenu deleted=false, AEAD valide",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290700000-0001-0000",
+        "del": true,
+        "n": "4iV42Kn5m-dBPjK4",
+        "ct": "I24urPo_WNvYH-ClmGk6TxQu4tkjVCo4k8NvHtz_dzeJet0NS7rIRqEuoxmPTz1n9tvUiA1AlwrRQDwCs58sPnM0lxP0JR7N5BBDTM4aUVtDpqKdbcNs--kDiAglra1XZFAVryHDmu0oyDVjz6okIAt72tFmlo_WOEQ3Czn_2xgIUjoDEvwxV9xLi01oZk1FUgaVTl1G7L2Pcq7hMJ_gNRTLWWPlnem6cPwzqmciS5hVk75bwF1E1CkOdgM9CAsJgRltY7sXF9L6Jh8X2Kp82Z-Q_-hNIKEWpLbFRSeMqrQA1W5jqcRlsrvUoDfjyaKxm6ChdvBsxD7w-jpmK7U7hvY1gL1u5AjpSfZH8oQx-ykBn1bZ35hik8XSKb6uu7ID0TOLLfGr0isPtnj-yl7ThUJlHPUTFnVeGAWl9Q0wRhcqrVXuMu1HxhJS6uT5GlPOarjHZ9sNY_iF5vWGBNJrSQxXv0haDDxHH37s_r6HCYKQvuWdwMvIIk-LiIZGzrpdDXQIbxu1ZyygtpFW7Zd1nh18Cd-gULKMtmyMLzxJdg3dzezvt2fOLI7PjJjTBGwAvUGcejl89JYjgIWjWz7mYRz9Boqry-2dfC4vnEoNMQHXzvhfdLxD8BxIPPyVWVS6gnofGxWWKZ-qtngURF7fKThVTI-dwdspHmk35Tuem0KgVbLoKdhxtk9Irr3XRDoTUUBE_00GqvKII3guun4-J99Cia18rpVdaE3X92PjM2FGjrMSae5AdzpnNGMIzDHgDrgujkNcsBb5qSrU1j6jZ4c93LP12gLt2JTvZCH-a0QIaI_Hx_DXVOBRNVxluAzFZZE60UnYmdFxowA42knpQBskXW3-ZLV5n4l2JTOhDvCvyqUAN1bkGSESC2wIEQ6q_xP2uZndC0g4f5dX1IfehvYQH8ardlAwwRHO1t2r5XHYL2pdrCVv9PbQ1DH2i0laT_upCfxKdet08dTcEVvRIADxWZhwZZEDShVuh1bwfMVnLKqfmcUccNaOuQqfIjd5Ov-Vx1IoK2e7y5Qw2vLhPg"
+      },
+      "error": "E_DEL_MISMATCH"
+    },
+    {
+      "name": "type login chiffré au niveau 2, AEAD valide",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 2,
+        "kg": 3,
+        "rev": "1763290700000-0002-0000",
+        "del": false,
+        "n": "cYNJNGoytSdWPVVe",
+        "ct": "SKaNjipcDSDMFwsqcC_aiXLc7FC_CLCbmTC1AOe-hVpCTsM9TSieNyelhiFVb7REiOtRODx8vwRZ7BPMxBqu64r3AV7f52FhqcvRE8XI1ZbbrcQz7D1gmme-L8MHtvXDGvj586HHELN-dXXmPrMtiH943or_7dWPF6P2NVBGc2pDxkUjmUXJZS0esgXn4sYhN-0wFbsnJQERcSOMb50vUBJBMNLnRBGgHBZFFMB2cQDrqYRQX_poyxt75Y_YXLYD2wgbqjCiXmNq9yOIoSrPA8PnLcyqDcKen51fHAftCu04_tnGAXf_yiJril2HyoXyhbtNX9zAVMiOp-n7rTY9heA41UNoZUnZ5p4Yj9dOqkw-Cuh9Y80dBPjrHmuGS19PbvnXeRa9Qncdmo1az98klb_3NWk6pS4MkHwDRekbEcwKK-N8dsBXaKBd8AFlRfIssMfviYNuH1t-9A5AX8VKnLLawEQzrcnD-psa9Y_7FWlmkrVCc4zog_JVpmBKxRywVvqkZkQ-Ud2U-0XzByYVifWzfQ6tsjQ9-IbxTs_raz-W5HcrHRV-yBI7Rhl-BdBjTSwohqb7vmeWx8DBQkYO_yRVKVHTwyJobRHA-WS6n-BeyO5DdCRlAZ6fj_h9LG6jcSCE7O0nE4oNWFxy9e-UpyTORLOvF8GhXTtGW2pvj8IcztIchME-y_CLF2BTyU_3IYq3srlDrrQsAQQtrkrlhHzSqxOPJXub4-LRhGta4MW9MpALB-vS0ilIT6qDJ2-FX8nRwthAWuB7yecY6zHpq2SQDJSBV1agUYe6N58jiOqDThHGtsXKdTLrIFsAtjLKXCPYFPFBUn4bRzf66Z_l0lZRpPJqiHO1s7KNakK33odkZpX7tIQI-ZwWxsYDtp0DYwGtDy2mCg3qQIXo8K0RJnKAVnZbXpqXeG13SOjo6DdYbojW0Z3VCPJ8ouy-KUyMuhkbh83TCuH-ahnFHpsJGmdUpdhjtvy79EiMx-xKfXp3uPVwoL3cnRLWZxzTtpf5brWWKfBPhXQtLDimjk1gwg"
+      },
+      "error": "E_TIER"
+    },
+    {
+      "name": "ct en base64 standard avec padding",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr/cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5/GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY+DX6hn7IlIDok0lP/FNkK/XbPL2NIFNpH/6R5X1aXwSP7V5Pf4+RBWkSJJLZ8Roru3oX+PjOZVgWMNK+4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H+3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6+1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS+dgwf0FwKMan7cfrwq9GOyIdMNBdgI3+Su2qqBvhCX70I8amgM1Q7otMcL3eHO+/Q8oZO/TcgY6+/tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk/61Wss4DDKGXjkr0lVmr2Qm6ob7bj+dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM+fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp/iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk+uagWybHnRgTLmi/8+g5MYQWgzbObJIpaQmGxdQrYxxFzOi/GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb/1Du+1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb+z+2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp+HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6+7zcKWNx88XcCicaBl1aw=="
+      },
+      "error": "E_BASE64URL"
+    },
+    {
+      "name": "version inconnue",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 2,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-0002-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_ENVELOPE"
+    },
+    {
+      "name": "rev dans un mauvais format",
+      "operation": "decryptRecord",
+      "envelope": {
+        "v": 1,
+        "id": "6f1c2e5a-3b0d-4a8e-9f21-0c7d4e5b6a90",
+        "tier": 1,
+        "kg": 3,
+        "rev": "1763290511123-2-9af3",
+        "del": false,
+        "n": "N5Pli9auQhtdNaoH",
+        "ct": "ooL94mSVLkujOHmEyNjYhEBy8GUYeylpxiRJY6SXk8mul2fuVkHMlXzvr_cgpo8d4yQPjZy4VBKtGNgXYkmWnNFpbUL5_GfhpsQ2ef3SIm1NC8RkFpWRod8hA6qSY-DX6hn7IlIDok0lP_FNkK_XbPL2NIFNpH_6R5X1aXwSP7V5Pf4-RBWkSJJLZ8Roru3oX-PjOZVgWMNK-4K5YuVokFoPUDTR9WydOgERWtPpcnQIOW2J4kpVT8FN79H-3qizbJSwt8Hdy8zxPBsXaC4HS9z8O4LELMLXfqdRm2kDf6-1J8tBcC9FpI8lSLrleFdIFs1pqsEQhqEpPeIahOwQhbF9BCjin4vD9beDdnRgRtxK8upPUXtGS27gv0NwfJRS-dgwf0FwKMan7cfrwq9GOyIdMNBdgI3-Su2qqBvhCX70I8amgM1Q7otMcL3eHO-_Q8oZO_TcgY6-_tdgC7SLtxhRSNk9xu8ktxYkk4R63oFM5TVfo81kZvSQrLaiHatgEorDch2QKNa3KGhohF9dvZ2pAFlJ1ge22xT8Nz1ahlCJwrXk_61Wss4DDKGXjkr0lVmr2Qm6ob7bj-dFPUhCSYgbERhHM5XPSG3PEj37DCJfwcI4BMIY3eXKDNKM-fkdIqAo6466Zn2yfh6APcUyEHoUBYjdu6yp_iMnCrB1VC9Q3DpfyGjKJ5e2wIEYXK0hDkLTmDoN61Q136cV1vlm41E4LeDSDlLayiC6tcq01oC5fmZb65XtETyHk-uagWybHnRgTLmi_8-g5MYQWgzbObJIpaQmGxdQrYxxFzOi_GeGhDgs6kKVRZxAa6izOVhMPFILv9B1uFw3sWm7NuAgb_1Du-1SQCMUG84OVA0Kp9OGjgiC5qyHWbuV4qkkQb-z-2L3TYEhoo7izwaTIsmlpZUpdNllZcrAkDOYp-HM2LOmJLzM4zic01GmXJv0Yoy5UZLH88STiuu1q7tBu0Ood2tLTpXdRceVpVRCktpGegOlGdORP1m7VFKNvAZu6w0L6-7zcKWNx88XcCicaBl1aw"
+      },
+      "error": "E_ENVELOPE"
+    }
+  ],
+  "keyForKg": {
+    "2": "vmkPrevious",
+    "3": "vmk"
+  }
+}

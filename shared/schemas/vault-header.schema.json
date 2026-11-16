@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/vault-header.schema.json",
+  "title": "En-tête du coffre",
+  "description": "Racine : l'en-tête LOCAL (header.json). $defs/public : la projection publiée sur le relais (v, vaultId, createdAt, keyGeneration et le seul emplacement recovery ; ni kdf, ni passphrase, ni device, ni previousKeys). Voir shared/CRYPTO.md §6.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "vaultId", "createdAt", "keyGeneration", "kdf", "slots", "previousKeys"],
+  "properties": {
+    "v": { "const": 1 },
+    "vaultId": { "$ref": "common.schema.json#/$defs/vaultId" },
+    "createdAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+    "keyGeneration": { "$ref": "common.schema.json#/$defs/keyGeneration" },
+    "kdf": { "$ref": "common.schema.json#/$defs/kdf" },
+    "slots": {
+      "description": "Au moins l'emplacement recovery ; passphrase et device selon l'appareil ; jamais export (réservé au fichier .qafila). Un id au plus une fois.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {
+        "allOf": [
+          { "$ref": "slot.schema.json" },
+          { "properties": { "id": { "enum": ["passphrase", "device", "recovery"] } } }
+        ]
+      },
+      "contains": { "properties": { "id": { "const": "recovery" } } }
+    },
+    "previousKeys": {
+      "description": "VMK des générations précédentes, chacune chiffrée sous K_previous = HKDF(VMK courante, \"qafila/v1/previous-keys\") avec AAD \"qafila/v1/previous|<vaultId>|<kg>|<keyGeneration>\". Sert uniquement à lire des enregistrements locaux retardataires ; jamais publié.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kg", "n", "ct"],
+        "properties": {
+          "kg": { "$ref": "common.schema.json#/$defs/keyGeneration" },
+          "n": { "$ref": "common.schema.json#/$defs/nonce" },
+          "ct": { "type": "string", "pattern": "^[A-Za-z0-9_-]{64}$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "public": {
+      "title": "En-tête public (relais)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "vaultId", "createdAt", "keyGeneration", "slots"],
+      "properties": {
+        "v": { "const": 1 },
+        "vaultId": { "$ref": "common.schema.json#/$defs/vaultId" },
+        "createdAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+        "keyGeneration": { "$ref": "common.schema.json#/$defs/keyGeneration" },
+        "slots": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "allOf": [
+              { "$ref": "slot.schema.json" },
+              { "properties": { "id": { "const": "recovery" } } }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/backup.schema.json",
+  "title": "Sauvegarde chiffrée .qafila",
+  "description": "Fichier d'export : un emplacement `export` (KEK Argon2id de la phrase choisie à l'export, AAD \"qafila/v1/slot|<vaultId>|export|<keyGeneration>\") + toutes les enveloppes de la génération courante, triées par id, + mac = base64url(HMAC-SHA256(K_export, JSON canonique du fichier sans `mac`)). Voir shared/CRYPTO.md §11.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "v", "vaultId", "keyGeneration", "kdf", "slot", "records", "mac"],
+  "properties": {
+    "format": { "const": "qafila-backup" },
+    "v": { "const": 1 },
+    "vaultId": { "$ref": "common.schema.json#/$defs/vaultId" },
+    "keyGeneration": { "$ref": "common.schema.json#/$defs/keyGeneration" },
+    "kdf": { "$ref": "common.schema.json#/$defs/kdf" },
+    "slot": {
+      "allOf": [
+        { "$ref": "slot.schema.json" },
+        { "properties": { "id": { "const": "export" } } }
+      ]
+    },
+    "records": { "type": "array", "items": { "$ref": "record-envelope.schema.json" } },
+    "mac": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
+  }
+}

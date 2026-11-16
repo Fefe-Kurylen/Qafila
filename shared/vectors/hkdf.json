@@ -1,0 +1,65 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "HKDF-SHA256, sel vide (sauf appairage : sel = pkN||pkE), info = \"qafila/v1/<usage>\", longueur 32 sauf vault-id (16).",
+  "vmk": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "rk": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+  "derived": [
+    {
+      "name": "K_secrets",
+      "ikm": "vmk",
+      "info": "qafila/v1/tier1-secrets",
+      "length": 32,
+      "okm": "eac38bb2c454fbe086e63da93583d359bb75cb9d7e63e1964b91c8d9d37da562"
+    },
+    {
+      "name": "K_data",
+      "ikm": "vmk",
+      "info": "qafila/v1/tier2-data",
+      "length": 32,
+      "okm": "5b8a8b57c5e2e80c383e2d21ddf921007c1ad9cb1a3e056a88b310ef217f297a"
+    },
+    {
+      "name": "K_sync",
+      "ikm": "vmk",
+      "info": "qafila/v1/sync-token",
+      "length": 32,
+      "okm": "d49cf8b7585a2e927b083be8101f4edc04e749828c3beb67d88f68fc878485a7"
+    },
+    {
+      "name": "K_export",
+      "ikm": "vmk",
+      "info": "qafila/v1/export",
+      "length": 32,
+      "okm": "5f297b7f77f15c5c995fbb1c3d37c146dd3035b4202c6d608b17ad5a477b90f1"
+    },
+    {
+      "name": "K_previous",
+      "ikm": "vmk",
+      "info": "qafila/v1/previous-keys",
+      "length": 32,
+      "okm": "5799a6a3debf688982c2b79a95e01dc6e64568bb0f531a2c656bfae0e2cfd29b"
+    },
+    {
+      "name": "vaultId",
+      "ikm": "K_sync",
+      "ikmHex": "d49cf8b7585a2e927b083be8101f4edc04e749828c3beb67d88f68fc878485a7",
+      "info": "qafila/v1/vault-id",
+      "length": 16,
+      "okm": "19fb3adb8ccb193b8d782ab67cbbccdd"
+    },
+    {
+      "name": "K_recovery",
+      "ikm": "rk",
+      "info": "qafila/v1/recovery",
+      "length": 32,
+      "okm": "ae148a631ed5906da2ffb263ba5069c0eac0b4914408bb564ef30d0fb4494b58"
+    },
+    {
+      "name": "recoveryToken",
+      "ikm": "rk",
+      "info": "qafila/v1/recovery-auth",
+      "length": 32,
+      "okm": "3f5b0520b74f0f127107be9b2b5d7be8cd95398dc9acbdbf7c685fdfcdb64d29"
+    }
+  ]
+}

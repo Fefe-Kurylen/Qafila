@@ -1,0 +1,121 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "Appairage X25519 éphémère. S = X25519(nE, pkN) = X25519(nN, pkE) ; HKDF sel vide, info = \"qafila/v1/<usage>\" || pkN || pkE ; SAS = uint32BE(4 premiers octets de HKDF(S, pair-sas, 32)) mod 10^6 sur 6 chiffres.",
+  "new": {
+    "privateKey": "feeadab3156e30b7ddea94b540457bd50b084e520fd143748393d17d7b48ad33",
+    "publicKey": "e29625c939ac6f4c12120473a72a7b561dd2ff26801af704b395ce7831d22142",
+    "publicKeyB64u": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+    "qr": "qafila://pair?v=1&s=https%3A%2F%2Fsync.qafila.fr&pk=4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI"
+  },
+  "existing": {
+    "privateKey": "ec8957b9637743f75d409499b47a8524a20a00cc88d028cda62ef50f7326b205",
+    "publicKey": "17ae3cf2e1584830b3bbbee52f4ec61c2499e693ab04c7cf07d35275ae623068"
+  },
+  "sharedSecret": "39fadae932ea62f99d8a6b04138e52dc454afadca8b5f3e27cbd57cc29d62d26",
+  "slot": "864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+  "hkdfInfoSuffix": "e29625c939ac6f4c12120473a72a7b561dd2ff26801af704b395ce7831d2214217ae3cf2e1584830b3bbbee52f4ec61c2499e693ab04c7cf07d35275ae623068",
+  "k": "e60917616dc9e4e728b8b544db30ecc8c122335aaec652b1dac31924aad01899",
+  "kMac": "1e6ba50c510053cfe19a1ae0d4dee30bfd4865471c9ee472fda8e34a50cb5848",
+  "kRead": "1f7a5083ca5efed32c001d7aff162e21a8cbbc4842bee7d4655a595b7de2c09d",
+  "sasBytes": "758bd8cbdbd77997b32c5a2d871438cc894cf555a6baf6911c1546bab4e6b85e",
+  "sas": "099275",
+  "sasDisplay": "099 275",
+  "readProof": "d8c0c3c90b4cdde0c56a6e36764ce21296acac91cb6e59686a0160a323a8ad32",
+  "payload": {
+    "v": 1,
+    "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+    "keyGeneration": 3,
+    "vmk": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+    "header": {
+      "v": 1,
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "createdAt": 1763290000000,
+      "keyGeneration": 3,
+      "slots": [
+        {
+          "id": "recovery",
+          "n": "FpP_WcrRgafPTtWF",
+          "ct": "E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj"
+        }
+      ]
+    },
+    "server": "https://sync.qafila.fr",
+    "deviceName": "iPhone de Lina"
+  },
+  "payloadCanonical": "{\"deviceName\":\"iPhone de Lina\",\"header\":{\"createdAt\":1763290000000,\"keyGeneration\":3,\"slots\":[{\"ct\":\"E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj\",\"id\":\"recovery\",\"n\":\"FpP_WcrRgafPTtWF\"}],\"v\":1,\"vaultId\":\"19fb3adb8ccb193b8d782ab67cbbccdd\"},\"keyGeneration\":3,\"server\":\"https://sync.qafila.fr\",\"v\":1,\"vaultId\":\"19fb3adb8ccb193b8d782ab67cbbccdd\",\"vmk\":\"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8\"}",
+  "aad": "qafila/v1/pair|864455b7db3119c9a74cda17b0cfd8988128298cbc2b78fe3325d650a24256fd",
+  "nonce": "dc8a393267a975ce3867719d",
+  "macInput": "pkN || pkE || ct",
+  "packet": {
+    "v": 1,
+    "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+    "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+    "n": "3Io5Mmepdc44Z3Gd",
+    "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHH",
+    "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7M"
+  },
+  "negative": [
+    {
+      "name": "SAS d'un autre échange (attaquant pkX à la place de pkE)",
+      "operation": "compare",
+      "attacker": {
+        "privateKey": "fb2f1043b9d1e25bd0de076e9710b9e7218cbea4372f6e031679e050d34b74f8",
+        "publicKey": "fb0412e738255f17a150200abfdddee5258f1a203e208c05235678f6774aa140"
+      },
+      "sas": "147363",
+      "mustDifferFrom": "099275"
+    },
+    {
+      "name": "mac altéré",
+      "operation": "pairingOpen",
+      "packet": {
+        "v": 1,
+        "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+        "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+        "n": "3Io5Mmepdc44Z3Gd",
+        "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHH",
+        "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7I"
+      },
+      "error": "E_PAIR"
+    },
+    {
+      "name": "ct altéré (mac recalculé impossible sans S)",
+      "operation": "pairingOpen",
+      "packet": {
+        "v": 1,
+        "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+        "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+        "n": "3Io5Mmepdc44Z3Gd",
+        "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHG",
+        "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7M"
+      },
+      "error": "E_PAIR"
+    },
+    {
+      "name": "pkE substitué",
+      "operation": "pairingOpen",
+      "packet": {
+        "v": 1,
+        "pkN": "4pYlyTmsb0wSEgRzpyp7Vh3S_yaAGvcEs5XOeDHSIUI",
+        "pkE": "-wQS5zglXxehUCAKv93e5SWPGiA-IIwFI1Z49ndKoUA",
+        "n": "3Io5Mmepdc44Z3Gd",
+        "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHH",
+        "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7M"
+      },
+      "error": "E_PAIR"
+    },
+    {
+      "name": "paquet destiné à une autre clé pkN",
+      "operation": "pairingOpen",
+      "packet": {
+        "v": 1,
+        "pkN": "-wQS5zglXxehUCAKv93e5SWPGiA-IIwFI1Z49ndKoUA",
+        "pkE": "F6488uFYSDCzu77lL07GHCSZ5pOrBMfPB9NSda5iMGg",
+        "n": "3Io5Mmepdc44Z3Gd",
+        "ct": "gXDAFyMmubraE8WMGrO2RQkSGwukDxFgafu3CyBrPc6TzY3QYzq0QJPS7dgIRBKQffegJ6Oo6DUr487CyqK7nNX9pur4ZpPDPGCTEYUtj5PnsHIzruv2eDYsjCi0a1DR-CSygB6WrvH_MQ9lLAaPtfNImiWM3ERWIvs8HqwZV1KwdSnag9K_o6hAHlIaGQYNySOeBOErddH9_XkdYd7qrVbiMMlUdYwpahGMLqCXyqQcyb11sbrsO7WDut5D08uxdc0s1tUFBVNKIplh6RwuIKwRBtoM8bHwskJ7VSsQuZTe-B8psQv317ke3QbHKnKBf21bQbq-RwI5SQq3DTmMYGRdRtYA8_q6RLFXAgmR5Wi3XK0xQ_VUcdgSwfpbjGPmRpXqCLX0AJG2AF3EWx-9yOSh1xtsgGedMy489W71Dob74HlI0E9ZHqEKE3fsKJcWtNhKDSf19sbwoxgvTwpw15-oK0N_MBlbJSXALFhfqsj3SXAbYuRJufvUpltS5xtir8UOalDFrHFTrghBAGB7rQ-T-peudjsXLVjzGYyqFu5SPJWWKom4mbaHxzmmRHiP2-PY7MQPBjGO_hLD00vfc2-Xtqg29QlHI8N56LNtKFBFqa3iDnQc8ne8q4LEaO38R1vGQjeI4hcTZmc5z8hAFTJCAKBjU-bmhlEp6_1_KBR_j_VvivpObkjylw3MITHH",
+        "mac": "q3yyWrBqqRafshs9CV4pe0wAwme1_zFchTuSVnsgE7M"
+      },
+      "error": "E_PAIR"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/record-device.schema.json",
+  "title": "device (niveau 2 — K_data)",
+  "description": "Un enregistrement par appareil associé ; l'id de l'enveloppe est aléatoire, deviceId est dans le chiffré (le relais ne voit jamais un nom d'appareil). Le quota de 5 appareils est compté côté client sur les device non supprimés. Enveloppe : tier = 2.",
+  "type": "object",
+  "required": ["type", "deviceId", "name", "platform", "appVersion", "createdAt", "lastSeenAt", "author", "deleted"],
+  "properties": {
+    "type": { "const": "device" },
+    "deviceId": { "$ref": "common.schema.json#/$defs/deviceId" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "platform": { "enum": ["ios", "android", "windows", "macos", "linux"] },
+    "appVersion": { "type": "string", "maxLength": 32 },
+    "createdAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+    "lastSeenAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+    "author": { "$ref": "common.schema.json#/$defs/deviceId" },
+    "deleted": { "const": false }
+  }
+}

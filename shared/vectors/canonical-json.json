@@ -1,0 +1,55 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "JSON canonique : clés triées par unités UTF-16, aucun espace, entiers seulement, UTF-8 brut (pas d'échappement \\uXXXX hors contrôles).",
+  "positive": [
+    {
+      "input": {
+        "b": 1,
+        "a": [
+          true,
+          null,
+          "x"
+        ],
+        "é": "e",
+        "Z": 0,
+        "~": -5,
+        "è": {
+          "y": 2,
+          "x": 1
+        }
+      },
+      "canonical": "{\"Z\":0,\"a\":[true,null,\"x\"],\"b\":1,\"~\":-5,\"è\":{\"x\":1,\"y\":2},\"é\":\"e\"}"
+    },
+    {
+      "input": {
+        "s": "guillemet \" antislash \\ contrôle \u0001 tab \t nl \n",
+        "emoji": "🔐",
+        "ar": "قافلة"
+      },
+      "canonical": "{\"ar\":\"قافلة\",\"emoji\":\"🔐\",\"s\":\"guillemet \\\" antislash \\\\ contrôle \\u0001 tab \\t nl \\n\"}"
+    },
+    {
+      "input": {
+        "a😀": 1,
+        "a￿": 2,
+        "ab": 3
+      },
+      "canonical": "{\"ab\":3,\"a😀\":1,\"a￿\":2}",
+      "note": "U+1F600 (substituts D83D DE00) se classe AVANT U+FFFF en unités UTF-16, après \"ab\""
+    }
+  ],
+  "negative": [
+    {
+      "name": "nombre non entier",
+      "operation": "canonicalJson",
+      "inputJson": "{\"x\":1.5}",
+      "error": "E_CANONICAL"
+    },
+    {
+      "name": "entier hors borne 2^53",
+      "operation": "canonicalJson",
+      "inputJson": "{\"x\":9007199254740993}",
+      "error": "E_CANONICAL"
+    }
+  ]
+}

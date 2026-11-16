@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/slot.schema.json",
+  "title": "Emplacement de clé (slot)",
+  "description": "Enveloppement AES-256-GCM de la VMK (32 o) sous une clé d'emplacement. ct = chiffré (32 o) || tag (16 o) = 48 o, soit 64 caractères base64url. AAD = \"qafila/v1/slot|<vaultId>|<id>|<keyGeneration>\" (voir shared/CRYPTO.md §5).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "n", "ct"],
+  "properties": {
+    "id": {
+      "description": "passphrase : KEK Argon2id du mot de passe principal (local seulement) · device : DUK du Secure Enclave / Keystore / safeStorage (local seulement) · recovery : HKDF(RK, \"qafila/v1/recovery\") (local et relais) · export : KEK Argon2id de la phrase d'export (fichier .qafila seulement).",
+      "enum": ["passphrase", "device", "recovery", "export"]
+    },
+    "n": { "$ref": "common.schema.json#/$defs/nonce" },
+    "ct": {
+      "description": "Chiffré de la VMK suivi du tag, base64url sans padding : 48 octets, donc exactement 64 caractères.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{64}$"
+    }
+  }
+}

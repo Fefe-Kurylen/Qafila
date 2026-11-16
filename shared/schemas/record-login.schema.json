@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/record-login.schema.json",
+  "title": "login (niveau 1 — K_secrets)",
+  "description": "Identifiant de connexion. Enveloppe : tier = 1. Les champs inconnus sont conservés (pas d'additionalProperties:false).",
+  "type": "object",
+  "required": ["type", "title", "origins", "username", "password", "createdAt", "modifiedAt", "author", "deleted"],
+  "properties": {
+    "type": { "const": "login" },
+    "title": { "type": "string", "maxLength": 512 },
+    "origins": {
+      "description": "Origines normalisées ; la première est l'origine principale (clé de dédoublonnage avec username).",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/origin" }
+    },
+    "username": { "type": "string", "maxLength": 1024 },
+    "password": { "type": "string", "maxLength": 4096 },
+    "note": { "type": "string", "maxLength": 32768 },
+    "formActionOrigin": { "anyOf": [{ "$ref": "common.schema.json#/$defs/origin" }, { "type": "null" }] },
+    "httpRealm": { "type": ["string", "null"] },
+    "totp": { "description": "URI otpauth:// ou null (phase 5).", "type": ["string", "null"], "pattern": "^otpauth://" },
+    "folderId": { "anyOf": [{ "$ref": "common.schema.json#/$defs/uuid" }, { "type": "null" }] },
+    "favorite": { "type": "boolean" },
+    "tags": { "type": "array", "items": { "type": "string", "maxLength": 64 } },
+    "createdAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+    "modifiedAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+    "lastUsedAt": { "anyOf": [{ "$ref": "common.schema.json#/$defs/timestampMs" }, { "type": "null" }] },
+    "passwordChangedAt": { "anyOf": [{ "$ref": "common.schema.json#/$defs/timestampMs" }, { "type": "null" }] },
+    "passwordHistory": {
+      "description": "Anciens mots de passe, le plus récent en premier, 10 au maximum.",
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["password", "changedAt"],
+        "properties": {
+          "password": { "type": "string" },
+          "changedAt": { "$ref": "common.schema.json#/$defs/timestampMs" }
+        }
+      }
+    },
+    "source": { "enum": ["manual", "saved", "chrome", "firefox", "safari", "bitwarden", "1password"] },
+    "importGuid": { "description": "guid Firefox ou identifiant de la source, tel quel.", "type": ["string", "null"] },
+    "importBatch": { "description": "UUID du lot d'import (« Annuler cet import », 24 h).", "anyOf": [{ "$ref": "common.schema.json#/$defs/uuid" }, { "type": "null" }] },
+    "neverSaveHere": { "type": "boolean" },
+    "author": { "$ref": "common.schema.json#/$defs/deviceId" },
+    "deleted": { "const": false }
+  }
+}

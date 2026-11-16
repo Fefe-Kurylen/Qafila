@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/record-bookmark.schema.json",
+  "title": "bookmark (niveau 2 — K_data)",
+  "description": "Favori. Étend Bookmark{id,title,url,addedAt} existant ; l'id est celui de l'enveloppe. Enveloppe : tier = 2.",
+  "type": "object",
+  "required": ["type", "title", "url", "addedAt", "folderId", "position", "author", "deleted"],
+  "properties": {
+    "type": { "const": "bookmark" },
+    "title": { "type": "string", "maxLength": 1024 },
+    "url": { "type": "string", "maxLength": 8192 },
+    "addedAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+    "folderId": {
+      "description": "null = racine. Un favori dont le dossier est supprimé revient à la racine.",
+      "anyOf": [{ "$ref": "common.schema.json#/$defs/uuid" }, { "type": "null" }]
+    },
+    "position": {
+      "description": "Index fractionnaire (chaîne, ordre lexicographique ASCII) pour l'ordre manuel ; deux insertions concurrentes ne se heurtent jamais.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[0-9A-Za-z]+$"
+    },
+    "author": { "$ref": "common.schema.json#/$defs/deviceId" },
+    "deleted": { "const": false }
+  }
+}

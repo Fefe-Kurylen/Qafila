@@ -1,0 +1,70 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "En-tête local complet (header.json) et sa projection publique (relais). Toutes les valeurs dérivent de vmk/vmk2/rk/duk/salt ci-dessus.",
+  "inputs": {
+    "vmk": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "vmkPrevious": {
+      "kg": 2,
+      "vmk": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f"
+    },
+    "rk": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "duk": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+    "kek": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd",
+    "salt": "606162636465666768696a6b6c6d6e6f",
+    "passphrase": "qafila-vecteur-test",
+    "createdAt": 1763290000000
+  },
+  "header": {
+    "v": 1,
+    "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+    "createdAt": 1763290000000,
+    "keyGeneration": 3,
+    "kdf": {
+      "alg": "argon2id",
+      "salt": "YGFiY2RlZmdoaWprbG1ubw",
+      "m": 65536,
+      "t": 3,
+      "p": 1
+    },
+    "slots": [
+      {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpY"
+      },
+      {
+        "id": "device",
+        "n": "Xhj1EXiBw64_wucU",
+        "ct": "YxYilu7AgGZZSxvBJNNfjwA2tosJoJtiBFu0jLY_5Wrns4wG4rNO95Op6SPV_bJl"
+      },
+      {
+        "id": "recovery",
+        "n": "FpP_WcrRgafPTtWF",
+        "ct": "E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj"
+      }
+    ],
+    "previousKeys": [
+      {
+        "kg": 2,
+        "n": "OpsmKL-hT9YH7DTY",
+        "ct": "aXWugG6swtAr67XGXrNkROo9OSFKR59po93KjtjpdOEVLgOdfgF9tCwer-Dk_NKZ"
+      }
+    ]
+  },
+  "headerCanonical": "{\"createdAt\":1763290000000,\"kdf\":{\"alg\":\"argon2id\",\"m\":65536,\"p\":1,\"salt\":\"YGFiY2RlZmdoaWprbG1ubw\",\"t\":3},\"keyGeneration\":3,\"previousKeys\":[{\"ct\":\"aXWugG6swtAr67XGXrNkROo9OSFKR59po93KjtjpdOEVLgOdfgF9tCwer-Dk_NKZ\",\"kg\":2,\"n\":\"OpsmKL-hT9YH7DTY\"}],\"slots\":[{\"ct\":\"yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpY\",\"id\":\"passphrase\",\"n\":\"rXh8MOZSqjVyEcU5\"},{\"ct\":\"YxYilu7AgGZZSxvBJNNfjwA2tosJoJtiBFu0jLY_5Wrns4wG4rNO95Op6SPV_bJl\",\"id\":\"device\",\"n\":\"Xhj1EXiBw64_wucU\"},{\"ct\":\"E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj\",\"id\":\"recovery\",\"n\":\"FpP_WcrRgafPTtWF\"}],\"v\":1,\"vaultId\":\"19fb3adb8ccb193b8d782ab67cbbccdd\"}",
+  "publicHeader": {
+    "v": 1,
+    "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+    "createdAt": 1763290000000,
+    "keyGeneration": 3,
+    "slots": [
+      {
+        "id": "recovery",
+        "n": "FpP_WcrRgafPTtWF",
+        "ct": "E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj"
+      }
+    ]
+  },
+  "vaultCode": "0SZCXD-Q36B3-4XRTY-1APSY-BQK6X",
+  "recoveryUrl": "qafila://recover?v=1&s=https%3A%2F%2Fsync.qafila.fr&id=0SZCXDQ36B34XRTY1APSYBQK6X&rk=ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8"
+}

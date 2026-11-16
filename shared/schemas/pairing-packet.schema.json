@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/pairing-packet.schema.json",
+  "title": "Paquet d'appairage",
+  "description": "Corps déposé par l'appareil existant (E) dans la boîte aux lettres /pairing/<slot>, slot = hex(SHA-256(pkN)). ct = AES-256-GCM(K, n, AAD \"qafila/v1/pair|<slot>\", bourrage(JSON canonique de la charge)) ; mac = HMAC-SHA256(K_mac, pkN || pkE || ct). Le relais vérifie seulement slot = SHA-256(pkN) et l'unicité du dépôt ; seul N peut vérifier mac. Voir shared/CRYPTO.md §10.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "pkN", "pkE", "n", "ct", "mac"],
+  "properties": {
+    "v": { "const": 1 },
+    "pkN": { "description": "Clé publique X25519 éphémère du nouvel appareil (32 o).", "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "pkE": { "description": "Clé publique X25519 éphémère de l'appareil existant (32 o).", "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "n": { "$ref": "common.schema.json#/$defs/nonce" },
+    "ct": { "type": "string", "pattern": "^[A-Za-z0-9_-]{363,}$", "maxLength": 87400 },
+    "mac": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
+  },
+  "$defs": {
+    "payload": {
+      "title": "Charge déchiffrée du paquet",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["v", "vaultId", "keyGeneration", "vmk", "header", "server", "deviceName"],
+      "properties": {
+        "v": { "const": 1 },
+        "vaultId": { "$ref": "common.schema.json#/$defs/vaultId" },
+        "vmk": { "description": "VMK courante, 32 o base64url.", "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+        "keyGeneration": { "$ref": "common.schema.json#/$defs/keyGeneration" },
+        "header": { "$ref": "vault-header.schema.json#/$defs/public" },
+        "server": { "description": "URL https du relais, telle que configurée sur E.", "type": "string", "pattern": "^https://" },
+        "deviceName": { "description": "Nom de E, affiché à N (« Associé à iPhone de Lina »).", "type": "string", "maxLength": 128 }
+      }
+    }
+  }
+}

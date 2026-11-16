@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/record-folder.schema.json",
+  "title": "folder (niveau 2 — K_data)",
+  "description": "Dossier de favoris ou d'identifiants. Enveloppe : tier = 2.",
+  "type": "object",
+  "required": ["type", "name", "kind", "parentId", "position", "createdAt", "toolbar", "author", "deleted"],
+  "properties": {
+    "type": { "const": "folder" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "kind": { "enum": ["bookmark", "login"] },
+    "parentId": { "anyOf": [{ "$ref": "common.schema.json#/$defs/uuid" }, { "type": "null" }] },
+    "position": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[0-9A-Za-z]+$" },
+    "createdAt": { "$ref": "common.schema.json#/$defs/timestampMs" },
+    "toolbar": {
+      "description": "true = contenu affiché en tuiles sur la page de démarrage (PERSONAL_TOOLBAR_FOLDER à l'import).",
+      "type": "boolean"
+    },
+    "author": { "$ref": "common.schema.json#/$defs/deviceId" },
+    "deleted": { "const": false }
+  }
+}

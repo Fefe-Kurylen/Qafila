@@ -1,0 +1,153 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "Enveloppement de la VMK dans les emplacements. AAD = \"qafila/v1/slot|<vaultId>|<slotId>|<keyGeneration>\".",
+  "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+  "keyGeneration": 3,
+  "vmk": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "positive": [
+    {
+      "slotId": "passphrase",
+      "keyName": "KEK = Argon2id(\"qafila-vecteur-test\", salt)",
+      "key": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd",
+      "salt": "606162636465666768696a6b6c6d6e6f",
+      "nonce": "ad787c30e652aa357211c539",
+      "aad": "qafila/v1/slot|19fb3adb8ccb193b8d782ab67cbbccdd|passphrase|3",
+      "slot": {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpY"
+      }
+    },
+    {
+      "slotId": "device",
+      "keyName": "DUK",
+      "key": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "nonce": "5e18f5117881c3ae3fc2e714",
+      "aad": "qafila/v1/slot|19fb3adb8ccb193b8d782ab67cbbccdd|device|3",
+      "slot": {
+        "id": "device",
+        "n": "Xhj1EXiBw64_wucU",
+        "ct": "YxYilu7AgGZZSxvBJNNfjwA2tosJoJtiBFu0jLY_5Wrns4wG4rNO95Op6SPV_bJl"
+      }
+    },
+    {
+      "slotId": "recovery",
+      "keyName": "HKDF(RK, \"qafila/v1/recovery\")",
+      "key": "ae148a631ed5906da2ffb263ba5069c0eac0b4914408bb564ef30d0fb4494b58",
+      "rk": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+      "nonce": "1693ff59cad181a7cf4ed585",
+      "aad": "qafila/v1/slot|19fb3adb8ccb193b8d782ab67cbbccdd|recovery|3",
+      "slot": {
+        "id": "recovery",
+        "n": "FpP_WcrRgafPTtWF",
+        "ct": "E8_v-YV7_uElkhcWhe8dwsx_OfsecTIjtf6owztXRHudlobhfYiLtjqrj6mhv-gj"
+      }
+    },
+    {
+      "slotId": "previousKeys[kg=2]",
+      "keyName": "K_previous = HKDF(VMK, \"qafila/v1/previous-keys\")",
+      "key": "5799a6a3debf688982c2b79a95e01dc6e64568bb0f531a2c656bfae0e2cfd29b",
+      "plaintext": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f",
+      "nonce": "3a9b2628bfa14fd607ec34d8",
+      "aad": "qafila/v1/previous|19fb3adb8ccb193b8d782ab67cbbccdd|2|3",
+      "entry": {
+        "kg": 2,
+        "n": "OpsmKL-hT9YH7DTY",
+        "ct": "aXWugG6swtAr67XGXrNkROo9OSFKR59po93KjtjpdOEVLgOdfgF9tCwer-Dk_NKZ"
+      }
+    }
+  ],
+  "negative": [
+    {
+      "name": "emplacement présenté sous une autre génération",
+      "operation": "unwrapSlot",
+      "key": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd",
+      "slot": {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpY"
+      },
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 4,
+      "error": "E_AEAD"
+    },
+    {
+      "name": "emplacement présenté sous un autre coffre",
+      "operation": "unwrapSlot",
+      "key": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd",
+      "slot": {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpY"
+      },
+      "vaultId": "dfcba490406f35a5afde0b7ad5fbd869",
+      "keyGeneration": 3,
+      "error": "E_AEAD"
+    },
+    {
+      "name": "emplacement renommé (device présenté comme passphrase)",
+      "operation": "unwrapSlot",
+      "key": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "slot": {
+        "id": "passphrase",
+        "n": "Xhj1EXiBw64_wucU",
+        "ct": "YxYilu7AgGZZSxvBJNNfjwA2tosJoJtiBFu0jLY_5Wrns4wG4rNO95Op6SPV_bJl"
+      },
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 3,
+      "error": "E_AEAD"
+    },
+    {
+      "name": "KEK issue de la phrase NFD sans normalisation",
+      "operation": "unwrapSlot",
+      "key": "36e105188961d5802ef6dffc59b2d47162df0991a1d2648e2e63ae2fb300fc4d",
+      "slot": {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpY"
+      },
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 3,
+      "error": "E_AEAD"
+    },
+    {
+      "name": "tag altéré",
+      "operation": "unwrapSlot",
+      "key": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd",
+      "slot": {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpZ"
+      },
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 3,
+      "error": "E_AEAD"
+    },
+    {
+      "name": "base64 avec bourrage « = » refusé",
+      "operation": "unwrapSlot",
+      "key": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd",
+      "slot": {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5=",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz-a6GiVf1MwzwCEVdV0aN9l9T1bKEG_n8tJnpY"
+      },
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 3,
+      "error": "E_BASE64URL"
+    },
+    {
+      "name": "alphabet base64 standard (« + », « / ») refusé",
+      "operation": "unwrapSlot",
+      "key": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd",
+      "slot": {
+        "id": "passphrase",
+        "n": "rXh8MOZSqjVyEcU5",
+        "ct": "yDzXdSl3dzp9RsHcqc09ilkIFjz+a6GiVf1MwzwCEVdV0aN9l9T1bKEG+n8tJnp/"
+      },
+      "vaultId": "19fb3adb8ccb193b8d782ab67cbbccdd",
+      "keyGeneration": 3,
+      "error": "E_BASE64URL"
+    }
+  ]
+}

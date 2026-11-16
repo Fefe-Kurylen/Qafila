@@ -1,0 +1,83 @@
+{
+  "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
+  "description": "Argon2id (RFC 9106, version 0x13) : m = 65536 Kio, t = 3, p = 1, sortie 32 o, sel 16 o. La phrase est normalisée NFC avant l'encodage UTF-8.",
+  "positive": [
+    {
+      "name": "phrase de référence",
+      "passphrase": "qafila-vecteur-test",
+      "passphraseNfd": "qafila-vecteur-test",
+      "passphraseNfcUtf8Hex": "716166696c612d766563746575722d74657374",
+      "salt": "606162636465666768696a6b6c6d6e6f",
+      "params": {
+        "alg": "argon2id",
+        "m": 65536,
+        "t": 3,
+        "p": 1
+      },
+      "outputLength": 32,
+      "kek": "82503a0b965c11a0168bb097ca73feb9e7f80cecec7bff8c808759b4424f62bd"
+    },
+    {
+      "name": "accents (NFC)",
+      "passphrase": "Café crème à l’été 2026",
+      "passphraseNfd": "Café crème à l’été 2026",
+      "passphraseNfcUtf8Hex": "436166c3a9206372c3a86d6520c3a0206ce28099c3a974c3a92032303236",
+      "salt": "044717d3d6d69cc586d60bb995a0aae2",
+      "params": {
+        "alg": "argon2id",
+        "m": 65536,
+        "t": 3,
+        "p": 1
+      },
+      "outputLength": 32,
+      "kek": "0f50c16df65654bae389306850b4f99414a0a5545b70d3f151b361ca39feabe3"
+    },
+    {
+      "name": "émoji",
+      "passphrase": "Mot de passe 🔐 émoji",
+      "passphraseNfd": "Mot de passe 🔐 émoji",
+      "passphraseNfcUtf8Hex": "4d6f7420646520706173736520f09f949020c3a96d6f6a69",
+      "salt": "42a75d42f3595709160e8c3fe8ce08da",
+      "params": {
+        "alg": "argon2id",
+        "m": 65536,
+        "t": 3,
+        "p": 1
+      },
+      "outputLength": 32,
+      "kek": "36d8795b2b718dc9afaa6c2dab4673ca8ad9b724774a3fc7d6a21b4553f94426"
+    },
+    {
+      "name": "arabe",
+      "passphrase": "قافلة-sécurité-2026",
+      "passphraseNfd": "قافلة-sécurité-2026",
+      "passphraseNfcUtf8Hex": "d982d8a7d981d984d8a92d73c3a96375726974c3a92d32303236",
+      "salt": "98e67fa11a5bfdd59452ca5352cad4fb",
+      "params": {
+        "alg": "argon2id",
+        "m": 65536,
+        "t": 3,
+        "p": 1
+      },
+      "outputLength": 32,
+      "kek": "17ba6264fb5c25f27aa57c11710f1fdbfe6dccdb910d5799d56733f8a3d7b02a"
+    }
+  ],
+  "negative": [
+    {
+      "name": "NFD non normalisé : dérivation sur les octets NFD bruts (interdit) donne une autre clé",
+      "operation": "argon2idRaw",
+      "passwordUtf8Hex": "43616665cc8120637265cc806d652061cc80206ce2809965cc817465cc812032303236",
+      "salt": "044717d3d6d69cc586d60bb995a0aae2",
+      "params": {
+        "alg": "argon2id",
+        "m": 65536,
+        "t": 3,
+        "p": 1
+      },
+      "kekWithoutNfc": "25f5d7ff64ed0d951d71fe29a0118f80e72e37582fde7ded8a7f10fc80d672e1",
+      "mustDifferFrom": "0f50c16df65654bae389306850b4f99414a0a5545b70d3f151b361ca39feabe3",
+      "expect": "kekWithoutNfc != mustDifferFrom ; une implémentation conforme produit mustDifferFrom pour la chaîne NFD"
+    }
+  ]
+}

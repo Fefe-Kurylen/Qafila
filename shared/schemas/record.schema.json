@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/record.schema.json",
+  "title": "Contenu déchiffré d'un enregistrement",
+  "description": "Point d'entrée : valide tout contenu déchiffré (après débourrage et analyse JSON). Un enregistrement vivant est validé par le schéma de son type ; un enregistrement supprimé (tombstone) ne porte que type et deleted:true. Les champs inconnus d'un enregistrement vivant sont CONSERVÉS et réécrits tels quels par un client plus ancien (règle de compatibilité, shared/CRYPTO.md §7.4) : c'est pourquoi les schémas de type n'interdisent pas additionalProperties.",
+  "type": "object",
+  "required": ["type", "deleted"],
+  "properties": {
+    "type": { "enum": ["login", "bookmark", "folder", "setting", "device", "tabs"] },
+    "deleted": { "type": "boolean" }
+  },
+  "if": { "properties": { "deleted": { "const": true } } },
+  "then": { "$ref": "#/$defs/tombstone" },
+  "else": {
+    "oneOf": [
+      { "$ref": "record-login.schema.json" },
+      { "$ref": "record-bookmark.schema.json" },
+      { "$ref": "record-folder.schema.json" },
+      { "$ref": "record-setting.schema.json" },
+      { "$ref": "record-device.schema.json" },
+      { "$ref": "#/$defs/tabs" }
+    ]
+  },
+  "$defs": {
+    "tombstone": {
+      "title": "Tombstone (suppression chiffrée)",
+      "description": "Contenu exact d'une suppression : {\"deleted\":true,\"type\":\"<type>\"} en JSON canonique, bourré à 256 o et chiffré comme n'importe quel enregistrement (même AAD, même clé de niveau). Aucun autre champ n'est autorisé : la taille d'un tombstone est indistinguable de celle d'un petit enregistrement. Un tombstone bat tout rev plus ancien et perd contre une édition plus récente ; purgé après 90 jours.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "deleted"],
+      "properties": {
+        "type": { "enum": ["login", "bookmark", "folder", "setting", "device", "tabs"] },
+        "deleted": { "const": true }
+      }
+    },
+    "tabs": {
+      "title": "tabs (niveau 2, phase 5)",
+      "description": "Onglets ouverts d'un appareil, remplacés en bloc. Réservé ; défini ici pour que le type soit connu des validateurs.",
+      "type": "object",
+      "required": ["type", "deviceId", "tabs", "deleted"],
+      "properties": {
+        "type": { "const": "tabs" },
+        "deviceId": { "$ref": "common.schema.json#/$defs/deviceId" },
+        "tabs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "url", "lastVisited"],
+            "properties": {
+              "title": { "type": "string" },
+              "url": { "type": "string" },
+              "lastVisited": { "$ref": "common.schema.json#/$defs/timestampMs" }
+            }
+          }
+        },
+        "author": { "$ref": "common.schema.json#/$defs/deviceId" },
+        "deleted": { "const": false }
+      }
+    }
+  }
+}

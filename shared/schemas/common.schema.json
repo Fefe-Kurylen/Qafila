@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qafila.fr/schemas/v1/common.schema.json",
+  "title": "Définitions communes",
+  "description": "Types scalaires partagés par les autres schémas. Tout binaire est en base64url sans padding (RFC 4648 §5) ; les identifiants hexadécimaux sont en minuscules.",
+  "$defs": {
+    "uuid": {
+      "description": "UUID v4 minuscule, aléatoire (jamais dérivé d'un contenu).",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "vaultId": {
+      "description": "16 octets en hexadécimal minuscule = HKDF(K_sync, \"qafila/v1/vault-id\", 16).",
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "deviceId": {
+      "description": "4 octets aléatoires en hexadécimal minuscule, propres à une installation.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}$"
+    },
+    "keyGeneration": {
+      "description": "Génération de clé, entier ≥ 1, incrémenté à chaque renouvellement (jamais réutilisé).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "rev": {
+      "description": "Horloge logique hybride : <ms Unix 13 chiffres>-<compteur 4 hex>-<aléa 4 hex>. Ordre total lexicographique.",
+      "type": "string",
+      "pattern": "^[0-9]{13}-[0-9a-f]{4}-[0-9a-f]{4}$"
+    },
+    "timestampMs": {
+      "description": "Millisecondes Unix, entier.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "base64url": {
+      "description": "base64url sans padding (RFC 4648 §5). Les décodeurs rejettent '+', '/' et '='.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]*$"
+    },
+    "nonce": {
+      "description": "Nonce AES-GCM de 12 octets, aléatoire (CSPRNG) par message : 16 caractères base64url.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{16}$"
+    },
+    "kdf": {
+      "description": "Paramètres Argon2id ; m en Kio. Une implémentation refuse m < 65536, t < 3 ou p ≠ 1, et ne les abaisse jamais.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "salt", "m", "t", "p"],
+      "properties": {
+        "alg": { "const": "argon2id" },
+        "salt": { "description": "16 octets, base64url (22 caractères).", "type": "string", "pattern": "^[A-Za-z0-9_-]{22}$" },
+        "m": { "type": "integer", "minimum": 65536 },
+        "t": { "type": "integer", "minimum": 3 },
+        "p": { "const": 1 }
+      }
+    },
+    "origin": {
+      "description": "Origine normalisée scheme://host[:port] (sans chemin), ou app:<package> pour une application Android.",
+      "type": "string",
+      "pattern": "^(https?://[^/\\s]+|app:[A-Za-z0-9_.]+)$"
+    }
+  }
+}
