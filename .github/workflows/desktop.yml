@@ -1,0 +1,71 @@
+# Qafila pour PC (Electron) : installateur Windows (.exe), AppImage Linux, DMG macOS (non signé tant que le compte Apple n'est pas relié).
+# Les fichiers sont déposés dans la release « Version de test », à côté de l'APK Android et de l'IPA iPhone.
+name: Qafila PC
+
+on:
+  push:
+    branches: [main]
+    paths: ["desktop/**", ".github/workflows/desktop.yml"]
+  pull_request:
+    paths: ["desktop/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: qafila-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+            script: dist:win
+            glob: desktop/dist/*.exe
+          - os: ubuntu-latest
+            label: Linux
+            script: dist:linux
+            glob: desktop/dist/*.AppImage
+          - os: macos-15
+            label: macOS
+            script: dist:mac
+            glob: desktop/dist/*.dmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Dépendances
+        run: npm ci
+      - name: Empaqueter
+        run: npm run ${{ matrix.script }} -- --publish never
+      - name: Lister
+        shell: bash
+        run: ls -la dist | grep -Ei "exe|appimage|dmg" || ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qafila-pc-${{ matrix.label }}
+          path: ${{ matrix.glob }}
+      - name: Publier dans la release de test
+        if: ${{ github.event_name == 'push' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test
+          name: Version de test
+          prerelease: true
+          make_latest: false
+          files: ${{ matrix.glob }}
