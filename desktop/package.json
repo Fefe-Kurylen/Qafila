@@ -11,6 +11,7 @@
   "scripts": {
     "start": "electron .",
     "smoke": "node test/smoke.mjs",
+    "test": "node --test test/unit.test.mjs",
     "i18n": "node scripts/i18n-from-android.mjs",
     "dist:win": "electron-builder --win nsis --x64",
     "dist:linux": "electron-builder --linux AppImage",

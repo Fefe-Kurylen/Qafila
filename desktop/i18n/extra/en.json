@@ -35,5 +35,8 @@
   "downloads_footer": "Files are saved to this folder without asking.",
   "show_downloads": "Open Folder",
   "choose_folder": "Choose Folder…",
-  "use_system_folder": "Use System Folder"
+  "use_system_folder": "Use System Folder",
+  "external_open": "Open",
+  "external_open_mail": "Open this link in your email app?",
+  "external_open_tel": "Open this number in your phone app?"
 }

@@ -2,6 +2,7 @@
 // Canaux IPC du chrome (window.qafila.*) : chaque canal valide ses arguments ; rien n'est exposé au-delà de cette liste.
 const { ipcMain, shell, clipboard, app, nativeTheme, dialog } = require('electron');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const contract = require('./contract');
 const settingsSchema = require('./settings');
 const search = require('./search');
@@ -9,6 +10,30 @@ const support = require('./support');
 const { hostOf } = require('./tabs');
 
 const str = (v, max = 4096) => (typeof v === 'string' ? v.slice(0, max) : '');
+// Réglages jamais modifiables par settings:set / settings:reset : le dossier de téléchargement ne change que par le
+// dialogue natif (downloads:chooseFolder) ou downloads:resetFolder.
+const PROTECTED_KEYS = new Set(['downloadFolder']);
+
+// Seul le document du chrome (renderer/index.html, cadre principal de la vue du chrome) peut appeler les canaux.
+const RENDERER_URL = pathToFileURL(path.join(__dirname, '..', 'renderer', 'index.html'));
+const samePath = (a, b) => (process.platform === 'win32' || process.platform === 'darwin' ? a.toLowerCase() === b.toLowerCase() : a === b);
+
+/**
+ * Le message vient-il du chrome ? Vérifie la vue émettrice ET le cadre (principal, adresse file:// du chrome).
+ * Une page web (même avec un moteur de rendu compromis) ne passe jamais ce contrôle.
+ * @param {Electron.IpcMainEvent|Electron.IpcMainInvokeEvent} e
+ * @param {Electron.WebContents|null|undefined} chromeWC
+ */
+function isChromeSender(e, chromeWC) {
+  if (!chromeWC || chromeWC.isDestroyed() || e?.sender !== chromeWC) return false;
+  const frame = e.senderFrame;
+  if (!frame || frame.parent) return false;
+  let u;
+  try { u = new URL(frame.url); } catch { return false; }
+  if (u.protocol !== 'file:' || u.host !== RENDERER_URL.host) return false;
+  try { return samePath(decodeURIComponent(u.pathname), decodeURIComponent(RENDERER_URL.pathname)); } catch { return false; }
+}
+
 const id = (v) => (typeof v === 'string' && /^[0-9A-Fa-f-]{36}$/.test(v) ? v : null);
 
 /**
@@ -17,7 +42,10 @@ const id = (v) => (typeof v === 'string' && /^[0-9A-Fa-f-]{36}$/.test(v) ? v : n
 function register(a) {
   // Accès paresseux : les onglets (TabManager) sont créés avec la fenêtre, après l'enregistrement des canaux.
   const store = a.store;
-  const handle = (channel, fn) => ipcMain.handle(`qafila:${channel}`, async (_e, p) => fn(p || {}));
+  const handle = (channel, fn) => ipcMain.handle(`qafila:${channel}`, async (e, p) => {
+    if (!isChromeSender(e, a.chrome?.webContents)) throw new Error('qafila: émetteur refusé');
+    return fn(p && typeof p === 'object' ? p : {});
+  });
   const current = (p) => id(p.id) || store.selected;
 
   // ----- Onglets -----
@@ -55,8 +83,8 @@ function register(a) {
 
   // ----- Réglages -----
   handle('settings:get', () => store.settings);
-  handle('settings:set', (p) => { const key = str(p.key, 64); const ok = store.setSetting(key, p.value); if (ok) a.onSettingChanged(key); return ok ? store.settings[key] : null; });
-  handle('settings:reset', (p) => { const key = str(p.key, 64); const d = settingsSchema.defaults(); if (!(key in d)) return null; store.setSetting(key, d[key]); a.onSettingChanged(key); return store.settings[key]; });
+  handle('settings:set', (p) => { const key = str(p.key, 64); if (PROTECTED_KEYS.has(key)) return null; const ok = store.setSetting(key, p.value); if (ok) a.onSettingChanged(key); return ok ? store.settings[key] : null; });
+  handle('settings:reset', (p) => { const key = str(p.key, 64); const d = settingsSchema.defaults(); if (!(key in d) || PROTECTED_KEYS.has(key)) return null; store.setSetting(key, d[key]); a.onSettingChanged(key); return store.settings[key]; });
   handle('settings:schema', () => settingsSchema.describe());
   handle('settings:applyPreset', (p) => {
     const cfg = settingsSchema.presetConfig(str(p.id, 32));
@@ -125,4 +153,4 @@ function register(a) {
   handle('test:screenshot', (p) => a.screenshot(str(p.name, 64)));
 }
 
-module.exports = { register, hostOf };
+module.exports = { register, hostOf, isChromeSender };

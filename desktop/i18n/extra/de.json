@@ -35,5 +35,8 @@
   "downloads_footer": "Dateien werden ohne Nachfrage in diesem Ordner gespeichert.",
   "show_downloads": "Ordner öffnen",
   "choose_folder": "Ordner wählen…",
-  "use_system_folder": "Systemordner verwenden"
+  "use_system_folder": "Systemordner verwenden",
+  "external_open": "Öffnen",
+  "external_open_mail": "Diesen Link in deiner E-Mail-App öffnen?",
+  "external_open_tel": "Diese Nummer in deiner Telefon-App öffnen?"
 }

@@ -7,6 +7,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const settingsSchema = require('./settings');
+const { safeFaviconURL } = require('./favicon');
 
 const HISTORY_MAX = 2000;
 const AUTO_CLOSE_MS = { never: null, day: 86_400_000, week: 604_800_000, month: 2_592_000_000 };
@@ -193,7 +194,7 @@ function normalizeTab(t) {
   return {
     id: t.id || uuid(), url: t.url || null, title: String(t.title || ''), isPrivate: false,
     createdAt: num(t.createdAt), lastVisited: num(t.lastVisited), readingMinutes: Number(t.readingMinutes) || 0,
-    faviconURL: t.faviconURL || null, themeColorHex: t.themeColorHex || null,
+    faviconURL: safeFaviconURL(t.faviconURL), themeColorHex: t.themeColorHex || null,
   };
 }
 function num(v) { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : Date.now(); }

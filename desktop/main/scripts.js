@@ -6,7 +6,12 @@
 const darkenCSS = `html { filter: invert(0.92) hue-rotate(180deg) !important; background: #111 !important; }
 img, video, canvas, picture, svg, iframe, [style*="background-image"] { filter: invert(1) hue-rotate(180deg) !important; }`;
 
-/** Lecteur : extrait l'article principal (heuristique simple inspirée de Readability) ; renvoie du JSON ou null. */
+/**
+ * Lecteur : extrait l'article principal (heuristique simple inspirée de Readability).
+ * Exécuté dans un MONDE ISOLÉ (executeJavaScriptInIsolatedWorld) : la page ne peut ni remplacer JSON, ni détourner les
+ * prototypes du DOM vus par ce script. Ne renvoie jamais de HTML : un arbre { t, a, c } (balise, attributs, enfants)
+ * ou du texte, que le processus principal re-filtre et sérialise lui-même (renderReaderTree). Adresses rendues absolues.
+ */
 const reader = `(function(){
   function score(el){ var t=(el.innerText||'').trim(); var p=el.querySelectorAll('p').length; return t.length + p*80 - el.querySelectorAll('a').length*30; }
   var candidates = Array.from(document.querySelectorAll('article, main, [role=main], .post, .article, .entry-content, .post-content, #content, .content'));
@@ -14,20 +19,103 @@ const reader = `(function(){
   candidates.forEach(function(c){ var s = score(c); if (s > bestScore) { bestScore = s; best = c; } });
   if (!best) { var ps = Array.from(document.querySelectorAll('p')); var map = new Map(); ps.forEach(function(p){ var par = p.parentElement; map.set(par, (map.get(par)||0) + (p.innerText||'').length); }); map.forEach(function(v,k){ if (v > bestScore) { bestScore = v; best = k; } }); }
   if (!best) return null;
-  var clone = best.cloneNode(true);
-  clone.querySelectorAll('script, style, nav, aside, footer, form, iframe, .share, .social, .ad, .ads, [class*="related"], [class*="comment"]').forEach(function(e){ e.remove(); });
+  var SKIP = /^(script|style|noscript|template|nav|aside|footer|form|iframe|frame|frameset|object|embed|applet|svg|math|button|input|select|textarea|canvas|video|audio|source|track|link|meta|base|dialog|slot)$/;
+  var DROP = /(^|\\s)(share|social|ad|ads)(\\s|$)|related|comment/i;
+  var budget = 30000;
+  function abs(u){ try { return new URL(u, document.baseURI).href; } catch (e) { return ''; } }
+  function walk(node, depth){
+    if (--budget <= 0 || depth > 60) return null;
+    if (node.nodeType === 3) return node.nodeValue;
+    if (node.nodeType !== 1) return null;
+    var tag = String(node.localName || '').toLowerCase();
+    if (SKIP.test(tag)) return null;
+    var cls = node.getAttribute('class') || '';
+    if (depth > 0 && DROP.test(cls)) return null;
+    var a = {};
+    if (tag === 'a' && node.hasAttribute('href')) a.href = abs(node.getAttribute('href'));
+    if (tag === 'img') { var src = node.currentSrc || node.getAttribute('src') || node.getAttribute('data-src') || ''; if (src) a.src = abs(src); a.alt = node.getAttribute('alt') || ''; }
+    if (tag === 'td' || tag === 'th') { if (node.hasAttribute('colspan')) a.colspan = node.getAttribute('colspan'); if (node.hasAttribute('rowspan')) a.rowspan = node.getAttribute('rowspan'); }
+    var c = [];
+    for (var k = node.firstChild; k; k = k.nextSibling) { var r = walk(k, depth + 1); if (r !== null && r !== '') c.push(r); }
+    return { t: tag, a: a, c: c };
+  }
+  var tree = walk(best, 0);
   var title = (document.querySelector('h1') || {}).innerText || document.title;
   var byline = (document.querySelector('[rel=author], .author, .byline') || {}).innerText || '';
-  return JSON.stringify({ title: title, byline: byline, html: clone.innerHTML, host: location.host, url: location.href });
+  return JSON.stringify({ title: String(title || ''), byline: String(byline || ''), tree: tree });
 })();`;
 
 function escape(s) {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/** Page du lecteur (mêmes couleurs et gabarit que le mobile). */
-function readerPage({ title, byline, html, host }, dark) {
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+// ----- Liste blanche du lecteur : balises gardées (les autres sont déballées : seul leur contenu reste) -----
+const READER_TAGS = new Set([
+  'p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'kbd', 'samp',
+  'em', 'strong', 'b', 'i', 'u', 's', 'del', 'ins', 'sub', 'sup', 'small', 'mark', 'q', 'cite', 'abbr', 'time', 'a', 'img',
+  'figure', 'figcaption', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption', 'dl', 'dt', 'dd', 'span',
+  'div', 'section', 'article', 'header', 'main', 'picture',
+]);
+const READER_VOID = new Set(['br', 'hr', 'img']);
+// Sous-arbres jetés entièrement (même s'ils arrivaient d'un moteur de rendu compromis).
+const READER_DROP = new Set(['script', 'style', 'noscript', 'template', 'iframe', 'frame', 'frameset', 'object', 'embed',
+  'applet', 'svg', 'math', 'form', 'button', 'input', 'select', 'textarea', 'link', 'meta', 'base', 'title', 'head']);
+const IMAGE_DATA = /^data:image\/(png|jpe?g|gif|webp|avif|bmp);base64,[a-z0-9+/=\s]+$/i;
+
+/** Lien sûr : http(s) ou mailto uniquement (jamais javascript:, data:, file:…). */
+function safeHref(u) {
+  try { const x = new URL(String(u)); return ['http:', 'https:', 'mailto:'].includes(x.protocol) ? x.href : ''; } catch { return ''; }
+}
+/** Image sûre : http(s), ou data:image matricielle (pas de SVG). */
+function safeImageSrc(u) {
+  const s = String(u || '');
+  if (IMAGE_DATA.test(s) && s.length <= 2_000_000) return s;
+  try { const x = new URL(s); return ['http:', 'https:'].includes(x.protocol) ? x.href : ''; } catch { return ''; }
+}
+
+/**
+ * Sérialise l'arbre renvoyé par l'extracteur avec une liste blanche stricte de balises et d'attributs : aucun
+ * attribut on*, aucun style, aucune adresse javascript:/data: (sauf data:image matricielle). Tout texte est échappé.
+ */
+function renderReaderTree(tree) {
+  const out = [];
+  let budget = 40000;
+  const visit = (n, depth) => {
+    if (--budget <= 0 || depth > 64 || n == null) return;
+    if (typeof n === 'string') { out.push(escape(n.slice(0, 100000))); return; }
+    if (typeof n !== 'object') return;
+    const tag = String(n.t || '').toLowerCase();
+    if (READER_DROP.has(tag)) return;
+    const kids = Array.isArray(n.c) ? n.c : [];
+    if (!READER_TAGS.has(tag)) { for (const k of kids) visit(k, depth + 1); return; }
+    const a = n.a && typeof n.a === 'object' ? n.a : {};
+    let attrs = '';
+    if (tag === 'a') { const h = safeHref(a.href); if (h) attrs += ` href="${escape(h)}" rel="noreferrer"`; }
+    if (tag === 'img') {
+      const src = safeImageSrc(a.src);
+      if (!src) return;
+      attrs += ` src="${escape(src)}" alt="${escape(String(a.alt || '').slice(0, 500))}" loading="lazy" referrerpolicy="no-referrer"`;
+    }
+    if (tag === 'td' || tag === 'th') {
+      for (const k of ['colspan', 'rowspan']) { const v = parseInt(a[k], 10); if (Number.isInteger(v) && v > 1 && v <= 100) attrs += ` ${k}="${v}"`; }
+    }
+    out.push(`<${tag}${attrs}>`);
+    if (READER_VOID.has(tag)) return;
+    for (const k of kids) visit(k, depth + 1);
+    out.push(`</${tag}>`);
+  };
+  visit(tree, 0);
+  return out.join('');
+}
+
+// Politiques de sécurité des pages locales : aucun script, aucune requête hors images (lecteur) ; origine opaque (data:).
+const CSP_READER = "default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
+const CSP_LOCAL = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
+const cspMeta = (csp) => `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
+
+/** Page du lecteur (mêmes couleurs et gabarit que le mobile). `host` vient du processus principal, jamais de la page. */
+function readerPage({ title, byline, tree, host }, dark) {
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8">${cspMeta(CSP_READER)}<meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
 <style>
 :root { color-scheme: ${dark ? 'dark' : 'light'}; }
@@ -37,7 +125,7 @@ h1 { font: 700 30px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; margin
 img, video { max-width: 100%; height: auto; border-radius: 10px; }
 a { color: ${dark ? '#8fb0ff' : '#004fd6'}; }
 pre { white-space: pre-wrap; font-size: 15px; }
-</style></head><body><h1>${escape(title)}</h1><div class="meta">${byline ? escape(byline) + ' · ' : ''}${escape(host)}</div>${html}</body></html>`;
+</style></head><body><h1>${escape(title)}</h1><div class="meta">${byline ? escape(byline) + ' · ' : ''}${escape(host)}</div>${renderReaderTree(tree)}</body></html>`;
 }
 
 /** Page de démarrage locale : « Qafila » en serif, « قافلة » en gris, tuiles de favoris (aucune requête réseau). */
@@ -47,7 +135,7 @@ function startPage({ dark, bookmarks = [], title = 'Qafila', rtl = false, lang =
     return `<a class="tile" href="${escape(b.url)}"><span class="ic">${escape(letter)}</span><span class="t">${escape(b.title)}</span></a>`;
   }).join('');
   return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escape(title)}</title>
+${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <style>
 :root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${dark ? '#000000' : '#ffffff'}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? '#1c1c1e' : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; }
 body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
@@ -64,7 +152,7 @@ h1 { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", ser
 
 /** Page d'erreur dans la langue de l'interface ; l'adresse reste de gauche à droite. */
 function errorPage({ title, message, url, lang = 'fr', rtl = false, dark = false }) {
-  return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${cspMeta(CSP_LOCAL)}<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
 <style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:24px;background:${dark ? '#000000' : '#ffffff'};color:${dark ? '#f2f2f7' : '#1c1c1e'}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
 </head><body><h1>${escape(title)}</h1><p dir="auto">${escape(message)}</p><p dir="ltr" style="font-size:13px;word-break:break-all">${escape(url)}</p></body></html>`;
@@ -77,7 +165,7 @@ function demoArticle({ title, host, minutes, dark }) {
   for (let i = 0; i < n; i++) {
     paras.push(`<p>Une caravane est un convoi de marchandises ou un groupe de personnes voyageant ensemble, essentiellement dans le cadre d'une expédition commerciale. Les caravanes ont été utilisées principalement dans les zones désertiques du Sahara ou de la péninsule arabique et tout au long de la route de la soie, où le voyage en groupe permettait de se défendre contre les brigands et de partager l'eau, les vivres et les bêtes de somme. Les étapes se faisaient de puits en puits, de caravansérail en caravansérail.</p>`);
   }
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escape(title)}</title>
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8">${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <link rel="icon" href="data:,">
 <style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;font:17px/1.65 Georgia,"Times New Roman",serif;background:${dark ? '#101012' : '#ffffff'};color:${dark ? '#e8e8ea' : '#202122'}}
 header{position:sticky;top:0;background:${dark ? '#1c1c1e' : '#f8f9fa'};border-bottom:1px solid ${dark ? '#333' : '#e5e5e5'};padding:14px 32px;font:600 22px/1 "Linux Libertine",Georgia,serif;letter-spacing:.02em}
@@ -87,4 +175,4 @@ main{max-width:760px;margin:0 auto;padding:32px 24px 120px}h1{font:400 34px/1.2 
 <div class="box">Pour les articles homonymes, voir <a href="#">Caravane</a>.</div>${paras.join('')}</main></body></html>`;
 }
 
-module.exports = { darkenCSS, reader, readerPage, startPage, errorPage, demoArticle, escape };
+module.exports = { darkenCSS, reader, readerPage, renderReaderTree, safeHref, safeImageSrc, startPage, errorPage, demoArticle, escape, CSP_READER, CSP_LOCAL };

@@ -14,6 +14,7 @@ const search = require('./search');
 const i18n = require('./i18n');
 const ipc = require('./ipc');
 const demo = require('./demo');
+const { FaviconCache } = require('./favicon');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -42,7 +43,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 const Q = {
   win: null, chrome: null, store: null, tabs: null, blocker: null, glass: null,
   chromeMode: 'strip', barHeight: 92, t: null, demo: DEMO, isFullscreenPage: false,
-  pending: new Map(), broadcastTimer: null,
+  pending: new Map(), broadcastTimer: null, favicons: null,
 };
 
 function isDark() { return nativeTheme.shouldUseDarkColors; }
@@ -94,7 +95,9 @@ function describeTabs() {
     const host = hostOf(tab.url || '');
     return {
       id: tab.id, url: tab.url, title: tab.title || (tab.url ? tab.url : t('new_tab')), isPrivate: tab.isPrivate,
-      createdAt: tab.createdAt, lastVisited: tab.lastVisited, readingMinutes: tab.readingMinutes, faviconURL: tab.faviconURL,
+      createdAt: tab.createdAt, lastVisited: tab.lastVisited, readingMinutes: tab.readingMinutes,
+      // Le chrome ne reçoit qu'une adresse data: (icône téléchargée par la session de l'onglet), jamais l'adresse du site.
+      faviconData: tab.isPrivate ? null : Q.favicons.get(tab.faviconURL, Q.tabs.sessionFor(tab)),
       themeColor: tab.themeColorHex, host: host.replace(/^www\./, ''), selected: tab.id === Q.store.selected,
       loading: live.loading, progress: live.progress, canGoBack: live.canGoBack, canGoForward: live.canGoForward,
       blocked: live.blocked, reader: live.reader,
@@ -439,7 +442,11 @@ async function screenshot(name) {
   return file;
 }
 
-ipcMain.on('qafila:test:composited', (_e, { id, dataURL }) => { const cb = Q.pending.get(id); if (cb) { Q.pending.delete(id); cb(dataURL); } });
+ipcMain.on('qafila:test:composited', (e, msg) => {
+  if (!ipc.isChromeSender(e, Q.chrome?.webContents)) return;
+  const { id, dataURL } = msg || {};
+  if (typeof dataURL !== 'string' && dataURL !== null) return;
+  const cb = Q.pending.get(id); if (cb) { Q.pending.delete(id); cb(dataURL); } });
 
 // ----- Fenêtre -----
 function createWindow() {
@@ -452,6 +459,7 @@ function createWindow() {
   });
   Menu.setApplicationMenu(null);
 
+  Q.favicons = new FaviconCache(() => broadcast());
   Q.blocker = new Blocker(() => Q.store.settings, (wcId) => Q.tabs.pageURLFor(wcId));
   Q.tabs = new TabManager({ win: Q.win, store: Q.store, blocker: Q.blocker, t: translator, isDark, offline: OFFLINE, userAgent: app.userAgentFallback });
 
@@ -528,7 +536,7 @@ app.whenReady().then(async () => {
   translator();
 
   ipc.register({
-    get win() { return Q.win; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
+    get win() { return Q.win; }, get chrome() { return Q.chrome; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
     toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, screenshot,
     downloadFolder,
@@ -545,6 +553,63 @@ app.on('web-contents-created', (_e, wc) => {
   // Aucune vue n'ouvre de fenêtre native ni ne charge de code distant dans le chrome.
   wc.on('will-attach-webview', (e) => e.preventDefault());
 });
+
+/**
+ * Contrôles de sécurité du test de fumée : lecteur (origine opaque, extracteur en monde isolé, aucun gestionnaire on*
+ * ni lien javascript: même si la page détourne JSON et les prototypes du DOM), émetteur des messages IPC, schémas
+ * externes sans geste, adresses d'icônes refusées.
+ */
+async function securityChecks(report, wait, shot) {
+  const fail = (m) => { report.errors.push(m); console.error('sécurité :', m); };
+  const evalIn = (wc, js) => wc.executeJavaScript(js, true).catch((e) => `ERREUR ${e.message}`);
+  // 1) Lecteur sur l'article de démonstration.
+  const sel = Q.store.selected;
+  const wc = Q.tabs.contents(sel);
+  if (!(await Q.tabs.toggleReader(sel))) fail('lecteur : extraction impossible');
+  await wait(1200);
+  const origin = await evalIn(wc, 'location.origin');
+  if (origin !== 'null') fail(`lecteur : origine ${origin} au lieu d'une origine opaque`);
+  await shot('26-reader');
+  await Q.tabs.toggleReader(sel); await wait(1200);
+  // 2) Page piégée : JSON.stringify et getAttribute détournés, img onerror, lien javascript:.
+  const trap = newTab();
+  await wait(800);
+  const twc = Q.tabs.contents(trap.id);
+  const para = '<p>Texte authentique de l\'article piégé, assez long pour être choisi par l\'extracteur du lecteur. '.repeat(6)
+    + '<img src="http://127.0.0.1:9/x.png" onerror="document.documentElement.dataset.pwned=1"> <a href="javascript:document.documentElement.dataset.pwned=1">lien</a></p>';
+  const hostile = `<!doctype html><html><head><meta charset="utf-8"><title>Piège</title><script>
+JSON.stringify = function () { return '{"title":"x","tree":{"t":"img","a":{"src":"x","onerror":"document.documentElement.dataset.pwned=1"},"c":[]}}'; };
+Element.prototype.getAttribute = function () { return 'javascript:document.documentElement.dataset.pwned=1'; };
+</script></head><body><article><h1>Article piégé</h1>${para.repeat(4)}</article></body></html>`;
+  await twc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(hostile)).catch(() => {});
+  await wait(600);
+  if (!(await Q.tabs.toggleReader(trap.id))) fail('lecteur piégé : extraction impossible');
+  await wait(1500);
+  const probe = await evalIn(twc, `JSON.stringify({ origin: location.origin, pwned: !!document.documentElement.dataset.pwned,
+    handlers: document.querySelectorAll('[onerror],[onload],[onclick]').length, js: document.querySelectorAll('a[href^="javascript:"]').length,
+    genuine: document.body.innerText.includes('Texte authentique'), csp: !!document.querySelector('meta[http-equiv="Content-Security-Policy"]') })`);
+  let r = {};
+  try { r = JSON.parse(probe); } catch { fail(`lecteur piégé : sonde illisible (${probe})`); }
+  if (r.origin !== 'null') fail(`lecteur piégé : origine ${r.origin}`);
+  if (r.pwned) fail('lecteur piégé : un gestionnaire on* a été exécuté');
+  if (r.handlers || r.js) fail(`lecteur piégé : ${r.handlers} attribut(s) on*, ${r.js} lien(s) javascript:`);
+  if (!r.genuine) fail('lecteur piégé : le contenu vient du JSON détourné (extracteur hors monde isolé)');
+  if (!r.csp) fail('lecteur piégé : pas de CSP');
+  // 3) IPC : une page n'est jamais acceptée comme émetteur ; le chrome l'est.
+  if (ipc.isChromeSender({ sender: twc, senderFrame: twc.mainFrame }, Q.chrome.webContents)) fail('ipc : une page est acceptée comme émetteur');
+  if (!ipc.isChromeSender({ sender: Q.chrome.webContents, senderFrame: Q.chrome.webContents.mainFrame }, Q.chrome.webContents)) fail('ipc : le chrome est refusé');
+  // 4) Schémas externes : rien sans geste de l'utilisateur, jamais magnet:/facetime:.
+  if (await Q.tabs.openExternal('magnet:?xt=urn:btih:0', twc)) fail('externe : magnet: ouvert');
+  if (await Q.tabs.openExternal('mailto:a@example.org', twc)) fail('externe : mailto: ouvert sans geste');
+  // 5) Icônes : file:, javascript: refusées ; le chrome ne reçoit que des adresses data:.
+  const { safeFaviconURL } = require('./favicon');
+  if (safeFaviconURL('file://attacker.example/share/a.ico') || safeFaviconURL('javascript:alert(1)')) fail('icône : adresse file:/javascript: acceptée');
+  if (describeTabs().some((x) => x.faviconData && !x.faviconData.startsWith('data:image/'))) fail('icône : adresse non data: envoyée au chrome');
+  closeTab(trap.id);
+  // Les captures suivantes repartent de l'onglet de démonstration initial.
+  if (Q.store.tabs.some((x) => x.id === sel)) selectTab(sel);
+  await wait(800);
+}
 
 /** Scénario de test : onglets de démonstration, captures (page, menu, saisie, onglets, réglages, galerie, éditeur,
  * démarrage, sombre, barre en bas), contrôle de la bande, sortie 0. */
@@ -575,6 +640,8 @@ async function runSmoke() {
   demoScreen('none'); await wait(400);
   demoScreen('find', { text: 'caravane' }); await wait(900); await shot('11-find');
   demoScreen('none'); await wait(300);
+  // Lecteur : la page du lecteur a une origine opaque (jamais celle du site).
+  await securityChecks(report, wait, shot);
   // Page de démarrage : un nouvel onglet, refermé ensuite.
   const start = newTab();
   await wait(1500); await shot('12-start');

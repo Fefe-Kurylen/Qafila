@@ -35,5 +35,8 @@
   "downloads_footer": "تُحفظ الملفات في هذا المجلد دون سؤال.",
   "show_downloads": "فتح المجلد",
   "choose_folder": "اختيار مجلد…",
-  "use_system_folder": "استخدام مجلد النظام"
+  "use_system_folder": "استخدام مجلد النظام",
+  "external_open": "فتح",
+  "external_open_mail": "هل تريد فتح هذا الرابط في تطبيق البريد الإلكتروني؟",
+  "external_open_tel": "هل تريد فتح هذا الرقم في تطبيق الهاتف؟"
 }

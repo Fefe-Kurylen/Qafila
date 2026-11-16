@@ -36,5 +36,8 @@
   "downloads_footer": "Les fichiers sont enregistrés sans question dans ce dossier.",
   "show_downloads": "Ouvrir le dossier",
   "choose_folder": "Choisir un dossier…",
-  "use_system_folder": "Utiliser le dossier du système"
+  "use_system_folder": "Utiliser le dossier du système",
+  "external_open": "Ouvrir",
+  "external_open_mail": "Ouvrir ce lien dans votre application de courriel ?",
+  "external_open_tel": "Ouvrir ce numéro dans votre application de téléphone ?"
 }

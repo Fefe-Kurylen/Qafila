@@ -2,15 +2,21 @@
 // Gestion des onglets : une WebContentsView par onglet (partition « persist:qafila », ou « qafila-private » partagée
 // par tous les onglets privés et vidée avec le dernier), navigation, comportements web portés du mobile (HTTPS forcé
 // avec repli, schémas externes, fenêtres surgissantes → onglets, lecteur, assombrissement, user agent, zoom, bloqueur).
-const { WebContentsView, session, shell, clipboard, Menu } = require('electron');
+const { WebContentsView, session, shell, clipboard, Menu, dialog } = require('electron');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const scripts = require('./scripts');
 const search = require('./search');
+const { safeFaviconURL } = require('./favicon');
 
 const PAGE_PRELOAD = path.join(__dirname, '..', 'preload', 'page.js');
 const INTERNAL_SCHEMES = new Set(['http:', 'https:', 'about:', 'file:', 'data:', 'blob:', 'chrome:', 'devtools:', 'chrome-error:']);
-const EXTERNAL_SCHEMES = new Set(['mailto:', 'tel:', 'sms:', 'geo:', 'maps:', 'facetime:', 'xmpp:', 'matrix:', 'magnet:']);
+// Applications externes : courriel et téléphone seulement, après un geste récent de l'utilisateur et sa confirmation.
+const EXTERNAL_SCHEMES = new Set(['mailto:', 'tel:']);
+const GESTURE_WINDOW_MS = 3000;
+const GESTURE_EVENTS = new Set(['mouseDown', 'keyDown', 'rawKeyDown', 'gestureTap', 'touchStart']);
+// Monde isolé de l'extracteur du lecteur (999 est celui des préchargements d'Electron).
+const READER_WORLD = 1001;
 const MAX_LIVE_VIEWS = 8;
 const MOBILE_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36';
 const ERR_ABORTED = -3;
@@ -46,6 +52,8 @@ class TabManager extends EventEmitter {
     this.readerActive = new Set();
     this.upgradedFrom = new Map(); // webContentsId → adresse http d'origine d'un passage forcé en https
     this.httpOnlyHosts = new Set();
+    this.lastGesture = new Map();  // webContentsId → instant du dernier clic / appui de touche dans la page
+    this.externalPrompt = new Set(); // webContentsId dont une demande d'application externe est ouverte
     this.attached = null;        // onglet dont la vue est affichée
     this.pageBounds = { x: 0, y: 0, width: 0, height: 0 };
     this.userAgent = desktopUserAgent(userAgent);
@@ -84,6 +92,9 @@ class TabManager extends EventEmitter {
     this.upgradedFrom.set(details.webContentsId, details.url);
     return 'https://' + details.url.slice('http://'.length);
   }
+
+  /** Session d'un onglet (privée ou persistante). */
+  sessionFor(tab) { return tab?.isPrivate ? this.privateSession() : this.persistent; }
 
   privateSession() {
     if (!this.private) { this.private = session.fromPartition('qafila-private'); this.prepare(this.private); }
@@ -208,6 +219,8 @@ class TabManager extends EventEmitter {
     const wc = view.webContents;
     this.blocker.forget(wc.id);
     this.upgradedFrom.delete(wc.id);
+    this.lastGesture.delete(wc.id);
+    this.externalPrompt.delete(wc.id);
     this.views.delete(tabId);
     this.live.delete(tabId);
     this.readerActive.delete(tabId);
@@ -267,7 +280,8 @@ class TabManager extends EventEmitter {
     wc.on('page-favicon-updated', (_e, favicons) => {
       if (this.isLocal(wc.getURL()) || !favicons?.length) return;
       const tab = this.store.tabs.find((x) => x.id === tabId);
-      if (tab && !tab.isPrivate) this.store.updateTab(tabId, { faviconURL: favicons[0] });
+      const icon = favicons.map(safeFaviconURL).find(Boolean);
+      if (tab && !tab.isPrivate && icon) this.store.updateTab(tabId, { faviconURL: icon });
       this.emit('change', tabId);
     });
     wc.on('did-finish-load', () => {
@@ -286,10 +300,11 @@ class TabManager extends EventEmitter {
         wc.loadURL(from).catch(() => {});
         return;
       }
-      if (code === -302 /* ERR_UNKNOWN_URL_SCHEME */) { this.openExternal(validatedURL); return; }
+      if (code === -302 /* ERR_UNKNOWN_URL_SCHEME */) { this.openExternal(validatedURL, wc); return; }
       const t = this.t();
       const html = scripts.errorPage({ title: t('error_page_title'), message: description, url: validatedURL, lang: t.lang, rtl: t.rtl, dark: this.isDark() });
-      wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html), { baseURLForDataURL: validatedURL }).catch(() => {});
+      // Origine opaque (data: sans baseURLForDataURL) : la page d'erreur n'hérite jamais des droits du site.
+      wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch(() => {});
     });
     wc.on('render-process-gone', () => {
       this.readerActive.delete(tabId);
@@ -300,13 +315,13 @@ class TabManager extends EventEmitter {
     wc.on('will-navigate', (e, url) => {
       let scheme = '';
       try { scheme = new URL(url).protocol; } catch { return; }
-      if (!INTERNAL_SCHEMES.has(scheme)) { e.preventDefault(); this.openExternal(url); }
+      if (!INTERNAL_SCHEMES.has(scheme)) { e.preventDefault(); this.openExternal(url, wc); }
     });
     wc.setWindowOpenHandler(({ url }) => {
       // target=_blank / window.open : un nouvel onglet dans Qafila (privé si l'onglet d'origine l'est).
       const tab = this.store.tabs.find((x) => x.id === tabId);
       if (/^https?:/.test(url)) this.emit('open-tab', { url, isPrivate: !!tab?.isPrivate, select: true });
-      else this.openExternal(url);
+      else this.openExternal(url, wc);
       return { action: 'deny' };
     });
     wc.on('enter-html-full-screen', () => this.emit('fullscreen', true));
@@ -314,6 +329,8 @@ class TabManager extends EventEmitter {
     wc.on('found-in-page', (_e, result) => this.emit('found', tabId, result));
     wc.on('update-target-url', (_e, url) => this.emit('status', tabId, url));
     wc.on('before-input-event', (e, input) => this.emit('input', e, input));
+    // Gestes de l'utilisateur (clic, touche) : seuls eux autorisent l'ouverture d'une application externe.
+    wc.on('input-event', (_e, ev) => { if (GESTURE_EVENTS.has(ev?.type)) this.lastGesture.set(wc.id, Date.now()); });
     wc.on('context-menu', (_e, params) => this.contextMenu(tabId, params));
     wc.on('ipc-message', (_e, channel, data) => {
       if (channel === 'qafila:page:info') this.onPageInfo(tabId, wc, data || {});
@@ -331,7 +348,8 @@ class TabManager extends EventEmitter {
     if (!this.isLocal(wc.getURL())) {
       patch.readingMinutes = Math.max(0, Number(info.minutes) || 0);
       if (info.color) patch.themeColorHex = String(info.color).slice(0, 64);
-      if (info.icon && !tab.isPrivate && !tab.faviconURL) patch.faviconURL = String(info.icon).slice(0, 2048);
+      const icon = safeFaviconURL(info.icon);
+      if (icon && !tab.isPrivate && !tab.faviconURL) patch.faviconURL = icon;
     }
     this.store.updateTab(tabId, patch);
     this.emit('change', tabId);
@@ -352,10 +370,30 @@ class TabManager extends EventEmitter {
     this.emit('change', tabId);
   }
 
-  openExternal(url) {
-    let scheme = '';
-    try { scheme = new URL(url).protocol; } catch { return; }
-    if (EXTERNAL_SCHEMES.has(scheme)) shell.openExternal(url).catch(() => {});
+  /**
+   * Ouvre mailto: / tel: dans l'application du système, uniquement juste après un geste de l'utilisateur dans la page
+   * (un geste = une demande au plus), avec une confirmation native comme Chrome, et une seule demande à la fois par page.
+   * Tout autre schéma (magnet:, facetime:, sms:…) est ignoré.
+   */
+  async openExternal(url, wc) {
+    let u;
+    try { u = new URL(url); } catch { return false; }
+    if (!EXTERNAL_SCHEMES.has(u.protocol) || !wc || wc.isDestroyed()) return false;
+    const last = this.lastGesture.get(wc.id) || 0;
+    if (Date.now() - last > GESTURE_WINDOW_MS) return false;
+    this.lastGesture.delete(wc.id);
+    if (this.externalPrompt.has(wc.id)) return false;
+    this.externalPrompt.add(wc.id);
+    try {
+      const t = this.t();
+      const { response } = await dialog.showMessageBox(this.win, {
+        type: 'question', buttons: [t('external_open'), t('cancel')], defaultId: 0, cancelId: 1, noLink: true,
+        message: t(u.protocol === 'tel:' ? 'external_open_tel' : 'external_open_mail'), detail: u.href.slice(0, 300),
+      });
+      if (response !== 0) return false;
+      await shell.openExternal(u.href);
+      return true;
+    } catch { return false; } finally { this.externalPrompt.delete(wc.id); }
   }
 
   /** Menu contextuel des pages : lien (nouvel onglet, onglet privé, copier, enregistrer), image (copier, enregistrer,
@@ -449,14 +487,23 @@ class TabManager extends EventEmitter {
     const wc = this.contents(tabId);
     if (!wc) return false;
     if (this.readerActive.has(tabId)) { this.readerActive.delete(tabId); if (wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack(); else this.reload(tabId); return false; }
+    // Extraction dans un monde isolé : la page ne peut pas détourner JSON ni les prototypes du DOM de l'extracteur.
     let json = null;
-    try { json = await wc.executeJavaScript(scripts.reader, true); } catch { json = null; }
-    if (!json) return false;
+    try { json = await wc.executeJavaScriptInIsolatedWorld(READER_WORLD, [{ code: scripts.reader }], true); } catch { json = null; }
+    if (typeof json !== 'string' || json.length > 20_000_000) return false;
     let obj;
     try { obj = JSON.parse(json); } catch { return false; }
-    const html = scripts.readerPage(obj, this.isDark());
+    if (!obj || typeof obj !== 'object') return false;
+    // Le domaine affiché vient du processus principal (adresse de l'onglet), jamais de la page.
+    const tab = this.store.tabs.find((x) => x.id === tabId);
+    const html = scripts.readerPage({
+      title: String(obj.title || '').slice(0, 500), byline: String(obj.byline || '').slice(0, 300),
+      tree: obj.tree, host: stripWWW(hostOf(tab?.url || wc.getURL())),
+    }, this.isDark());
     this.readerActive.add(tabId);
-    await wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html), { baseURLForDataURL: obj.url || wc.getURL() }).catch(() => {});
+    // Origine opaque : pas de baseURLForDataURL (sinon la page du lecteur prendrait l'origine, les cookies et le
+    // stockage du site). Les adresses de l'article sont déjà absolues.
+    await wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch(() => {});
     this.emit('change', tabId);
     return true;
   }

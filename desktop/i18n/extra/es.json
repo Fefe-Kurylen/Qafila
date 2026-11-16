@@ -35,5 +35,8 @@
   "downloads_footer": "Los archivos se guardan en esta carpeta sin preguntar.",
   "show_downloads": "Abrir carpeta",
   "choose_folder": "Elegir carpeta…",
-  "use_system_folder": "Usar la carpeta del sistema"
+  "use_system_folder": "Usar la carpeta del sistema",
+  "external_open": "Abrir",
+  "external_open_mail": "¿Abrir este enlace en tu aplicación de correo?",
+  "external_open_tel": "¿Abrir este número en tu aplicación de teléfono?"
 }

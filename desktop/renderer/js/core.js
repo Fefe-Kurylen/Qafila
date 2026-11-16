@@ -70,11 +70,13 @@ export function shortURL(u) {
   return s.endsWith('/') ? s.slice(0, -1) : s;
 }
 
-/** Favicon : image du site, main levée en privé, sinon l'initiale en serif sur un carré gris. */
+/** Favicon : image du site (adresse data: préparée par le processus principal), main levée en privé, sinon l'initiale
+ * en serif sur un carré gris. Aucune adresse distante ni file: n'est jamais chargée par le chrome. */
 export function favicon(tab, size = 20) {
   const r = (size * 0.24).toFixed(1);
   const style = `width:${size}px;height:${size}px;border-radius:${r}px;font-size:${(size * 0.55).toFixed(1)}px`;
-  if (tab?.faviconURL) return `<span class="fav img" style="${style}"><img src="${esc(tab.faviconURL)}" alt="" onerror="this.parentNode.classList.remove('img');this.replaceWith(document.createTextNode('${esc(brandLetter(tab.host))}'))"></span>`;
+  const data = typeof tab?.faviconData === 'string' && tab.faviconData.startsWith('data:image/') ? tab.faviconData : null;
+  if (data) return `<span class="fav img" style="${style}" data-letter="${esc(brandLetter(tab.host))}"><img src="${esc(data)}" alt=""></span>`;
   if (tab?.isPrivate) return `<span class="fav" style="${style}"><svg class="ic" viewBox="0 0 24 24" style="width:${(size * 0.7).toFixed(1)}px;height:${(size * 0.7).toFixed(1)}px"><path d="M8.6 12.6V6.3a1.25 1.25 0 0 1 2.5 0v5.2M11.1 11.5V4.9a1.25 1.25 0 0 1 2.5 0v6.6M13.6 11.5V6a1.25 1.25 0 0 1 2.5 0v6.2M16.1 12.2V8.6a1.25 1.25 0 0 1 2.5 0v5.6c0 3.9-2.6 6.6-6.2 6.6-2.4 0-3.9-1-5.2-2.9l-2.4-3.7a1.3 1.3 0 0 1 2.1-1.5l1.7 2.1v-2.2"/></svg></span>`;
   return `<span class="fav" style="${style}">${esc(brandLetter(tab?.host))}</span>`;
 }
@@ -167,3 +169,13 @@ export function toast(text) {
   toastTimer = setTimeout(() => { S.toast = null; render(); }, 1800);
   render();
 }
+
+// Icône illisible : on revient à l'initiale du site (les gestionnaires onerror en ligne sont interdits par la CSP).
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  const box = img.parentElement;
+  if (!box?.classList.contains('fav')) return;
+  box.classList.remove('img');
+  img.replaceWith(document.createTextNode(box.dataset.letter || ''));
+}, true);
