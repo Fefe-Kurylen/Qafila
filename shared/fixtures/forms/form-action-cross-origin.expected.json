@@ -1,0 +1,17 @@
+{
+  "url": "https://shop.example/login",
+  "description": "Le formulaire envoie vers une autre origine : détecté, formActionOrigin différent de origin (la carte le dira) ; fill() n'accepte que l'origine de la page.",
+  "detect": [
+    {
+      "origin": "https://shop.example",
+      "formActionOrigin": "https://auth.shop-id.example",
+      "form": "#login",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#login-email", "visible": true, "autocomplete": null },
+        { "kind": "password", "selectorPath": "#login-pass", "visible": true, "autocomplete": null }
+      ]
+    }
+  ]
+}

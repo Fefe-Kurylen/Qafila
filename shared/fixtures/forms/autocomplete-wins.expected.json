@@ -1,0 +1,17 @@
+{
+  "url": "https://bank.example/auth",
+  "description": "Noms opaques, identifiant placé après le mot de passe dans le DOM (ordre inversé en CSS) : les attributs autocomplete tranchent ; le code postal est écarté ; les champs sont rendus dans l'ordre du document.",
+  "detect": [
+    {
+      "origin": "https://bank.example",
+      "formActionOrigin": "https://bank.example",
+      "form": "#auth",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "password", "selectorPath": "#f2", "visible": true, "autocomplete": "current-password" },
+        { "kind": "username", "selectorPath": "#f1", "visible": true, "autocomplete": "username" }
+      ]
+    }
+  ]
+}

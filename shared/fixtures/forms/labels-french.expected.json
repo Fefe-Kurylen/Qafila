@@ -1,0 +1,17 @@
+{
+  "url": "https://mairie.example/espace-citoyen",
+  "description": "Identifiants opaques, tout est dans les <label> : « Code postal » écarté, « Identifiant » retenu.",
+  "detect": [
+    {
+      "origin": "https://mairie.example",
+      "formActionOrigin": "https://mairie.example",
+      "form": "#espace",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#x2", "visible": true, "autocomplete": null },
+        { "kind": "password", "selectorPath": "#x3", "visible": true, "autocomplete": null }
+      ]
+    }
+  ]
+}

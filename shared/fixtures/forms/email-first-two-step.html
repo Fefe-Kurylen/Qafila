@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Connexion en deux étapes</title></head>
+<body>
+<form id="step1" action="/signin/identifier" method="post">
+  <h1>Connexion</h1>
+  <input id="email" type="email" name="identifier" autocomplete="username" placeholder="E-mail ou téléphone">
+  <button type="submit">Suivant</button>
+</form>
+<form id="step2" action="/signin/challenge" method="post" hidden>
+  <h1>Bienvenue</h1>
+  <input type="hidden" name="identifier" id="identifier-hidden" value="">
+  <input id="pwd" type="password" name="Passwd" autocomplete="current-password" placeholder="Saisissez votre mot de passe">
+  <button type="submit">Suivant</button>
+</form>
+</body></html>

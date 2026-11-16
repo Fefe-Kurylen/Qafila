@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Connexion — Aeon</title></head>
+<body>
+<header><a href="/">Aeon</a></header>
+<main>
+  <h1>Connexion</h1>
+  <form id="login" action="/session" method="post">
+    <p><label for="user">Identifiant</label> <input id="user" name="login" type="text"></p>
+    <p><label for="pass">Mot de passe</label> <input id="pass" name="password" type="password" autocomplete="current-password"></p>
+    <p><label><input type="checkbox" name="remember"> Rester connecté</label></p>
+    <button type="submit">Se connecter</button>
+  </form>
+  <p><a href="/inscription">Créer un compte</a> · <a href="/oubli">Mot de passe oublié ?</a></p>
+</main>
+</body></html>

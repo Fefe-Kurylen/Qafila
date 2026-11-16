@@ -1,0 +1,5 @@
+{
+  "url": "https://news.example/",
+  "description": "Le formulaire vit dans une iframe d'une autre origine : le cadre principal ne voit rien et le script, injecté dans l'iframe, y est inerte (frame=child).",
+  "detect": []
+}

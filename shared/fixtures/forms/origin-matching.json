@@ -1,0 +1,33 @@
+{
+  "description": "Correspondance d'origine stricte (FORMS.md §7), décidée côté natif depuis l'URL de la vue. result : exact | subdomain | downgrade | none. label : hôte affiché sur la carte pour un second rang. upgrade : l'identifiant était enregistré en http et la page est en https (proposer la mise à jour de l'origine). La liste de suffixes publics utilisée par le test de référence est réduite à : com, fr, uk, co.uk, example, io, github.io, net.",
+  "cases": [
+    { "id": "exact", "page": "https://aeon.example/connexion", "record": { "origins": ["https://aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "www-equals-apex", "page": "https://www.aeon.example/", "record": { "origins": ["https://aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "apex-equals-www", "page": "https://aeon.example/", "record": { "origins": ["https://www.aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "subdomain-without-flag", "page": "https://login.aeon.example/", "record": { "origins": ["https://aeon.example"], "matchSubdomains": false }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "subdomain-with-flag", "page": "https://login.aeon.example/", "record": { "origins": ["https://aeon.example"], "matchSubdomains": true }, "expected": { "result": "subdomain", "label": "login.aeon.example", "upgrade": false } },
+    { "id": "sibling-with-flag", "page": "https://shop.aeon.example/", "record": { "origins": ["https://login.aeon.example"], "matchSubdomains": true }, "expected": { "result": "subdomain", "label": "shop.aeon.example", "upgrade": false } },
+    { "id": "apex-from-subdomain-record-with-flag", "page": "https://aeon.example/", "record": { "origins": ["https://login.aeon.example"], "matchSubdomains": true }, "expected": { "result": "subdomain", "label": "aeon.example", "upgrade": false } },
+    { "id": "downgrade-https-to-http", "page": "http://aeon.example/", "record": { "origins": ["https://aeon.example"], "matchSubdomains": true }, "expected": { "result": "downgrade", "label": null, "upgrade": false } },
+    { "id": "upgrade-http-to-https", "page": "https://aeon.example/", "record": { "origins": ["http://aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": true } },
+    { "id": "port-differs", "page": "https://aeon.example:8443/", "record": { "origins": ["https://aeon.example"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "default-port-explicit", "page": "https://aeon.example:443/", "record": { "origins": ["https://aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "lookalike-suffix", "page": "https://aeon.example.evil.example/", "record": { "origins": ["https://aeon.example"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "public-suffix-github-io", "page": "https://lina.github.io/", "record": { "origins": ["https://docs.github.io"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "co-uk-www", "page": "https://www.bbc.co.uk/", "record": { "origins": ["https://bbc.co.uk"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "co-uk-subdomain-with-flag", "page": "https://news.bbc.co.uk/", "record": { "origins": ["https://bbc.co.uk"], "matchSubdomains": true }, "expected": { "result": "subdomain", "label": "news.bbc.co.uk", "upgrade": false } },
+    { "id": "co-uk-parent-without-flag", "page": "https://bbc.co.uk/", "record": { "origins": ["https://news.bbc.co.uk"], "matchSubdomains": false }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "idn-punycode", "page": "https://xn--mnchen-3ya.example/", "record": { "origins": ["https://münchen.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "uppercase-host-and-path", "page": "https://AEON.example/Compte?x=1#y", "record": { "origins": ["https://aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "any-origin-of-the-list", "page": "https://aeon.example/", "record": { "origins": ["https://other.example", "https://aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "memorised-subdomain-origin", "page": "https://login.aeon.example/", "record": { "origins": ["https://aeon.example", "https://login.aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "file-page", "page": "file:///tmp/login.html", "record": { "origins": ["https://aeon.example"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "about-blank", "page": "about:blank", "record": { "origins": ["https://aeon.example"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "ip-exact", "page": "https://192.168.1.10/", "record": { "origins": ["https://192.168.1.10"], "matchSubdomains": true }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "ip-no-registrable-domain", "page": "https://10.0.0.1/", "record": { "origins": ["https://192.168.1.10"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "localhost-port-exact", "page": "http://localhost:3000/", "record": { "origins": ["http://localhost:3000"], "matchSubdomains": true }, "expected": { "result": "exact", "label": null, "upgrade": false } },
+    { "id": "localhost-port-differs", "page": "http://localhost/", "record": { "origins": ["http://localhost:3000"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "android-app-origin-ignored", "page": "https://aeon.example/", "record": { "origins": ["app:com.aeon"], "matchSubdomains": true }, "expected": { "result": "none", "label": null, "upgrade": false } },
+    { "id": "downgrade-beaten-by-exact", "page": "http://aeon.example/", "record": { "origins": ["https://aeon.example", "http://aeon.example"], "matchSubdomains": false }, "expected": { "result": "exact", "label": null, "upgrade": false } }
+  ]
+}

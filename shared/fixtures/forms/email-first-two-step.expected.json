@@ -1,0 +1,27 @@
+{
+  "url": "https://mail.example/signin",
+  "description": "Identifiant d'abord : étape 1 visible (autocomplete=username, pas de mot de passe), étape 2 cachée avec identifiant hidden + mot de passe. L'étape 1 est classée avant l'étape 2 (mot de passe non rendu).",
+  "detect": [
+    {
+      "origin": "https://mail.example",
+      "formActionOrigin": "https://mail.example",
+      "form": "#step1",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#email", "visible": true, "autocomplete": "username" }
+      ]
+    },
+    {
+      "origin": "https://mail.example",
+      "formActionOrigin": "https://mail.example",
+      "form": "#step2",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#identifier-hidden", "visible": false, "autocomplete": null },
+        { "kind": "password", "selectorPath": "#pwd", "visible": false, "autocomplete": "current-password" }
+      ]
+    }
+  ]
+}

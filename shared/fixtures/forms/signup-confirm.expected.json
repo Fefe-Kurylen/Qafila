@@ -1,0 +1,18 @@
+{
+  "url": "https://forum.example/register",
+  "description": "Inscription avec confirmation : prénom écarté, e-mail retenu, deux new-password → newPassword puis confirmPassword.",
+  "detect": [
+    {
+      "origin": "https://forum.example",
+      "formActionOrigin": "https://forum.example",
+      "form": "#register",
+      "isSignup": true,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#email", "visible": true, "autocomplete": "email" },
+        { "kind": "newPassword", "selectorPath": "#pw1", "visible": true, "autocomplete": "new-password" },
+        { "kind": "confirmPassword", "selectorPath": "#pw2", "visible": true, "autocomplete": "new-password" }
+      ]
+    }
+  ]
+}

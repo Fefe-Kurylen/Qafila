@@ -1,0 +1,18 @@
+{
+  "url": "https://media.example/login",
+  "description": "Formulaire de lettre d'information (e-mail seul, sans autocomplete=username) ignoré ; pot de miel : second mot de passe caché, décrit mais sans transformer la connexion en inscription.",
+  "detect": [
+    {
+      "origin": "https://media.example",
+      "formActionOrigin": "https://media.example",
+      "form": "#login",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#username", "visible": true, "autocomplete": "username" },
+        { "kind": "password", "selectorPath": "#password", "visible": true, "autocomplete": "current-password" },
+        { "kind": "password", "selectorPath": "#trap", "visible": false, "autocomplete": "off" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>App — Log in</title></head>
+<body>
+<div id="root">
+  <form id="f">
+    <input id="email" type="email" name="email" autocomplete="username" placeholder="Email">
+    <input id="password" type="password" name="password" autocomplete="current-password" placeholder="Password">
+    <button type="submit">Log in</button>
+  </form>
+</div>
+<script>
+// Imitation d'un champ contrôlé React : setter d'instance qui « suit » la valeur, et gestionnaire input qui
+// ignore l'événement si la valeur suivie est déjà égale (c'est ce qui rend « el.value = x » inopérant).
+(function () {
+  var state = { email: '', password: '' };
+  var protoDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  window.__reactState = state;
+  window.__reactChanges = [];
+  ['email', 'password'].forEach(function (name) {
+    var el = document.getElementById(name);
+    var tracked = '';
+    Object.defineProperty(el, 'value', {
+      configurable: true,
+      get: function () { return protoDesc.get.call(this); },
+      set: function (v) { tracked = String(v); protoDesc.set.call(this, v); }
+    });
+    el.addEventListener('input', function () {
+      var current = protoDesc.get.call(el);
+      if (current === tracked) { return; }
+      tracked = current;
+      state[name] = current;
+      window.__reactChanges.push(name);
+      el.value = state[name];
+    });
+  });
+})();
+</script>
+</body></html>

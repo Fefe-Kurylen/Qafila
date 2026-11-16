@@ -1,0 +1,17 @@
+{
+  "url": "https://aeon.example/connexion",
+  "description": "Connexion classique : identifiant texte + mot de passe, action relative (même origine).",
+  "detect": [
+    {
+      "origin": "https://aeon.example",
+      "formActionOrigin": "https://aeon.example",
+      "form": "#login",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#user", "visible": true, "autocomplete": null },
+        { "kind": "password", "selectorPath": "#pass", "visible": true, "autocomplete": "current-password" }
+      ]
+    }
+  ]
+}

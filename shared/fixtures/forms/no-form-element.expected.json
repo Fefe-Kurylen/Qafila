@@ -1,0 +1,17 @@
+{
+  "url": "https://spa.example/#/login",
+  "description": "Aucun <form> : le conteneur est la carte ; formActionOrigin et form valent null ; la boîte de recherche du menu n'est pas prise pour l'identifiant.",
+  "detect": [
+    {
+      "origin": "https://spa.example",
+      "formActionOrigin": null,
+      "form": null,
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#u", "visible": true, "autocomplete": null },
+        { "kind": "password", "selectorPath": "#p", "visible": true, "autocomplete": null }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "url": "https://app.example/login",
+  "description": "Champs contrôlés façon React ; le formulaire sans attribut action a pour formActionOrigin l'origine de la page.",
+  "detect": [
+    {
+      "origin": "https://app.example",
+      "formActionOrigin": "https://app.example",
+      "form": "#f",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#email", "visible": true, "autocomplete": "username" },
+        { "kind": "password", "selectorPath": "#password", "visible": true, "autocomplete": "current-password" }
+      ]
+    }
+  ]
+}

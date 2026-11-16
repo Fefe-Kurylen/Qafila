@@ -1,0 +1,17 @@
+{
+  "url": "https://shop.example/account/login",
+  "description": "Identifiant masqué par CSS (display:none via une classe) et prérempli ; il est décrit mais visible=false, donc jamais rempli.",
+  "detect": [
+    {
+      "origin": "https://shop.example",
+      "formActionOrigin": "https://shop.example",
+      "form": "#login",
+      "isSignup": false,
+      "isPasswordChange": false,
+      "fields": [
+        { "kind": "username", "selectorPath": "#email", "visible": false, "autocomplete": "username" },
+        { "kind": "password", "selectorPath": "#password", "visible": true, "autocomplete": "current-password" }
+      ]
+    }
+  ]
+}
