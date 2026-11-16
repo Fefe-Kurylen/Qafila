@@ -78,11 +78,11 @@ const demoTab = () => {
 };
 
 /** Aperçu en direct : fausse page et barre (ou une configuration de barre donnée). */
-function preview(bar = toolbar().bar, { menu = false } = {}) {
+function preview(bar = toolbar().bar, { menu = false, sticky = false } = {}) {
   const tb = toolbar();
   const top = tb.position !== 'bottom';
   const count = S.state.tabs.filter((x) => !x.isPrivate).length;
-  return `<div class="preview ${top ? 'top' : 'bottom'} pv-${tb.style || 'floating'}${menu ? ' with-menu' : ''}">
+  return `<div class="preview ${top ? 'top' : 'bottom'} pv-${tb.style || 'floating'}${menu ? ' with-menu' : ''}${sticky ? ' sticky' : ''}">
     <div class="pv-page"><i class="h"></i><i></i><i></i><i class="s"></i><i></i><i></i><i class="s"></i></div>
     <div class="pv-bar"><div class="pv-tint"></div>${rowHTML(bar, { preview: true, tab: demoTab(), count })}</div>
     ${menu ? `<div class="pv-menu card-glass">${menuHTML(tb.menu)}</div>` : ''}
@@ -104,7 +104,7 @@ P.settings = () => {
       sup
         ? `<button class="s-row" data-do="support"><span class="s-ic heart">${icon('heart', 20)}</span><span class="s-l">${esc(t('page_support'))}</span><span class="s-chev">${icon('external', 16)}</span></button>`
         : `<div class="s-row disabled" aria-disabled="true"><span class="s-ic heart">${icon('heart', 20)}</span><span class="s-l">${esc(t('page_support'))}</span><span class="s-v">${esc(t('support_coming_soon'))}</span></div>`,
-    ]) + group([
+    ], { footer: sup ? t('support_desktop_pitch') : '' }) + group([
       navRow('circleHalf', t('page_appearance'), t('appearance_' + (s.appearance || 'system')), 'appearance'),
       navRow('toolbarIcon', t('page_toolbar'), t(s.toolbar?.position === 'bottom' ? 'position_bottom' : 'position_top'), 'toolbar'),
       navRow('link', t('page_address'), addressStyleLabel(s.addressStyle), 'address'),
@@ -113,6 +113,7 @@ P.settings = () => {
       navRow('search', t('page_search'), engines[s.searchEngine] || '', 'search'),
       navRow('shieldHalf', t('page_privacy'), '', 'privacy'),
       navRow('reader', t('page_reading'), t('percent', s.textZoom || 100), 'reading'),
+      navRow('download', t('downloads'), S.state.downloads?.active ? t('percent', Math.round((S.state.downloads.progress || 0) * 100)) : '', 'downloads'),
       navRow('globe', t('language'), lang, 'language'),
     ]) + group([navRow('info', t('page_about'), '', 'about')]),
   };
@@ -130,7 +131,8 @@ P.appearance = () => {
   const tr = Math.round((Number(s.glassTransparency) || 0) * 100);
   return {
     title: t('page_appearance'),
-    body: preview()
+    // Aperçu collant : la barre reste visible pendant le réglage des couleurs, du style et de la transparence.
+    body: preview(undefined, { sticky: true })
       + group([segmented('appearance', [['system', t('appearance_system')], ['light', t('appearance_light')], ['dark', t('appearance_dark')]])], { header: t('theme') })
       + group([swatches('accent', accents)], { header: t('accent_color') })
       + group([swatches('barColorLight', bars)], { header: t('bar_color_light'), footer: t('bar_auto_light_desc') })
@@ -221,6 +223,17 @@ P.reading = () => {
       + group(pickRows('translateLanguage', langs.map((l) => [l, t('lang_' + l)])), { header: t('translation_language') })
       + group([toggleRow(t('desktop_by_default'), 'desktopByDefault')])
       + group(hostList('desktopHosts', t('desktop_empty', t('menu_desktop_version'))), { header: s.desktopByDefault ? t('mobile_sites') : t('desktop_sites') }),
+  };
+};
+
+P.downloads = () => {
+  const d = S.state.downloads || {};
+  const custom = !!settings().downloadFolder;
+  return {
+    title: t('downloads'),
+    body: group([`<div class="s-row"><span class="s-ic">${icon('folder', 20)}</span><span class="s-l path" dir="ltr">${esc(d.folder || '')}</span></div>`,
+      buttonRow(t('choose_folder'), 'chooseDownloads'), custom ? buttonRow(t('use_system_folder'), 'resetDownloads') : null], { header: t('downloads_folder'), footer: t('downloads_footer') })
+      + group([`<button class="s-row" data-do="openDownloads"><span class="s-l">${esc(t('show_downloads'))}</span><span class="s-chev">${icon('external', 16)}</span></button>`]),
   };
 };
 
@@ -400,7 +413,10 @@ export function installSheetEvents() {
     if ((b = g('[data-label]'))) { const arr = toolbar().menu.map((x) => ({ ...x })); arr[Number(b.dataset.label)].showsLabel = b.dataset.v === 'true'; await saveToolbar({ menu: arr }); return; }
     if ((b = g('[data-do]'))) {
       const d = b.dataset.do;
-      if (d === 'support') { await q.support.open(); return; }
+      if (d === 'support') { if (!(await q.support.open())) toast(t('support_open_failed')); else setOverlay('none'); return; }
+      if (d === 'chooseDownloads') { await q.downloads.chooseFolder(); return; }
+      if (d === 'resetDownloads') { await q.downloads.resetFolder(); return; }
+      if (d === 'openDownloads') { await q.downloads.openFolder(); return; }
       if (d === 'source') { q.openExternal('https://github.com/Fefe-Kurylen/qafila'); return; }
       if (d === 'resetToolbar') { await q.settings.applyPreset('complete'); toast(t('reset_bar_menu')); return; }
       if (d === 'clearHistory') { await q.history.clear(); await loadHistory(); render(); return; }

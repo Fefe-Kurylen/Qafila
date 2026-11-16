@@ -21,5 +21,19 @@
   "support_coming_soon": "Coming soon",
   "support_desktop_pitch": "Qafila is free, with no ads and no tracking. Support goes through a secure Stripe payment page (Apple Pay, Google Pay or card), opened in your browser.",
   "reading_time_label": "%1$s read",
-  "find_none": "No results"
+  "find_none": "No results",
+  "ctx_cut": "Cut",
+  "ctx_copy": "Copy",
+  "ctx_paste": "Paste",
+  "ctx_select_all": "Select All",
+  "copy_image": "Copy Image",
+  "save_link_as": "Save Link As…",
+  "inspect": "Inspect",
+  "download_started": "Downloading: %1$s",
+  "download_failed": "Download failed: %1$s",
+  "downloads_folder": "Download folder",
+  "downloads_footer": "Files are saved to this folder without asking.",
+  "show_downloads": "Open Folder",
+  "choose_folder": "Choose Folder…",
+  "use_system_folder": "Use System Folder"
 }

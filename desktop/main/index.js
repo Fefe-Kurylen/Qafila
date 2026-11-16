@@ -109,6 +109,7 @@ function describeState() {
   return {
     tabs: describeTabs(), selected: Q.store.selected, bookmarks: Q.store.bookmarks, historyCount: Q.store.history.length,
     settings: Q.store.settings, dark: isDark(), lang: t.lang, rtl: t.rtl, closedTabs: Q.store.closedTabs.length,
+    downloads: describeDownloads(),
     window: { fullscreen: Q.win?.isFullScreen() || false, maximized: Q.win?.isMaximized() || false, focused: Q.win?.isFocused() || false },
   };
 }
@@ -312,13 +313,29 @@ function shortcut(event, input) {
   }
   if (key === 'F5') return run(() => Q.tabs.reload(sel));
   if (key === 'F11') return run(() => Q.win.setFullScreen(!Q.win.isFullScreen()));
-  if (key === 'Escape') { if (Q.chromeMode === 'full') return run(() => command('escape')); if (Q.tabs.isLoading(sel)) return run(() => Q.tabs.stop(sel)); return false; }
+  if (key === 'Escape') {
+    if (Q.chromeMode === 'full') return run(() => command('escape'));
+    command('escape'); // ferme la recherche dans la page si elle est ouverte (sans retirer Échap à la page)
+    if (Q.tabs.isLoading(sel)) return run(() => Q.tabs.stop(sel));
+    return false;
+  }
+  // Outils de développement de la page (comme « Inspecter » du menu contextuel).
+  if (key === 'F12' || (mod && shift && key === 'i')) return run(() => { const wc = Q.tabs.contents(sel); if (wc) wc.toggleDevTools(); });
   if (!mod) return false;
+  // Chiffres par position physique (Ctrl+1…9, Ctrl+0) : indépendants de la disposition (AZERTY : « & », « é »…).
+  const digit = /^(Digit|Numpad)([0-9])$/.exec(input.code || '');
+  if (digit && !shift && !input.alt) {
+    const n = Number(digit[2]);
+    if (n === 0) return run(() => zoom(0));
+    return run(() => { const i = n === 9 ? Q.store.tabs.length - 1 : n - 1; const tab = Q.store.tabs[i]; if (tab) selectTab(tab.id); });
+  }
   switch (key) {
-    case 't': return run(() => newTab({ isPrivate: false }));
-    case 'n': if (shift) return run(() => newTab({ isPrivate: true })); return false;
+    case 't': return run(() => (shift ? reopenTab() : newTab({ isPrivate: false })));
+    case 'n': return run(() => newTab({ isPrivate: shift }));
     case 'w': return run(() => closeTab(sel));
     case 'Tab': return run(() => cycleTab(shift ? -1 : 1));
+    case 'PageDown': return run(() => cycleTab(1));
+    case 'PageUp': return run(() => cycleTab(-1));
     case 'l': return run(() => command('focusAddress'));
     case 'r': return run(() => Q.tabs.reload(sel));
     case 'f': return run(() => command('find'));
@@ -330,7 +347,6 @@ function shortcut(event, input) {
     case '+': case '=': return run(() => zoom(10));
     case '-': return run(() => zoom(-10));
     case '0': return run(() => zoom(0));
-    case 'T': if (shift) return run(() => reopenTab()); return false;
     default:
       if (/^[1-9]$/.test(key)) return run(() => { const i = key === '9' ? Q.store.tabs.length - 1 : Number(key) - 1; const t = Q.store.tabs[i]; if (t) selectTab(t.id); });
       return false;
@@ -342,6 +358,56 @@ function cycleTab(dir) {
   if (i < 0) return;
   const n = Q.store.tabs.length;
   selectTab(Q.store.tabs[(i + dir + n) % n].id);
+}
+
+// ----- Téléchargements -----
+const downloads = new Map(); // identifiant → { name, received, total, state }
+
+function downloadFolder() {
+  const custom = Q.store.settings.downloadFolder;
+  if (custom && path.isAbsolute(custom)) { try { if (fs.statSync(custom).isDirectory()) return custom; } catch { /* dossier disparu */ } }
+  return app.getPath('downloads');
+}
+
+/** Chemin libre dans le dossier : « nom.ext », puis « nom (1).ext », « nom (2).ext »… */
+function uniquePath(dir, filename) {
+  const safe = String(filename || 'download').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200) || 'download';
+  const ext = path.extname(safe);
+  const stem = safe.slice(0, safe.length - ext.length);
+  let candidate = path.join(dir, safe);
+  for (let i = 1; fs.existsSync(candidate) && i < 1000; i++) candidate = path.join(dir, `${stem} (${i})${ext}`);
+  return candidate;
+}
+
+function onDownload(item) {
+  const t = translator();
+  const dir = downloadFolder();
+  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* repli : dialogue d'Electron */ }
+  const file = uniquePath(dir, item.getFilename());
+  item.setSavePath(file);
+  const key = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const name = path.basename(file);
+  downloads.set(key, { name, received: 0, total: item.getTotalBytes(), state: 'progressing' });
+  command('toast', { text: t('download_started', name) });
+  broadcast();
+  item.on('updated', () => { const d = downloads.get(key); if (d) { d.received = item.getReceivedBytes(); d.total = item.getTotalBytes(); broadcast(); } });
+  item.once('done', (_e, state) => {
+    downloads.delete(key);
+    if (state === 'completed') {
+      command('toast', { text: t('download_done', name) });
+      if (process.platform === 'darwin') app.dock?.downloadFinished(file);
+    } else if (state !== 'cancelled') command('toast', { text: t('download_failed', name) });
+    lastDownload = state === 'completed' ? file : lastDownload;
+    broadcast();
+  });
+}
+let lastDownload = null;
+
+function describeDownloads() {
+  const list = [...downloads.values()];
+  const total = list.reduce((a, d) => a + (d.total || 0), 0);
+  const received = list.reduce((a, d) => a + (d.received || 0), 0);
+  return { active: list.length, progress: total > 0 ? Math.min(1, received / total) : null, folder: downloadFolder(), last: lastDownload ? path.basename(lastDownload) : null };
 }
 
 // ----- Captures d'écran (tests) : page + chrome composés par le chrome lui-même (canvas) -----
@@ -437,11 +503,9 @@ function createWindow() {
     broadcast();
   });
 
-  // Téléchargements : dossier par défaut, pas de dialogue, notification au chrome.
-  const onDownload = (_e, item) => {
-    item.once('done', (_ev, state) => { if (state === 'completed') command('toast', { text: translator()('download_done', item.getFilename()) }); });
-  };
-  Q.tabs.persistent.on('will-download', onDownload);
+  // Téléchargements : dossier par défaut (réglage « downloadFolder », sinon Téléchargements du système), sans dialogue,
+  // nom unique, notification dans la barre (début, fin, échec) et progression dans l'état poussé au chrome.
+  Q.tabs.on('download', (item) => onDownload(item));
 
   Q.chrome.webContents.once('did-finish-load', () => {
     layout();
@@ -467,6 +531,7 @@ app.whenReady().then(async () => {
     get win() { return Q.win; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
     toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, screenshot,
+    downloadFolder,
   });
 
   createWindow();
@@ -527,7 +592,19 @@ async function runSmoke() {
   await wait(900);
   demoScreen('history'); await wait(900); await shot('19-history');
   demoScreen('bookmarks'); await wait(900); await shot('20-bookmarks');
-  demoScreen('none'); await wait(900);
+  demoScreen('none'); await wait(500);
+  // Apparence, bas de page : style de la barre et curseur Transparence (aperçu en direct).
+  demoScreen('appearance'); await wait(900); demoScreen('scroll', { top: 'end' }); await wait(500); await shot('24-appearance-style');
+  demoScreen('about'); await wait(900); await shot('25-about');
+  demoScreen('none'); await wait(500);
+  // Interface en arabe : mise en page de droite à gauche (dir="rtl").
+  set('language', 'ar'); await wait(1500);
+  await shot('21-ar-page');
+  demoScreen('settings'); await wait(1000); await shot('22-ar-settings');
+  demoScreen('menu'); await wait(900); await shot('23-ar-menu');
+  demoScreen('none'); await wait(500);
+  if (!describeState().rtl) report.errors.push('arabe : interface non RTL');
+  set('language', 'fr'); await wait(1200);
   // La vue du chrome doit être revenue à la bande (barre + 2 × 12 px) une fois les surcouches fermées.
   const cb = Q.chrome.getBounds();
   if (cb.height !== Q.barHeight + 2 * BAR_MARGIN) report.errors.push(`bande : hauteur ${cb.height} au lieu de ${Q.barHeight + 2 * BAR_MARGIN}`);

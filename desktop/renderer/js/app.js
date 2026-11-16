@@ -29,6 +29,12 @@ function escape() {
 $('#dim').addEventListener('mousedown', () => { if (S.overlay === 'editing') cancelEditing(); else setOverlay('none'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !e.target.closest('input')) escape(); });
 window.addEventListener('resize', () => render());
+// Boutons latéraux de la souris au-dessus de la barre (sous Windows, « app-command » de la fenêtre s'en charge).
+document.addEventListener('mouseup', (e) => {
+  if ((e.button !== 3 && e.button !== 4) || S.cfg?.app?.platform === 'win32') return;
+  e.preventDefault();
+  if (e.button === 3) q.tabs.back(); else q.tabs.forward();
+});
 
 // ----- Commandes du processus principal -----
 q.ui.onCommand(async (c) => {
@@ -52,13 +58,14 @@ async function demo(c) {
   const s = c.screen;
   if (S.find) closeFind();
   if (s === 'none') return setOverlay('none');
+  if (s === 'scroll') { const b = $('#sheet-body'); if (b) b.scrollTop = c.top === 'end' ? b.scrollHeight : Number(c.top) || 0; return null; }
   if (s === 'menu') { await setOverlay('none'); return setOverlay('menu'); }
   if (s === 'address') return demoEditing(c.text || 'cara');
   if (s === 'find') { await setOverlay('none'); openFind(); const i = $('#find-input'); if (i) { i.value = c.text || 'caravane'; i.dispatchEvent(new Event('input', { bubbles: true })); } return null; }
   if (s === 'tabs') { setTabsDemo({ popup: false }); return openTabs({ privateMode: false }); }
   if (s === 'tabs-popup') { setTabsDemo({ popup: true }); return render(); }
   if (['settings', 'history', 'bookmarks', 'gallery', 'editor'].includes(s)) return openSheet(s, true);
-  if (['appearance', 'toolbar', 'address', 'privacy', 'reading', 'about', 'search', 'tabsSettings'].includes(s)) { await openSheet('settings', true); return openSheet(s); }
+  if (['appearance', 'toolbar', 'address', 'privacy', 'reading', 'about', 'search', 'tabsSettings', 'downloads', 'language'].includes(s)) { await openSheet('settings', true); return openSheet(s); }
   return null;
 }
 

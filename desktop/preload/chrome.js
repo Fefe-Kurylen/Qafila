@@ -77,6 +77,12 @@ contextBridge.exposeInMainWorld('qafila', {
   /** Contrat partagé, chaînes et informations de l'application (version, moteur, langue). */
   config: () => invoke('config'),
   openExternal: (url) => invoke('openExternal', { url }),
+  /** Téléchargements : dossier (dialogue natif), retour au dossier du système, ouverture du dossier. */
+  downloads: {
+    chooseFolder: () => invoke('downloads:chooseFolder'),
+    resetFolder: () => invoke('downloads:resetFolder'),
+    openFolder: () => invoke('downloads:openFolder'),
+  },
   /** Soutenir Qafila : { configured } puis ouverture du lien Stripe dans le navigateur du système. */
   support: {
     info: () => invoke('support:info'),

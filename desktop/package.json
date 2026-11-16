@@ -36,6 +36,7 @@
       "blocker/**/*",
       "i18n/**/*",
       "config/**/*",
+      "build/icon.png",
       "package.json"
     ],
     "extraResources": [
@@ -79,7 +80,8 @@
       "category": "Network",
       "target": [
         "AppImage"
-      ]
+      ],
+      "executableName": "qafila"
     },
     "mac": {
       "icon": "build/icon.png",

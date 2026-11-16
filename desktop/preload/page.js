@@ -66,3 +66,13 @@ window.addEventListener('scroll', () => {
 
 // Le thème du système change : la couleur du site (theme-color avec media) peut changer avec lui.
 try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => setTimeout(pageInfo, 50)); } catch { /* ignoré */ }
+
+// Boutons latéraux de la souris (Précédent / Suivant). Sous Windows, l'événement « app-command » de la fenêtre s'en
+// charge déjà (main/index.js) : ne pas naviguer deux fois.
+if (process.platform !== 'win32') {
+  window.addEventListener('mouseup', (e) => {
+    if (e.button !== 3 && e.button !== 4) return;
+    e.preventDefault();
+    ipcRenderer.send('qafila:page:nav', { dir: e.button === 3 ? 'back' : 'forward' });
+  }, true);
+}

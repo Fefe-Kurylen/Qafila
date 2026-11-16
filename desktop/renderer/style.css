@@ -126,6 +126,8 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .address .title.strong { font-size: 14px; font-weight: 600; }
 .address .sub { font-size: 11px; color: var(--bfg2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .address .pill, .pill { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--bfg2); background: var(--bfill); padding: 3px 7px; border-radius: 999px; flex: none; white-space: nowrap; }
+.address .pill.dl { display: inline-flex; align-items: center; gap: 3px; color: var(--accent, var(--bfg)); }
+.address .pill.dl svg { width: 12px; height: 12px; }
 .address .url { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .address .lock { color: var(--bfg2); display: grid; }
 .address .lock svg { width: 11px; height: 11px; stroke-width: 2; }
@@ -325,6 +327,7 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 /* Aperçus (réglages, galerie, éditeur) */
 .preview { position: relative; height: 210px; border-radius: 22px; background: var(--cell); overflow: hidden; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(0, 0, 0, .05); }
 .preview.with-menu { height: 470px; }
+.preview.sticky { position: sticky; top: 0; z-index: 3; height: 168px; box-shadow: 0 8px 24px rgba(0, 0, 0, .10); }
 .pv-page { position: absolute; inset: 0; padding: 26px 30px; }
 .preview.top .pv-page { padding-top: 104px; }
 .pv-page i { display: block; height: 10px; border-radius: 5px; background: rgba(118, 118, 128, .16); margin: 13px 0; }
@@ -365,3 +368,4 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .add-item { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 10px; border-radius: 10px; font-size: 14px; text-align: start; }
 .add-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .add-item:hover { background: var(--fill); }
+.s-l.path { font-size: 13px; word-break: break-all; color: var(--secondary); }

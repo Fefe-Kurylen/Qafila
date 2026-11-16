@@ -1,6 +1,7 @@
 'use strict';
 // Canaux IPC du chrome (window.qafila.*) : chaque canal valide ses arguments ; rien n'est exposé au-delà de cette liste.
-const { ipcMain, shell, clipboard, app, nativeTheme } = require('electron');
+const { ipcMain, shell, clipboard, app, nativeTheme, dialog } = require('electron');
+const path = require('node:path');
 const contract = require('./contract');
 const settingsSchema = require('./settings');
 const search = require('./search');
@@ -95,6 +96,17 @@ function register(a) {
     theme: { dark: nativeTheme.shouldUseDarkColors },
   }));
   handle('openExternal', (p) => { const u = str(p.url); if (/^https?:\/\//i.test(u)) return shell.openExternal(u).then(() => true, () => false); return false; });
+
+  // ----- Téléchargements : choix du dossier (dialogue natif) et ouverture dans le gestionnaire de fichiers -----
+  handle('downloads:chooseFolder', async () => {
+    const r = await dialog.showOpenDialog(a.win, { properties: ['openDirectory', 'createDirectory'], defaultPath: store.settings.downloadFolder || app.getPath('downloads') });
+    if (r.canceled || !r.filePaths[0] || !path.isAbsolute(r.filePaths[0])) return null;
+    store.setSetting('downloadFolder', r.filePaths[0]);
+    a.onSettingChanged('downloadFolder');
+    return r.filePaths[0];
+  });
+  handle('downloads:resetFolder', () => { store.setSetting('downloadFolder', ''); a.onSettingChanged('downloadFolder'); return true; });
+  handle('downloads:openFolder', () => shell.openPath(a.downloadFolder()).then((err) => !err, () => false));
 
   // ----- Soutenir Qafila : lien Stripe ouvert dans le navigateur par défaut (jamais dans un onglet) -----
   handle('support:info', () => support.info());

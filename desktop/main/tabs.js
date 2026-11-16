@@ -58,6 +58,8 @@ class TabManager extends EventEmitter {
   prepare(ses) {
     ses.setUserAgent(this.userAgent);
     ses.setSpellCheckerEnabled(false);
+    // Téléchargements : traités par le processus principal (dossier par défaut, notification dans la barre).
+    ses.on('will-download', (_e, item, wc) => this.emit('download', item, wc, ses === this.private));
     // Permissions : rien n'est accordé en silence (pas de géolocalisation, notifications, capteurs, micro…).
     const allowed = new Set(['fullscreen', 'pointerLock', 'clipboard-sanitized-write', 'window-management']);
     ses.setPermissionRequestHandler((_wc, permission, cb) => cb(allowed.has(permission)));
@@ -316,6 +318,7 @@ class TabManager extends EventEmitter {
     wc.on('ipc-message', (_e, channel, data) => {
       if (channel === 'qafila:page:info') this.onPageInfo(tabId, wc, data || {});
       else if (channel === 'qafila:page:scroll') this.emit('scroll', tabId, !!data?.final);
+      else if (channel === 'qafila:page:nav') { if (data?.dir === 'back') this.back(tabId); else if (data?.dir === 'forward') this.forward(tabId); }
     });
     wc.on('zoom-changed', (_e, dir) => this.emit('zoom', dir));
   }
@@ -355,31 +358,54 @@ class TabManager extends EventEmitter {
     if (EXTERNAL_SCHEMES.has(scheme)) shell.openExternal(url).catch(() => {});
   }
 
+  /** Menu contextuel des pages : lien (nouvel onglet, onglet privé, copier, enregistrer), image (copier, enregistrer,
+   * adresse), édition, sélection (copier, rechercher), navigation (précédent, suivant, actualiser) et « Inspecter ». */
   contextMenu(tabId, params) {
     const wc = this.contents(tabId);
     if (!wc) return;
     const t = this.t();
+    const tab = this.store.tabs.find((x) => x.id === tabId);
     const items = [];
-    if (params.linkURL) {
-      items.push({ label: t('open_in_new_tab'), click: () => this.emit('open-tab', { url: params.linkURL, isPrivate: !!this.store.tabs.find((x) => x.id === tabId)?.isPrivate, select: false }) });
+    const sep = () => { if (items.length && items[items.length - 1].type !== 'separator') items.push({ type: 'separator' }); };
+    const web = (u) => /^https?:/i.test(u || '');
+    if (params.linkURL && web(params.linkURL)) {
+      items.push({ label: t('open_in_new_tab'), click: () => this.emit('open-tab', { url: params.linkURL, isPrivate: !!tab?.isPrivate, select: false }) });
+      items.push({ label: t('open_in_private_tab'), click: () => this.emit('open-tab', { url: params.linkURL, isPrivate: true, select: true }) });
       items.push({ label: t('action_copy_link'), click: () => clipboard.writeText(params.linkURL) });
-      items.push({ type: 'separator' });
+      items.push({ label: t('save_link_as'), click: () => wc.downloadURL(params.linkURL) });
+      sep();
+    } else if (params.linkURL) {
+      items.push({ label: t('action_copy_link'), click: () => clipboard.writeText(params.linkURL) });
+      sep();
     }
-    if (params.srcURL && params.mediaType === 'image') {
+    if (params.mediaType === 'image' && params.srcURL) {
+      items.push({ label: t('copy_image'), click: () => wc.copyImageAt(params.x, params.y) });
+      items.push({ label: t('save_image_as'), click: () => wc.downloadURL(params.srcURL) });
       items.push({ label: t('copy_image_address'), click: () => clipboard.writeText(params.srcURL) });
-      items.push({ type: 'separator' });
+      sep();
     }
     if (params.isEditable) {
-      items.push({ role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' });
-    } else if (params.selectionText) {
-      items.push({ role: 'copy' });
-      items.push({ label: t('search_selection'), click: () => this.emit('open-tab', { url: search.searchURL(params.selectionText, this.store.settings), isPrivate: false, select: true }) });
-    } else {
-      items.push({ label: t('action_back'), enabled: wc.navigationHistory.canGoBack(), click: () => wc.navigationHistory.goBack() });
-      items.push({ label: t('action_forward'), enabled: wc.navigationHistory.canGoForward(), click: () => wc.navigationHistory.goForward() });
-      items.push({ label: t('action_reload'), click: () => wc.reload() });
+      const f = params.editFlags || {};
+      items.push({ label: t('ctx_cut'), enabled: !!f.canCut, click: () => wc.cut() });
+      items.push({ label: t('ctx_copy'), enabled: !!f.canCopy, click: () => wc.copy() });
+      items.push({ label: t('ctx_paste'), enabled: !!f.canPaste, click: () => wc.paste() });
+      items.push({ label: t('ctx_select_all'), click: () => wc.selectAll() });
+      sep();
+    } else if (params.selectionText && params.selectionText.trim()) {
+      const text = params.selectionText.trim().replace(/\s+/g, ' ');
+      const short = text.length > 28 ? text.slice(0, 27) + '…' : text;
+      items.push({ label: t('ctx_copy'), click: () => wc.copy() });
+      items.push({ label: t('search_selection', short), click: () => this.emit('open-tab', { url: search.searchURL(text, this.store.settings), isPrivate: !!tab?.isPrivate, select: true }) });
+      sep();
     }
-    if (items.length) Menu.buildFromTemplate(items).popup({ window: this.win });
+    if (!params.linkURL && params.mediaType === 'none' && !params.isEditable && !params.selectionText) {
+      items.push({ label: t('action_back'), enabled: wc.navigationHistory.canGoBack(), click: () => this.back(tabId) });
+      items.push({ label: t('action_forward'), enabled: wc.navigationHistory.canGoForward(), click: () => this.forward(tabId) });
+      items.push({ label: t('action_reload'), click: () => this.reload(tabId) });
+      sep();
+    }
+    items.push({ label: t('inspect'), click: () => { wc.inspectElement(params.x, params.y); if (wc.isDevToolsOpened()) wc.devToolsWebContents?.focus(); } });
+    Menu.buildFromTemplate(items).popup({ window: this.win });
   }
 
   // ----- Navigation -----

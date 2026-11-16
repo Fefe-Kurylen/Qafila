@@ -42,7 +42,10 @@ export function addressCard(tab, opts = {}) {
   const showRead = s.addressShowsReadingTime !== false;
   const reading = showRead ? readingLabel(tab) : null;
   const domain = tab?.host || '';
-  const pill = reading ? `<span class="pill">${esc(reading)}</span>` : '';
+  // Téléchargement en cours : la pilule de lecture devient une pilule de progression (notification dans la barre).
+  const dl = !opts.preview && S.state?.downloads?.active ? S.state.downloads : null;
+  const dlText = dl ? (dl.progress === null ? '' : t('percent', Math.round(dl.progress * 100))) : '';
+  const pill = dl ? `<span class="pill dl" title="${esc(t('downloads'))}">${icon('download', 12)}${esc(dlText)}</span>` : reading ? `<span class="pill">${esc(reading)}</span>` : '';
   let inner;
   if (!opts.preview && S.toast) {
     inner = `<span class="toast">${esc(S.toast)}</span>`;

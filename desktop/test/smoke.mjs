@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Test de fumée : lance Qafila sous xvfb avec --smoke=<dossier> (onglets de démonstration, captures d'écran de la
-// fenêtre : page, menu, saisie d'adresse, onglets, réglages, galerie, éditeur, démarrage, sombre, barre en bas), vérifie le code de sortie 0 et la présence des PNG.
+// fenêtre : page, menu, saisie d'adresse, onglets, réglages, galerie, éditeur, démarrage, sombre, barre en bas, interface arabe RTL, À propos), vérifie le code de sortie 0 et la présence des PNG.
 // Usage : node test/smoke.mjs [dossier]   (défaut : /tmp/qafila-smoke)
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, statSync } from 'node:fs';
@@ -12,7 +12,8 @@ const out = resolve(process.argv[2] || '/tmp/qafila-smoke');
 rmSync(out, { recursive: true, force: true });
 
 const expected = ['01-page', '02-menu', '03-address', '04-tabs', '05-tabs-grid', '06-tabs-popup', '07-settings', '08-appearance', '09-gallery',
-  '10-editor', '11-find', '12-start', '13-dark', '14-dark-menu', '15-dark-tabs', '16-dark-settings', '17-bottom-glass', '18-chrome-strip', '19-history', '20-bookmarks'];
+  '10-editor', '11-find', '12-start', '13-dark', '14-dark-menu', '15-dark-tabs', '16-dark-settings', '17-bottom-glass', '18-chrome-strip', '19-history', '20-bookmarks',
+  '21-ar-page', '22-ar-settings', '23-ar-menu', '24-appearance-style', '25-about'];
 const useXvfb = process.platform === 'linux' && !process.env.DISPLAY;
 const electronArgs = ['electron', '.', '--no-sandbox', `--smoke=${out}`];
 const [cmd, args] = useXvfb ? ['xvfb-run', ['-a', '-s', '-screen 0 1440x900x24', 'npx', ...electronArgs]] : ['npx', electronArgs];
