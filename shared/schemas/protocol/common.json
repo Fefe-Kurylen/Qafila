@@ -40,10 +40,10 @@
       "pattern": "^[A-Za-z0-9_-]{43}$"
     },
     "ciphertext": {
-      "description": "Chiffré AES-GCM d'un contenu bourré à 256·k octets, suivi du tag de 16 o : (256·k + 16) octets, k ≥ 1, en base64url ; 363 caractères minimum (272 o), 87 400 maximum (≈ 64 Kio).",
+      "description": "Chiffré AES-GCM d'un contenu bourré à 256·k octets, suivi du tag de 16 o : (256·k + 16) octets, k ≥ 1, en base64url ; 363 caractères minimum (272 o), 87 403 maximum (65 536 + 16 o).",
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{363,}$",
-      "maxLength": 87400
+      "maxLength": 87403
     },
     "millis": {
       "description": "Horodatage : entier, millisecondes Unix.",

@@ -44,6 +44,7 @@
     "importGuid": { "description": "guid Firefox ou identifiant de la source, tel quel.", "type": ["string", "null"] },
     "importBatch": { "description": "UUID du lot d'import (« Annuler cet import », 24 h).", "anyOf": [{ "$ref": "common.schema.json#/$defs/uuid" }, { "type": "null" }] },
     "neverSaveHere": { "type": "boolean" },
+    "matchSubdomains": { "description": "Proposer aussi cet identifiant sur les sous-domaines du même domaine enregistrable (FORMS.md §7.3). Posé par l'utilisateur seulement ; absent = false.", "type": "boolean" },
     "author": { "$ref": "common.schema.json#/$defs/deviceId" },
     "deleted": { "const": false }
   }

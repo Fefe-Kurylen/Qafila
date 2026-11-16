@@ -11,7 +11,7 @@
     "pkN": { "description": "Clé publique X25519 éphémère du nouvel appareil (32 o).", "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
     "pkE": { "description": "Clé publique X25519 éphémère de l'appareil existant (32 o).", "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
     "n": { "$ref": "common.schema.json#/$defs/nonce" },
-    "ct": { "type": "string", "pattern": "^[A-Za-z0-9_-]{363,}$", "maxLength": 87400 },
+    "ct": { "type": "string", "pattern": "^[A-Za-z0-9_-]{363,}$", "maxLength": 87403 },
     "mac": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
   },
   "$defs": {

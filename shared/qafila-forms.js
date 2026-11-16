@@ -58,7 +58,7 @@
   function fold(s) {
     // minuscules, accents retirés, espaces normalisés : « Mot de passe actuel » → « mot de passe actuel »
     var t = lower(s);
-    try { t = t.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) { /* normalize absent : on garde */ }
+    try { t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { /* normalize absent : on garde */ }
     return t.replace(/\s+/g, ' ').trim();
   }
   function isElement(n) { return !!n && n.nodeType === 1; }
@@ -621,6 +621,10 @@
         else if (RE_LOGIN_BUTTON.test(fold(btn.textContent + ' ' + (attr(btn, 'value') || '')))) { report(form); }
         return;
       }
+      // Sans <form> : un bouton (ou un élément à rôle de bouton) du conteneur suffit ; un simple lien (« Mot de
+      // passe oublié ? ») ne compte que si son texte ressemble à une connexion.
+      if (localName(btn) === 'a' && attr(btn, 'role') !== 'button' &&
+        !RE_LOGIN_BUTTON.test(fold(btn.textContent + ' ' + (attr(btn, 'aria-label') || '')))) { return; }
       report(containerOf(btn));
     }
     function onKey(e) {

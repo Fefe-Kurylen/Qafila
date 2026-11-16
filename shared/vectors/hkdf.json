@@ -1,6 +1,6 @@
 {
   "$comment": "Généré par shared/vectors/gen.mjs — ne pas éditer à la main.",
-  "description": "HKDF-SHA256, sel vide (sauf appairage : sel = pkN||pkE), info = \"qafila/v1/<usage>\", longueur 32 sauf vault-id (16).",
+  "description": "HKDF-SHA256, sel vide partout (appairage compris : pkN||pkE est concaténé à info, jamais placé dans le sel), info = \"qafila/v1/<usage>\", longueur 32 sauf vault-id (16).",
   "vmk": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
   "rk": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
   "derived": [

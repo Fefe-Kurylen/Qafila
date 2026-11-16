@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://qafila.fr/schemas/v1/record.schema.json",
   "title": "Contenu déchiffré d'un enregistrement",
-  "description": "Point d'entrée : valide tout contenu déchiffré (après débourrage et analyse JSON). Un enregistrement vivant est validé par le schéma de son type ; un enregistrement supprimé (tombstone) ne porte que type et deleted:true. Les champs inconnus d'un enregistrement vivant sont CONSERVÉS et réécrits tels quels par un client plus ancien (règle de compatibilité, shared/CRYPTO.md §7.4) : c'est pourquoi les schémas de type n'interdisent pas additionalProperties.",
+  "description": "Point d'entrée : valide tout contenu déchiffré (après débourrage et analyse JSON). Un enregistrement vivant est validé par le schéma de son type ; un enregistrement supprimé (tombstone) ne porte que type et deleted:true. Les champs inconnus d'un enregistrement vivant sont CONSERVÉS et réécrits tels quels par un client plus ancien (règle de compatibilité, shared/CRYPTO.md §7.2) : c'est pourquoi les schémas de type n'interdisent pas additionalProperties.",
   "type": "object",
   "required": ["type", "deleted"],
   "properties": {

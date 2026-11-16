@@ -454,3 +454,29 @@ for (const c of ORIGIN_CASES) {
     assert.deepEqual(matchOrigin(c.page, c.record), c.expected);
   });
 }
+
+test('captureSubmit() — sans <form> : un simple lien ne rapporte rien, un lien à rôle de bouton ou au texte de connexion si', () => {
+  const html = `<!doctype html><body><div id="box">
+    <input id="u" type="text" autocomplete="username"><input id="p" type="password">
+    <a id="forgot" href="/reset">Mot de passe oublié ?</a>
+    <a id="rolebtn" href="#" role="button">Entrer</a>
+    <a id="textbtn" href="#">Se connecter</a>
+  </div></body>`;
+  const dom = new JSDOM(html, { url: 'https://links.example/', runScripts: 'dangerously', pretendToBeVisual: true });
+  dom.window.eval(SCRIPT);
+  const window = dom.window;
+  const document = window.document;
+  const got = [];
+  window.__qafilaForms.captureSubmit((p) => got.push(plain(p)));
+  document.getElementById('u').value = 'lina';
+  document.getElementById('p').value = 'pw-1';
+  const click = (id) => document.getElementById(id).dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+  click('forgot');
+  assert.equal(got.length, 0, 'un lien « mot de passe oublié » ne vaut pas une soumission');
+  click('rolebtn');
+  assert.equal(got.length, 1, 'role=button compte');
+  document.getElementById('p').value = 'pw-2';
+  click('textbtn');
+  assert.equal(got.length, 2, 'un lien dont le texte ressemble à une connexion compte');
+  assert.deepEqual([got[1].username, got[1].password, got[1].form], ['lina', 'pw-2', null]);
+});

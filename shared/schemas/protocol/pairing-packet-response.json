@@ -47,7 +47,7 @@
               "$ref": "common.json#/$defs/ciphertext"
             },
             {
-              "maxLength": 43700
+              "maxLength": 43712
             }
           ]
         },

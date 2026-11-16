@@ -173,7 +173,7 @@ Résultat `scheme://host[:port]`, conforme au schéma `common.schema.json#/$defs
 
 `http://www.example.org` et `https://www.example.org` sont **deux origines** (pas de rétrogradation, §2 du document
 de référence) ; `aeon.co` et `www.aeon.co` aussi (l'équivalence `www.`/apex relève de la correspondance au
-remplissage, `AUTOFILL_HEURISTICS.md`, pas du stockage).
+remplissage, `FORMS.md` §7, pas du stockage).
 
 `loginOrigin(url)` ajoute les applications Android : `android://<hash>@<package>/` (Chrome) et `app:<package>`
 (export Qafila, §10.1) ⇒ `app:<package>` (`[A-Za-z0-9_.]+`). Le `hash` du certificat est ignoré (phase 4 :
@@ -289,9 +289,9 @@ Parcours de `roots` dans l'ordre, après `dedupeBookmarks` :
 `position` : les trois plateformes génèrent leurs index fractionnaires avec leur bibliothèque habituelle ; seul
 l'**ordre** est contractuel (ordre du fichier, dossiers et favoris mêlés comme dans le fichier).
 
-> **Décision.** `record-bookmark.schema.json` et `record-folder.schema.json` ne listent pas `importBatch` ni `note` ;
-> ils n'interdisent pas les champs inconnus. Ces deux champs sont ajoutés aux schémas lors de leur prochaine
-> révision (demande ouverte) ; en attendant, leur présence est conforme.
+> **Décision.** `importBatch` (UUID du lot ou `null`) et `note` (chaîne, 32 Kio au plus) sont déclarés, optionnels,
+> dans `record-bookmark.schema.json` et `record-folder.schema.json` ; un client qui ne les connaît pas les conserve
+> comme tout champ inconnu.
 
 ### 6.4 « Ranger dans un dossier » (interrupteur, actif par défaut)
 
@@ -495,7 +495,7 @@ fixtures sont fictifs ; aucune fixture ne contient de donnée réelle.
 13. **Dédoublonnage** : guid avant clé ; mot de passe différent ⇒ `updated` même si l'existant garde la main ; Chrome sans date perd toujours face à une date connue ; déjà dans l'historique ⇒ rien à écrire.
 14. **Notes fusionnées** par concaténation `\n`, jamais écrasées ; graphie du nom d'utilisateur de l'existant conservée.
 15. **« Ranger dans un dossier » s'applique aussi aux identifiants** (`folder` `kind: "login"`).
-16. **`importBatch` et `note` sur `bookmark`/`folder`** : champs à ajouter aux schémas (conformes en attendant).
+16. **`importBatch` et `note` sur `bookmark`/`folder`** : champs optionnels déclarés dans les schémas de ces deux types.
 17. **Annulation d'import** : tombstones pour les créations, retour arrière borné pour les fusions, journal `imports.json` sans donnée en clair, 24 h.
 18. **Export CSV** : LF, sans BOM, citation minimale, `url` = origine + `/`, realm dans la note.
 19. **Export HTML** : secondes, 4 espaces, `PERSONAL_TOOLBAR_FOLDER`, `<DD>` pour les notes PC.

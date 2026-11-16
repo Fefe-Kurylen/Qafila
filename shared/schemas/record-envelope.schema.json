@@ -24,7 +24,7 @@
       "description": "(256·k + 16) octets en base64url sans padding, k ≥ 1 ; au plus 64 Kio une fois décodé.",
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{363,}$",
-      "maxLength": 87400
+      "maxLength": 87403
     }
   }
 }

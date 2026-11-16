@@ -265,7 +265,7 @@ qui le reçoit vérifie `vaultId` (égal à celui demandé) et `keyGeneration` (
 | `rev` | `^[0-9]{13}-[0-9a-f]{4}-[0-9a-f]{4}$` : ms Unix sur 13 chiffres, compteur 4 hex, aléa 4 hex ; ordre total = ordre des octets ASCII ; **sans** auteur |
 | `del` | indice de ménage pour le relais ; **toujours** égal à `deleted` du contenu, sinon rejet (`E_DEL_MISMATCH`) ; jamais lu pour fusionner |
 | `n` | nonce 12 o, aléatoire par enveloppe |
-| `ct` | `AES-GCM(K_tier, n, AAD, padded) || tag` ; |ct| − 16 est un multiple de 256 ; ≤ 65 536 o |
+| `ct` | `AES-GCM(K_tier, n, AAD, padded) || tag` ; |ct| − 16 est un multiple de 256 ; |ct| ≤ 65 536 + 16 o, soit au plus **87 403** caractères base64url (le même plafond figure dans les schémas) |
 
 ```
 AAD = UTF-8("qafila/v1|<vaultId>|<id>|<tier>|<kg>|<rev>")
@@ -319,7 +319,8 @@ seulement) et ne touche pas à l'état local.
 `"<ms>-<compteur>-<aléa>"` : `ms` = max(horloge locale, plus grand `ms` connu) sur 13 chiffres ; `compteur` =
 `0000` quand `ms` avance, sinon +1 (hex 4 chiffres, minuscule) ; `aléa` = 2 o CSPRNG en hex. Deux clients
 produisent le même `rev` avec une probabilité 2⁻¹⁶ par milliseconde partagée, et un `rev` égal sur deux contenus
-différents se résout par l'ordre des octets du `ct` (déterministe, documenté dans `shared/sync/PROTOCOL.md`).
+différents se résout par l'ordre des octets **décodés** du `ct` (le plus grand gagne ; règle unique du relais et des
+clients, fixée dans `shared/PROTOCOL.md` §5.5).
 
 ---
 
@@ -406,6 +407,9 @@ charge            = { "v": 1, "vaultId", "keyGeneration", "vmk": b64u(VMK), "hea
 > concaténé à **`info`** (sel vide, règle unique du §1), pas placé dans le sel. `pkN || pkE` dans `info` lie les
 > quatre clés aux deux clés publiques exactes de l'échange ; le SAS d'un autre échange est différent (vecteur
 > négatif). La charge porte `keyGeneration` (nom complet comme dans l'en-tête) et `vmk` en base64url.
+> `COFFRE-SYNC.md` écrit aussi `HMAC(HKDF(S,"pair-read"), slot)` sans dire si `slot` désigne l'hexadécimal du chemin
+> ou le haché lui-même : `readProof` authentifie les **32 octets bruts** de `SHA-256(pkN)` (la valeur dont `slot`
+> est l'écriture hexadécimale), jamais la chaîne de 64 caractères ; `pairing.json` et la fixture du protocole le fixent.
 
 Vérification côté N, dans l'ordre : `v = 1` ; `pkN` égal à sa propre clé ; `pkE` 32 o ; `S ≠ 0` ; `mac` égal
 (comparaison en temps constant) ; GCM ; débourrage ; JSON ; `vaultId` 32 hex, `keyGeneration` entier,
@@ -413,7 +417,7 @@ Vérification côté N, dans l'ordre : `v = 1` ; `pkN` égal à sa propre clé ;
 le même et c'est **sur E** (qui détient les données) que l'utilisateur confirme « Même code ? ». La charge
 n'existe qu'en RAM ; N pose ensuite ses propres emplacements. Le relais ne connaît ni S ni aucune clé : il
 vérifie seulement `slot = SHA-256(pkN)`, l'unicité du dépôt et la preuve de lecture `readProof` (échanges HTTP
-dans `shared/sync/PROTOCOL.md`). Vecteurs : `pairing.json`.
+dans `shared/PROTOCOL.md` §6). Vecteurs : `pairing.json`.
 
 ---
 
@@ -492,7 +496,7 @@ vérifie, re-dérive chaque valeur et exige l'échec de chaque négatif avec son
 | `pairing.json` | échange complet : clés, `S`, `slot`, `K_pair`/`K_mac`/`K_read`, SAS, `readProof`, paquet | SAS d'un autre échange, `mac`, `ct`, `pkE`, `pkN` substitués |
 | `backup.json` | `.qafila` à deux enveloppes avec `mac` | enveloppe retirée, `mac` altéré |
 | `canonical-json.json` | tri UTF-16, échappements, non-ASCII brut | flottant, entier > 2⁵³ |
-| `standard.json` | RFC 5869 A.1, RFC 4231 cas 2, NIST GCM cas 16, RFC 7748 §6.1, SHA-256(« abc ») | — |
+| `standard.json` | RFC 5869 A.1, RFC 4231 cas 2, AES-256-GCM McGrew–Viega / NIST cas 13 à 16, RFC 7748 §6.1, SHA-256(« abc ») | — |
 
 Chaque port (Swift `XCTest`, Kotlin `JUnit`, TypeScript `vitest`) charge ces JSON, recalcule les positifs à
 l'octet et vérifie que chaque négatif échoue **à l'étape annoncée** (`error`). Les codes d'erreur (`E_AEAD`,
@@ -521,14 +525,16 @@ Choix faits là où `COFFRE-SYNC.md` était muet (chacun est marqué **Décision
 8. **Jetons** : empreinte = SHA-256 de la chaîne hexadécimale reçue (§8).
 9. Le type s'écrit **`setting`** (singulier, comme dans `COFFRE-SYNC.md` §4.1) ; `tabs` est déclaré (phase 5).
 10. Emplacements : décodage strict, |ct| = 48 exigé ; `kdf` jamais abaissé (`E_KDF`).
+11. **`readProof`** = HMAC-SHA256 sur les 32 octets bruts de `SHA-256(pkN)`, pas sur la chaîne hexadécimale `slot` (§10).
+12. **Égalité de `rev`** sur un même `id` : départage par les octets décodés de `ct`, le plus grand gagne ; règle
+    écrite dans `shared/PROTOCOL.md` §5.5 et appliquée à l'identique par le relais et les clients (§7.4).
 
-**À arbitrer** (incohérences constatées avec d'autres fichiers de `shared/`) :
+**Écarts avec `COFFRE-SYNC.md`, assumés** :
 
-- `shared/schemas/protocol/*.json` et `shared/fixtures/protocol/*.json` encodent `n`, `ct`, `mac`, `vmk` en
-  **base64 standard avec `=`** (lecture littérale de « base64 » dans `COFFRE-SYNC.md`), alors que ce contrat
-  impose **base64url**. Un seul des deux doit rester ; ce document recommande base64url (un codec, URL-safe,
-  déjà obligatoire pour `pk=` et `rk=`). Les dérivations d'appairage (HKDF, SAS, `mac`, `readProof`) sont,
-  elles, **identiques** dans les deux jeux de fichiers.
-- `COFFRE-SYNC.md` nomme `shared/schema/*.schema.json` et `shared/tools/gen-vectors.mjs` ; la mise en place de
-  `shared/` a retenu `shared/schemas/*.schema.json` et `shared/vectors/gen.mjs` (`npm run vectors`). Ce document
-  suit l'arborescence réelle.
+- `COFFRE-SYNC.md` écrit `base64(…)` ; tout `shared/` (ce document, `schemas/`, `schemas/protocol/`, `fixtures/`,
+  `vectors/`) est en **base64url sans `=`** (§2.2). `shared/test/protocol.test.mjs` recalcule le vecteur
+  d'appairage depuis `pairing.json` : toute divergence d'encodage ou de dérivation entre les deux jeux de fichiers
+  fait échouer la suite.
+- `COFFRE-SYNC.md` nomme `shared/schema/*.schema.json`, `shared/tools/gen-vectors.mjs`, `shared/sync/PROTOCOL.md` ;
+  la mise en place de `shared/` a retenu `shared/schemas/*.schema.json`, `shared/vectors/gen.mjs` (`npm run vectors`)
+  et `shared/PROTOCOL.md`. Ce document suit l'arborescence réelle ; `COFFRE-SYNC.md` §9.1 reste à aligner.

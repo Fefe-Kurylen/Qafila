@@ -202,13 +202,23 @@ Puis, par enveloppe, la règle **« plus grand `rev` par `id` »** :
 | État du relais pour cet `id` | Résultat | Effet |
 |---|---|---|
 | absent, ou `rev` stocké < `rev` reçu | `accepted` | écrit, nouveau `seq` (renvoyé) |
-| `rev` stocké = `rev` reçu | `duplicate` | rien (rejeu idempotent) |
+| `rev` stocké = `rev` reçu, `ct` identique | `duplicate` | rien (rejeu idempotent) |
+| `rev` stocké = `rev` reçu, `ct` différent | `accepted` si le `ct` reçu est le plus grand (décision ci-dessous), sinon `superseded` | idem |
 | `rev` stocké > `rev` reçu | `superseded` | rien ; `rev` courant renvoyé |
+
+> **Décision — égalité de `rev`.** Deux appareils peuvent produire le même `rev` pour le même `id` (même
+> milliseconde, même compteur, même aléa : 2⁻¹⁶ par milliseconde partagée, `CRYPTO.md` §7.4). Pour que ni le relais
+> ni les clients ne divergent, le départage est le même partout : à `rev` égal, on compare les octets **décodés** de
+> `ct` (octets non signés, ordre lexicographique ; si l'un est préfixe de l'autre, le plus long est le plus grand) et
+> **le plus grand gagne**. `ct` identique ⇒ `duplicate`. Le client applique exactement la même comparaison quand il
+> reçoit une enveloppe de `rev` égal à celle qu'il détient ; pour un `login`, le mot de passe perdant est archivé
+> comme pour toute autre défaite (§5.7). Le relais ne lit rien de plus : `rev`, puis ces octets opaques.
 
 Réponse `changes-post-response.json` : `{ results: [{ id, status, rev, seq? }…], nextSeq, usage }`, dans l'ordre du
 lot ; `seq` présent **si et seulement si** `accepted`. Le relais ne compare jamais deux enveloppes autrement que par
-`rev` : il ne sait pas ce qu'elles contiennent. Le client qui reçoit `superseded` retire l'enveloppe de son outbox,
-**tire**, et laisse la règle de fusion (§5.7) trancher après déchiffrement — qui aboutit au même gagnant.
+`rev` (puis par les octets de `ct` à égalité) : il ne sait pas ce qu'elles contiennent. Le client qui reçoit
+`superseded` retire l'enveloppe de son outbox, **tire**, et laisse la règle de fusion (§5.7) trancher après
+déchiffrement — qui aboutit au même gagnant.
 
 > **Décision — pas de `del` dans le flux.** `del` est stocké et renvoyé tel quel ; le relais ne s'en sert que pour
 > la purge à 90 jours (§8). Il ne refuse pas une enveloppe `del: true` plus récente qu'une `del: false` ni
@@ -231,7 +241,9 @@ Rejouée dans `protocol.test.mjs` sur `merge-two-devices.json` :
 - **login** : si le perdant avait un autre mot de passe, le client qui détecte le conflit l'ajoute à
   `passwordHistory` du gagnant (10 entrées maximum, les plus anciennes sortent) et **ré-écrit** l'enregistrement
   avec un `rev` neuf (strictement supérieur par la règle d'adoption §4.2). Rien n'est perdu en silence.
-- **Idempotence** : appliquer deux fois la même enveloppe est sans effet (même `rev` ⇒ rien à faire).
+- **Idempotence** : appliquer deux fois la même enveloppe est sans effet (même `rev` et même `ct` ⇒ rien à faire).
+- **Égalité de `rev`** avec un `ct` différent : le `ct` dont les octets décodés sont les plus grands gagne (§5.5),
+  comme au relais ; aucune ré-écriture n'est nécessaire, le gagnant est déjà celui que le relais a retenu.
 - `del` en clair ≠ `deleted` déchiffré ⇒ enveloppe rejetée et signalée ; jamais utilisée pour fusionner.
 
 ### 5.8 Anti-rejeu et points de contrôle
@@ -576,6 +588,8 @@ Là où `COFFRE-SYNC.md` laissait une latitude :
     confidentialité.
 13. `GET /sync/v1/` **carte d'identité** sans jeton, limites minimales imposées par le schéma.
 14. QR `pair` : trois paramètres dans un ordre fixe, paramètre inconnu = QR invalide.
+15. **Égalité de `rev`** sur un même `id` : départage par les octets décodés de `ct` (le plus grand gagne), identique
+    au relais et chez les clients ; `duplicate` réservé au `ct` identique (§5.5, `CRYPTO.md` §7.4 et §14).
 
 ---
 

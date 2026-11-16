@@ -463,6 +463,5 @@ que sur un tap explicite « Copier » (fiche d'un identifiant, générateur, rep
    identifiant ; `http`→`https` accepté avec proposition de mise à jour ; `https`→`http` jamais.
 9. Le presse-papiers n'intervient jamais dans le remplissage ; 60 s pour les secrets, pas d'expiration pour un
    identifiant.
-10. À ajouter au schéma `record-login.schema.json` (propriété du contrat crypto/protocole, non modifié ici) :
-    `"matchSubdomains": { "type": "boolean" }`, optionnel, `false` par défaut ; les champs inconnus étant conservés,
-    rien ne casse en attendant.
+10. `matchSubdomains` est déclaré dans `record-login.schema.json` (`"type": "boolean"`, optionnel, `false` par
+    défaut) ; un client qui ne le connaît pas le conserve comme tout champ inconnu.

@@ -531,7 +531,7 @@ export async function generateVectors() {
 
   // --- hkdf ------------------------------------------------------------------
   const hkdfVectors = {
-    description: 'HKDF-SHA256, sel vide (sauf appairage : sel = pkN||pkE), info = "qafila/v1/<usage>", longueur 32 sauf vault-id (16).',
+    description: 'HKDF-SHA256, sel vide partout (appairage compris : pkN||pkE est concaténé à info, jamais placé dans le sel), info = "qafila/v1/<usage>", longueur 32 sauf vault-id (16).',
     vmk: hex(VMK), rk: hex(RK),
     derived: [
       { name: 'K_secrets', ikm: 'vmk', info: INFO.secrets, length: 32, okm: hex(keys.secrets) },
@@ -806,15 +806,23 @@ export async function generateVectors() {
       okm: hex(hkdfSync('sha256', Buffer.alloc(22, 0x0b), unhex('000102030405060708090a0b0c'), unhex('f0f1f2f3f4f5f6f7f8f9'), 42)),
     }],
     hmacSha256: [{ source: 'RFC 4231 case 2', key: hex(utf8('Jefe')), data: hex(utf8('what do ya want for nothing?')), mac: hex(hmacSha256(utf8('Jefe'), utf8('what do ya want for nothing?'))) }],
-    aes256Gcm: [(() => {
-      const key = unhex('feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308');
-      const iv = unhex('cafebabefacedbaddecaf888');
-      const pt = unhex('d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39');
-      const aad = unhex('feedfacedeadbeeffeedfacedeadbeefabaddad2');
-      const c = createCipheriv('aes-256-gcm', key, iv); c.setAAD(aad);
-      const ct = Buffer.concat([c.update(pt), c.final()]);
-      return { source: 'McGrew–Viega / NIST GCM test case 16', key: hex(key), iv: hex(iv), plaintext: hex(pt), aad: hex(aad), ciphertext: hex(ct), tag: hex(c.getAuthTag()) };
-    })()],
+    aes256Gcm: (() => {
+      // McGrew–Viega, « The Galois/Counter Mode of Operation », cas 13 à 16 (AES-256), repris par NIST.
+      const K16 = 'feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308';
+      const IV16 = 'cafebabefacedbaddecaf888';
+      const P15 = 'd9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255';
+      const cases = [
+        { source: 'McGrew–Viega / NIST GCM test case 13', key: '00'.repeat(32), iv: '00'.repeat(12), plaintext: '', aad: '' },
+        { source: 'McGrew–Viega / NIST GCM test case 14', key: '00'.repeat(32), iv: '00'.repeat(12), plaintext: '00'.repeat(16), aad: '' },
+        { source: 'McGrew–Viega / NIST GCM test case 15', key: K16, iv: IV16, plaintext: P15, aad: '' },
+        { source: 'McGrew–Viega / NIST GCM test case 16', key: K16, iv: IV16, plaintext: P15.slice(0, 120), aad: 'feedfacedeadbeeffeedfacedeadbeefabaddad2' },
+      ];
+      return cases.map((v) => {
+        const c = createCipheriv('aes-256-gcm', unhex(v.key), unhex(v.iv)); c.setAAD(unhex(v.aad));
+        const ct = Buffer.concat([c.update(unhex(v.plaintext)), c.final()]);
+        return { ...v, ciphertext: hex(ct), tag: hex(c.getAuthTag()) };
+      });
+    })(),
     x25519: [{
       source: 'RFC 7748 §6.1',
       alicePrivate: '77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a',

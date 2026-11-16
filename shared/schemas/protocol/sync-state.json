@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "sync-state.json",
   "title": "Fichier client sync-state.json",
-  "description": "État de synchronisation d'un appareil (vault/sync-state.json, COFFRE-SYNC.md §3.4). Les plus grands `rev` connus par id vivent dans records.jsonl, pas ici. `checkpoints` : les 10 derniers points de contrôle anti-rejeu (PROTOCOL.md §5.4). `hlc` : état de l'horloge logique hybride (§4). `paused` : raison d'une pause (null si la synchro tourne).",
+  "description": "État de synchronisation d'un appareil (vault/sync-state.json, COFFRE-SYNC.md §3.4). Les plus grands `rev` connus par id vivent dans records.jsonl, pas ici. `checkpoints` : les 10 derniers points de contrôle anti-rejeu (PROTOCOL.md §5.8). `hlc` : état de l'horloge logique hybride (§4). `paused` : raison d'une pause (null si la synchro tourne).",
   "type": "object",
   "required": ["v", "server", "vaultId", "deviceId", "serverSeq", "lastSync", "hlc", "checkpoints", "paused"],
   "additionalProperties": false,

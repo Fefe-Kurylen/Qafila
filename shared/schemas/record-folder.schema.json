@@ -16,6 +16,8 @@
       "description": "true = contenu affiché en tuiles sur la page de démarrage (PERSONAL_TOOLBAR_FOLDER à l'import).",
       "type": "boolean"
     },
+    "note": { "description": "Description libre (<DD> d'un import Netscape, PC seulement ; conservée telle quelle par les mobiles).", "type": "string", "maxLength": 32768 },
+    "importBatch": { "description": "UUID du lot d'import qui a créé le dossier (« Annuler cet import », 24 h), ou null.", "anyOf": [{ "$ref": "common.schema.json#/$defs/uuid" }, { "type": "null" }] },
     "author": { "$ref": "common.schema.json#/$defs/deviceId" },
     "deleted": { "const": false }
   }

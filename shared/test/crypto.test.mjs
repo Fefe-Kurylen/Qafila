@@ -52,13 +52,24 @@ describe('standard.json — primitives contre les vecteurs publiés', () => {
     assert.equal(hex(C.hmacSha256(unhex(v.key), unhex(v.data))), v.mac);
     assert.equal(v.mac, '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843');
   });
-  test('AES-256-GCM NIST cas 16', () => {
-    const v = s.aes256Gcm[0];
-    const c = createCipheriv('aes-256-gcm', unhex(v.key), unhex(v.iv)); c.setAAD(unhex(v.aad));
-    const ct = Buffer.concat([c.update(unhex(v.plaintext)), c.final()]);
-    assert.equal(hex(ct), v.ciphertext);
-    assert.equal(hex(c.getAuthTag()), v.tag);
-    assert.equal(v.tag, '76fc6ece0f4e1768cddf8853bb2d551b');
+  test('AES-256-GCM McGrew–Viega / NIST cas 13 à 16', () => {
+    const published = {
+      'McGrew–Viega / NIST GCM test case 13': '530f8afbc74536b9a963b4f1c4cb738b',
+      'McGrew–Viega / NIST GCM test case 14': 'd0d1c8a799996bf0265b98b5d48ab919',
+      'McGrew–Viega / NIST GCM test case 15': 'b094dac5d93471bdec1a502270e3cc6c',
+      'McGrew–Viega / NIST GCM test case 16': '76fc6ece0f4e1768cddf8853bb2d551b',
+    };
+    assert.equal(s.aes256Gcm.length, 4);
+    for (const v of s.aes256Gcm) {
+      const c = createCipheriv('aes-256-gcm', unhex(v.key), unhex(v.iv)); c.setAAD(unhex(v.aad));
+      const ct = Buffer.concat([c.update(unhex(v.plaintext)), c.final()]);
+      assert.equal(hex(ct), v.ciphertext, v.source);
+      assert.equal(hex(c.getAuthTag()), v.tag, v.source);
+      assert.equal(v.tag, published[v.source], `tag publié : ${v.source}`);
+    }
+    // la primitive du contrat (ciphertext || tag) sur le cas 16
+    const v16 = s.aes256Gcm[3];
+    assert.equal(hex(C.aesGcmEncrypt(unhex(v16.key), unhex(v16.iv), unhex(v16.aad), unhex(v16.plaintext))), v16.ciphertext + v16.tag);
   });
   test('X25519 RFC 7748 §6.1', () => {
     const v = s.x25519[0];
