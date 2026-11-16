@@ -4,9 +4,9 @@ name: Qafila Android
 on:
   push:
     branches: [main]
-    paths: ["android-browser/**", ".github/workflows/android.yml"]
+    paths: ["android-browser/**", "shared/support.json", ".github/workflows/android.yml"]
   pull_request:
-    paths: ["android-browser/**"]
+    paths: ["android-browser/**", "shared/support.json"]
   workflow_dispatch:
     inputs:
       track:
