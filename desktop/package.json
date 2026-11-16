@@ -6,6 +6,7 @@
   "license": "MIT",
   "private": true,
   "main": "main/index.js",
+  "desktopName": "qafila.desktop",
   "author": "Qafila",
   "homepage": "https://qafila.fr",
   "scripts": {
@@ -18,8 +19,8 @@
     "dist:mac": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg"
   },
   "devDependencies": {
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8"
+    "electron": "^45.3.3",
+    "electron-builder": "^26.18.0"
   },
   "build": {
     "appId": "fr.qafila.desktop",
@@ -82,7 +83,8 @@
       "target": [
         "AppImage"
       ],
-      "executableName": "qafila"
+      "executableName": "qafila",
+      "syncDesktopName": true
     },
     "mac": {
       "icon": "build/icon.png",

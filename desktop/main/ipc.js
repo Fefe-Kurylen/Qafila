@@ -1,13 +1,13 @@
 'use strict';
 // Canaux IPC du chrome (window.qafila.*) : chaque canal valide ses arguments ; rien n'est exposé au-delà de cette liste.
-const { ipcMain, shell, clipboard, app, nativeTheme, dialog } = require('electron');
+const { ipcMain, shell, app, nativeTheme, dialog } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const contract = require('./contract');
 const settingsSchema = require('./settings');
 const search = require('./search');
 const support = require('./support');
-const { hostOf } = require('./tabs');
+const { hostOf, copyText } = require('./tabs');
 
 const str = (v, max = 4096) => (typeof v === 'string' ? v.slice(0, max) : '');
 // Réglages jamais modifiables par settings:set / settings:reset : le dossier de téléchargement ne change que par le
@@ -107,8 +107,8 @@ function register(a) {
   handle('page:translate', () => a.tabs.translate(store.selected));
   handle('page:scrollTo', (p) => a.tabs.scrollTo(store.selected, p.where === 'bottom' ? 'bottom' : 'top'));
   handle('page:zoom', (p) => a.zoom(Number(p.delta) || 0));
-  handle('page:copyLink', () => { const u = store.selectedTab?.url; if (u) clipboard.writeText(u); return !!u; });
-  handle('page:share', () => { const u = store.selectedTab?.url; if (u) clipboard.writeText(u); return !!u; });
+  handle('page:copyLink', () => { const u = store.selectedTab?.url; return u ? copyText(u) : false; });
+  handle('page:share', () => { const u = store.selectedTab?.url; return u ? copyText(u) : false; });
 
   // ----- Données, suggestions, configuration -----
   handle('data:clear', () => a.clearData());

@@ -10,6 +10,10 @@ const search = require('./search');
 const { safeFaviconURL } = require('./favicon');
 
 const PAGE_PRELOAD = path.join(__dirname, '..', 'preload', 'page.js');
+
+/** Copie un texte (Electron 44+ : clipboard.writeText renvoie une promesse ; un échec est ignoré). */
+function copyText(text) { return clipboard.writeText(String(text)).then(() => true, () => false); }
+
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const INTERNAL_SCHEMES = new Set(['http:', 'https:', 'about:', 'file:', 'data:', 'blob:', 'chrome:', 'devtools:', 'chrome-error:']);
 // Applications externes : courriel et téléphone seulement, après un geste récent de l'utilisateur et sa confirmation.
@@ -233,10 +237,7 @@ class TabManager extends EventEmitter {
   // ----- Événements d'une page -----
   wire(wc, tabId) {
     const update = (patch) => { const l = this.live.get(tabId); if (l) { Object.assign(l, patch); this.emit('change', tabId); } };
-    const navState = () => {
-      const h = wc.navigationHistory;
-      update({ canGoBack: h ? h.canGoBack() : wc.canGoBack(), canGoForward: h ? h.canGoForward() : wc.canGoForward() });
-    };
+    const navState = () => update({ canGoBack: wc.navigationHistory.canGoBack(), canGoForward: wc.navigationHistory.canGoForward() });
 
     wc.on('did-start-loading', () => update({ loading: true, progress: 0.1 }));
     wc.on('did-stop-loading', () => { update({ loading: false, progress: 1 }); navState(); this.emit('glass', tabId); });
@@ -411,17 +412,17 @@ class TabManager extends EventEmitter {
     if (params.linkURL && web(params.linkURL)) {
       items.push({ label: t('open_in_new_tab'), click: () => this.emit('open-tab', { url: params.linkURL, isPrivate: !!tab?.isPrivate, select: false }) });
       items.push({ label: t('open_in_private_tab'), click: () => this.emit('open-tab', { url: params.linkURL, isPrivate: true, select: true }) });
-      items.push({ label: t('action_copy_link'), click: () => clipboard.writeText(params.linkURL) });
+      items.push({ label: t('action_copy_link'), click: () => copyText(params.linkURL) });
       items.push({ label: t('save_link_as'), click: () => wc.downloadURL(params.linkURL) });
       sep();
     } else if (params.linkURL) {
-      items.push({ label: t('action_copy_link'), click: () => clipboard.writeText(params.linkURL) });
+      items.push({ label: t('action_copy_link'), click: () => copyText(params.linkURL) });
       sep();
     }
     if (params.mediaType === 'image' && params.srcURL) {
       items.push({ label: t('copy_image'), click: () => wc.copyImageAt(params.x, params.y) });
       items.push({ label: t('save_image_as'), click: () => wc.downloadURL(params.srcURL) });
-      items.push({ label: t('copy_image_address'), click: () => clipboard.writeText(params.srcURL) });
+      items.push({ label: t('copy_image_address'), click: () => copyText(params.srcURL) });
       sep();
     }
     if (params.isEditable) {
@@ -583,4 +584,4 @@ class TabManager extends EventEmitter {
   }
 }
 
-module.exports = { TabManager, desktopUserAgent, MOBILE_UA, hostOf, stripWWW };
+module.exports = { copyText, TabManager, desktopUserAgent, MOBILE_UA, hostOf, stripWWW };
