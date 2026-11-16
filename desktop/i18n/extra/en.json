@@ -38,5 +38,11 @@
   "use_system_folder": "Use System Folder",
   "external_open": "Open",
   "external_open_mail": "Open this link in your email app?",
-  "external_open_tel": "Open this number in your phone app?"
+  "external_open_tel": "Open this number in your phone app?",
+  "page_crashed": "This page stopped unexpectedly. Reload to try again.",
+  "download_multiple": "%1$s wants to download multiple files.",
+  "download_allow": "Allow",
+  "download_block": "Block",
+  "download_blocked": "Multiple downloads blocked: %1$s",
+  "scroll_desktop_footer": "Fixed: the page starts below the bar, nothing is ever hidden. Shrink and Hide: the page scrolls under the glass bar."
 }

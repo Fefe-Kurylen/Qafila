@@ -1,5 +1,6 @@
 'use strict';
-// Faux verre (comme GlassBackdrop.kt) : la zone de la page sous la bande du chrome est capturée à échelle réduite
+// Faux verre (comme GlassBackdrop.kt) : la zone de la page sous la bande du chrome (ou, si la page est posée à côté
+// de la bande, ses premières lignes) est capturée à échelle réduite
 // (au plus toutes les ~100 ms pendant le défilement, puis une dernière fois à l'arrêt) et envoyée au chrome, qui la
 // floute sous la couleur translucide de la barre. Jamais d'exception : en cas d'échec, la barre garde sa couleur simple.
 class Glass {
@@ -7,7 +8,7 @@ class Glass {
    * @param {object} o
    * @param {() => Electron.WebContents|null} o.pageContents contenu de la page affichée
    * @param {() => Electron.WebContents|null} o.chromeContents contenu du chrome
-   * @param {() => Electron.Rectangle|null} o.stripRect zone de la barre dans la fenêtre (null : verre inactif)
+   * @param {() => Electron.Rectangle|null} o.stripRect zone de la page à capturer, en coordonnées de la page (null : verre inactif)
    */
   constructor({ pageContents, chromeContents, stripRect, scale = 0.25 }) {
     this.pageContents = pageContents;

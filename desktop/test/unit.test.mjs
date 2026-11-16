@@ -1,4 +1,5 @@
-// Tests unitaires (node --test) : liste blanche du lecteur, CSP des pages locales, adresses d'icônes.
+// Tests unitaires (node --test) : liste blanche du lecteur, CSP des pages locales, adresses d'icônes, lien Stripe
+// « Soutenir Qafila », robustesse de state.json.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -46,4 +47,89 @@ test('icônes : seulement http, https et data:image', () => {
   assert.equal(safeFaviconURL('data:text/html,<script>'), null);
   assert.equal(safeFaviconURL('https://example.org/favicon.ico'), 'https://example.org/favicon.ico');
   assert.equal(safeFaviconURL('data:image/png;base64,AAAA'), 'data:image/png;base64,AAAA');
+});
+
+// ----- Soutenir Qafila : validation du lien Stripe (shared/support.json) -----
+const contract = require('../main/contract.js');
+const support = require('../main/support.js');
+
+/** paymentLink() avec un support.json simulé. */
+function link(stripePaymentLink, ...hosts) {
+  const allowedHosts = hosts.length ? hosts[0] : ['buy.stripe.com'];
+  const saved = contract.readJSONFresh;
+  contract.readJSONFresh = () => (allowedHosts === undefined ? { stripePaymentLink } : { stripePaymentLink, allowedHosts });
+  try { return support.paymentLink(); } finally { contract.readJSONFresh = saved; }
+}
+
+test('Stripe : lien vide = « Bientôt disponible » (désactivé)', () => {
+  assert.deepEqual(link(''), { configured: false, url: null, reason: 'empty' });
+  assert.equal(link('   ').configured, false);
+  assert.equal(link(undefined).configured, false);
+});
+
+test('Stripe : https://buy.stripe.com accepté', () => {
+  const l = link('https://buy.stripe.com/abc123');
+  assert.equal(l.configured, true);
+  assert.equal(l.url, 'https://buy.stripe.com/abc123');
+});
+
+test('Stripe : http, autre hôte, sosie, identifiants, port, javascript: refusés', () => {
+  for (const bad of [
+    'http://buy.stripe.com/abc', 'https://evil.example/abc', 'https://buy.stripe.com.evil.com/abc', 'https://stripe.com/abc',
+    'https://u:p@buy.stripe.com/abc', 'https://u@buy.stripe.com/abc', 'https://buy.stripe.com:8443/abc', 'javascript:alert(1)', 'pas une adresse',
+  ]) assert.equal(link(bad).configured, false, bad);
+  assert.equal(link('https://buy.stripe.com/abc', []).configured, false, 'allowedHosts vide');
+  assert.equal(link('https://buy.stripe.com/abc', undefined).configured, false, 'allowedHosts absent');
+});
+
+// ----- state.json : fichier corrompu mis de côté, écriture atomique, nouvel essai après échec -----
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { Store } = require('../main/store.js');
+
+function tmpDir() { return fs.mkdtempSync(path.join(os.tmpdir(), 'qafila-store-')); }
+const quiet = (fn) => { const e = console.error; console.error = () => {}; try { return fn(); } finally { console.error = e; } };
+
+test('state.json corrompu : renommé en state.json.corrupt-<horodatage>, jamais écrasé', () => {
+  const dir = tmpDir();
+  fs.writeFileSync(path.join(dir, 'state.json'), '{"tabs": [ tronqué');
+  const store = new Store(dir);
+  quiet(() => store.load());
+  const backups = fs.readdirSync(dir).filter((f) => f.startsWith('state.json.corrupt-'));
+  assert.equal(backups.length, 1);
+  assert.equal(fs.readFileSync(path.join(dir, backups[0]), 'utf8'), '{"tabs": [ tronqué');
+  assert.equal(store.tabs.length, 0);
+  store.addTab({ url: 'https://example.org/' });
+  assert.equal(store.saveNow(), true);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')).tabs[0].url, 'https://example.org/');
+  clearTimeout(store._timer);
+});
+
+test('state.json : aller-retour, aucun fichier temporaire laissé', () => {
+  const dir = tmpDir();
+  const a = new Store(dir);
+  a.load();
+  a.addTab({ url: 'https://example.org/a' });
+  a.addBookmark('A', 'https://example.org/a');
+  assert.equal(a.saveNow(), true);
+  clearTimeout(a._timer);
+  assert.deepEqual(fs.readdirSync(dir).filter((f) => f.endsWith('.tmp')), []);
+  const b = new Store(dir);
+  b.load();
+  assert.equal(b.tabs[0].url, 'https://example.org/a');
+  assert.equal(b.bookmarks[0].url, 'https://example.org/a');
+});
+
+test('state.json : écriture impossible = état gardé « à écrire » et nouvel essai programmé', () => {
+  const parent = tmpDir();
+  const dir = path.join(parent, 'pas-un-dossier');
+  fs.writeFileSync(dir, 'x'); // un fichier à la place du dossier : mkdir / open échouent
+  const store = new Store(dir);
+  store.addTab({ url: 'https://example.org/' });
+  clearTimeout(store._timer);
+  assert.equal(quiet(() => store.saveNow()), false);
+  assert.equal(store._dirty, true);
+  assert.ok(store._timer, 'nouvel essai programmé');
+  clearTimeout(store._timer);
 });

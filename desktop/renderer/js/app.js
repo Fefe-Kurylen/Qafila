@@ -1,7 +1,7 @@
 // Chrome de Qafila — démarrage : abonnements à l'état poussé par le processus principal, commandes (raccourcis
 // clavier, scénario de test), voile, Échap, composition des captures d'écran de test. Aucun texte en dur :
 // toutes les chaînes viennent de config().strings (i18n/<langue>.json).
-import { q, S, $, setOverlay, render, renderNow, syncChromeMode, onRender, toast } from './core.js';
+import { q, S, $, setOverlay, render, renderNow, syncChromeMode, onRender, toast, reservesStrip } from './core.js';
 import { installBarEvents, beginEditing, cancelEditing, openFind, closeFind, demoEditing } from './bar.js';
 import { installMenuEvents } from './menu.js';
 import { installTabsEvents, openTabs, tabsEscape, setTabsDemo } from './tabs.js';
@@ -14,6 +14,8 @@ onRender(() => {
   dim.hidden = !['menu', 'editing', 'sheet'].includes(S.overlay);
   dim.classList.toggle('strong', S.overlay === 'sheet');
   document.documentElement.classList.toggle('overlay-tabs', S.overlay === 'tabs');
+  // macOS : la barre déplace la fenêtre seulement quand aucune surcouche ne la recouvre (style.css).
+  document.documentElement.classList.toggle('overlay-open', S.overlay !== 'none');
 });
 
 /** Échap : referme la surcouche la plus haute. */
@@ -35,6 +37,15 @@ document.addEventListener('mouseup', (e) => {
   e.preventDefault();
   if (e.button === 3) q.tabs.back(); else q.tabs.forward();
 });
+
+// Molette au-dessus de la bande quand la page passe sous la barre (Réduire / Masquer) : la vue du chrome intercepte
+// l'événement, il est renvoyé à la page (en Fixe, la page n'est pas sous la bande : rien à faire).
+document.addEventListener('wheel', (e) => {
+  if (S.overlay !== 'none' || !S.state || reservesStrip()) return;
+  e.preventDefault();
+  const k = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
+  q.page.wheel(e.clientX, e.clientY, e.deltaX * k, e.deltaY * k).catch(() => {});
+}, { passive: false });
 
 // ----- Commandes du processus principal -----
 q.ui.onCommand(async (c) => {

@@ -68,6 +68,8 @@ contextBridge.exposeInMainWorld('qafila', {
     copyLink: () => invoke('page:copyLink'),
     share: () => invoke('page:share'),
     onStatus: (cb) => on('status', cb),
+    /** Molette au-dessus de la bande, renvoyée à la page qui passe dessous (Réduire / Masquer). */
+    wheel: (x, y, deltaX, deltaY) => invoke('page:wheel', { x, y, deltaX, deltaY }),
   },
   data: {
     clear: () => invoke('data:clear'),

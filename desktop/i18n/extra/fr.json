@@ -39,5 +39,11 @@
   "use_system_folder": "Utiliser le dossier du système",
   "external_open": "Ouvrir",
   "external_open_mail": "Ouvrir ce lien dans votre application de courriel ?",
-  "external_open_tel": "Ouvrir ce numéro dans votre application de téléphone ?"
+  "external_open_tel": "Ouvrir ce numéro dans votre application de téléphone ?",
+  "page_crashed": "Cette page s'est arrêtée de façon inattendue. Actualisez pour réessayer.",
+  "download_multiple": "%1$s veut télécharger plusieurs fichiers.",
+  "download_allow": "Autoriser",
+  "download_block": "Bloquer",
+  "download_blocked": "Téléchargements multiples bloqués : %1$s",
+  "scroll_desktop_footer": "Fixe : la page commence sous la barre, rien n'est jamais caché. Réduire et Masquer : la page passe sous la barre en verre."
 }

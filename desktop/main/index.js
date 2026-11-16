@@ -3,7 +3,7 @@
 // transparente (desktop/renderer) qui occupe une bande en haut ou en bas, ou toute la fenêtre quand un menu, les
 // suggestions ou un écran (onglets, réglages…) sont ouverts. Lancer avec --demo pour les onglets de démonstration,
 // --smoke=<dossier> pour les captures d'écran de test (quitte avec le code 0).
-const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, net, Menu } = require('electron');
+const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, net, Menu, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { Store } = require('./store');
@@ -37,7 +37,10 @@ if (SMOKE_DIR) {
   app.commandLine.appendSwitch('disable-dev-shm-usage');
   app.commandLine.appendSwitch('force-device-scale-factor', '1');
 }
-if (!app.requestSingleInstanceLock()) app.quit();
+// Instance unique : un second lancement transmet ses adresses à la première fenêtre et quitte aussitôt, avant de
+// lire state.json ou de créer quoi que ce soit (app.quit() seul laisserait whenReady() s'exécuter).
+const GOT_LOCK = app.requestSingleInstanceLock();
+if (!GOT_LOCK) app.exit(0);
 
 /** L'application : services et actions partagés par l'IPC et les raccourcis. */
 const Q = {
@@ -54,7 +57,7 @@ function translator() {
   return Q.t;
 }
 
-// ----- Géométrie : bande du chrome, page sous la bande -----
+// ----- Géométrie : bande du chrome, page à côté de la bande (Fixe) ou dessous (Réduire / Masquer) -----
 function stripRect() {
   if (!Q.win || Q.win.isDestroyed()) return null;
   const [w, h] = Q.win.getContentSize();
@@ -63,18 +66,50 @@ function stripRect() {
   return { x: 0, y: top ? 0 : Math.max(0, h - strip), width: w, height: Math.min(h, strip) };
 }
 
+/**
+ * La page laisse-t-elle la place de la bande ? Toujours en Classique ; sinon selon « Au défilement » : Fixe (défaut
+ * du PC) pose la page sous la bande (au-dessus si la barre est en bas), si bien qu'aucune partie d'un site n'est
+ * cachée ni inaccessible au clic ; Réduire / Masquer gardent la page sous la barre (verre au-dessus du contenu).
+ */
+function reservesStrip() {
+  const s = Q.store.settings;
+  return (s.toolbar?.style || 'floating') === 'classic' || (s.scrollBehavior || 'fixed') === 'fixed';
+}
+
+/** Rectangle de la page dans la fenêtre. */
+function pageRect() {
+  const [w, h] = Q.win.getContentSize();
+  const full = { x: 0, y: 0, width: w, height: h };
+  if (Q.isFullscreenPage || !reservesStrip()) return full;
+  const strip = stripRect();
+  const height = Math.max(0, h - strip.height);
+  return strip.y === 0 ? { x: 0, y: strip.height, width: w, height } : { x: 0, y: 0, width: w, height };
+}
+
+/**
+ * Zone de la page capturée pour le faux verre, en coordonnées de la page : la page sous la bande (Réduire / Masquer),
+ * ou ses premières lignes (dernières si la barre est en bas) quand la page est posée à côté de la bande (Fixe).
+ */
+function glassRect() {
+  const s = stripRect();
+  const p = Q.tabs?.pageBounds;
+  if (!s || !p || p.width < 2 || p.height < 2) return null;
+  if (!reservesStrip()) return { x: s.x - p.x, y: s.y - p.y, width: s.width, height: s.height };
+  const h = Math.min(s.height, p.height);
+  return { x: 0, y: s.y === 0 ? 0 : p.height - h, width: p.width, height: h };
+}
+
 function layout() {
   if (!Q.win || Q.win.isDestroyed()) return;
   const [w, h] = Q.win.getContentSize();
   const full = { x: 0, y: 0, width: w, height: h };
   const strip = stripRect();
   const style = Q.store.settings.toolbar?.style || 'floating';
-  // Style Classique : barre pleine et opaque, la page est posée sous elle (aucun recouvrement, pas de CSS injecté).
-  let page = full;
-  if (style === 'classic' && !Q.isFullscreenPage) {
-    page = strip.y === 0 ? { x: 0, y: strip.height, width: w, height: h - strip.height } : { x: 0, y: 0, width: w, height: h - strip.height };
-  }
+  const page = pageRect();
   Q.tabs.setPageBounds(page);
+  // Pages locales (démarrage, lecteur, erreur) : marge de la hauteur de la bande quand la page passe sous la barre.
+  const under = !Q.isFullscreenPage && !reservesStrip();
+  Q.tabs.setLocalInsets({ top: under && strip.y === 0 ? strip.height : 0, bottom: under && strip.y > 0 ? strip.height : 0 });
   if (Q.isFullscreenPage) { Q.chrome.setBounds({ x: 0, y: h, width: w, height: 0 }); return; }
   Q.chrome.setBounds(Q.chromeMode === 'full' ? full : strip);
   Q.glass.setActive(style !== 'classic');
@@ -149,23 +184,35 @@ function command(name, data) {
 }
 
 // ----- Actions -----
-function newTab({ url = null, isPrivate = false, select = true } = {}) {
+/**
+ * Nouvel onglet. `focus` (Ctrl+T, Ctrl+Shift+N, bouton +) : sans adresse imposée, la frappe va au champ d'adresse du
+ * nouvel onglet, comme dans tout navigateur de bureau ; un onglet ouvert sur une adresse (lien, favori) garde le
+ * focus dans la page.
+ */
+function newTab({ url = null, isPrivate = false, select = true, focus = false } = {}) {
   const target = url || search.newTabURL(Q.store.settings);
   const tab = Q.store.addTab({ url: target, isPrivate, select });
-  if (select) showSelected();
+  const toAddress = select && focus && !url;
+  if (select) showSelected({ focusPage: !toAddress });
   else Q.tabs.ensure(tab.id);
   broadcast();
+  if (toAddress) {
+    command('focusAddress');
+    // Le premier chargement de la vue peut lui rendre le focus natif : le champ d'adresse le reprend ensuite.
+    const wc = Q.tabs.contents(tab.id);
+    wc?.once('did-finish-load', () => { if (Q.chromeMode === 'full' && Q.store.selected === tab.id) focusChrome(); });
+  }
   return tab;
 }
 
 function selectTab(id) { Q.store.select(id); showSelected(); broadcast(); }
 
-function showSelected() {
+function showSelected({ focusPage = true } = {}) {
   const tab = Q.store.selectedTab;
   if (!tab) { if (!Q.store.tabs.length) newTab(); return; }
   Q.tabs.show(tab.id);
   Q.tabs.applyUserAgent(tab.id);
-  if (!Q.chromeMode || Q.chromeMode === 'strip') Q.tabs.focus();
+  if (focusPage && (!Q.chromeMode || Q.chromeMode === 'strip')) Q.tabs.focus();
   Q.glass.refresh(80);
 }
 
@@ -285,7 +332,7 @@ async function clearData() {
 function onSettingChanged(key) {
   const s = Q.store.settings;
   if (key === 'appearance') nativeTheme.themeSource = s.appearance;
-  if (key === 'toolbar') layout();
+  if (key === 'toolbar' || key === 'scrollBehavior') layout();
   if (key === 'textZoom') Q.tabs.applyZoom();
   if (key === 'language') { Q.t = null; translator(); Q.tabs.refreshStartPages(); }
   if (['darkenSites', 'darkenOnlyInDarkMode', 'darkenHosts'].includes(key)) Q.tabs.refreshDarken();
@@ -355,8 +402,8 @@ function shortcut(event, input) {
     return run(() => { const i = n === 9 ? Q.store.tabs.length - 1 : n - 1; const tab = Q.store.tabs[i]; if (tab) selectTab(tab.id); });
   }
   switch (key) {
-    case 't': return run(() => (shift ? reopenTab() : newTab({ isPrivate: false })));
-    case 'n': return run(() => newTab({ isPrivate: shift }));
+    case 't': return run(() => (shift ? reopenTab() : newTab({ isPrivate: false, focus: true })));
+    case 'n': return run(() => newTab({ isPrivate: shift, focus: true }));
     case 'w': return run(() => closeTab(sel));
     case 'Tab': return run(() => cycleTab(shift ? -1 : 1));
     case 'PageDown': return run(() => cycleTab(1));
@@ -376,6 +423,24 @@ function shortcut(event, input) {
       if (/^[1-9]$/.test(key)) return run(() => { const i = key === '9' ? Q.store.tabs.length - 1 : Number(key) - 1; const t = Q.store.tabs[i]; if (t) selectTab(t.id); });
       return false;
   }
+}
+
+/**
+ * Molette au-dessus de la bande quand la page passe sous la barre (Réduire / Masquer) : la vue du chrome reçoit
+ * l'événement (une vue ne laisse rien passer, même transparente) ; il est renvoyé à la page sous le curseur.
+ */
+function forwardWheel({ x, y, deltaX, deltaY }) {
+  if (reservesStrip() || Q.chromeMode !== 'strip' || Q.isFullscreenPage) return false;
+  const wc = Q.store.selected && Q.tabs.contents(Q.store.selected);
+  if (!wc || wc.isDestroyed()) return false;
+  const cb = Q.chrome.getBounds();
+  const pb = Q.tabs.pageBounds;
+  const px = Math.round(x + cb.x - pb.x);
+  const py = Math.round(y + cb.y - pb.y);
+  if (px < 0 || py < 0 || px >= pb.width || py >= pb.height) return false;
+  // Sens Chromium : deltaY positif = vers le haut (l'inverse de WheelEvent.deltaY).
+  wc.sendInputEvent({ type: 'mouseWheel', x: px, y: py, deltaX: -deltaX, deltaY: -deltaY, canScroll: true });
+  return true;
 }
 
 function cycleTab(dir) {
@@ -404,7 +469,22 @@ function uniquePath(dir, filename) {
   return candidate;
 }
 
-function onDownload(item) {
+// Téléchargements automatiques répétés (sans geste de l'utilisateur) : décision par site pour la session.
+const downloadSites = new Map(); // hôte → true | false | Promise<boolean> (question en cours)
+
+/** Demande une seule fois par site s'il peut télécharger plusieurs fichiers (règle de Chrome). */
+function allowMultipleDownloads(host) {
+  if (downloadSites.has(host)) return Promise.resolve(downloadSites.get(host));
+  const t = translator();
+  const asked = dialog.showMessageBox(Q.win, {
+    type: 'question', buttons: [t('download_allow'), t('download_block')], defaultId: 1, cancelId: 1, noLink: true,
+    message: t('download_multiple', host),
+  }).then((r) => r.response === 0, () => false);
+  downloadSites.set(host, asked);
+  return asked.then((ok) => { downloadSites.set(host, ok); return ok; });
+}
+
+function onDownload(item, wc) {
   const t = translator();
   const dir = downloadFolder();
   try { fs.mkdirSync(dir, { recursive: true }); } catch { /* repli : dialogue d'Electron */ }
@@ -412,18 +492,29 @@ function onDownload(item) {
   item.setSavePath(file);
   const key = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const name = path.basename(file);
-  downloads.set(key, { name, received: 0, total: item.getTotalBytes(), state: 'progressing' });
-  command('toast', { text: t('download_started', name) });
-  broadcast();
+  const start = () => {
+    downloads.set(key, { name, received: 0, total: item.getTotalBytes(), state: 'progressing' });
+    command('toast', { text: t('download_started', name) });
+    broadcast();
+  };
   item.on('updated', () => { const d = downloads.get(key); if (d) { d.received = item.getReceivedBytes(); d.total = item.getTotalBytes(); broadcast(); } });
   item.once('done', (_e, state) => {
-    downloads.delete(key);
+    const tracked = downloads.delete(key);
     if (state === 'completed') {
       command('toast', { text: t('download_done', name) });
       if (process.platform === 'darwin') app.dock?.downloadFinished(file);
-    } else if (state !== 'cancelled') command('toast', { text: t('download_failed', name) });
+    } else if (state !== 'cancelled' && tracked) command('toast', { text: t('download_failed', name) });
     lastDownload = state === 'completed' ? file : lastDownload;
     broadcast();
+  });
+  // Un geste (clic, touche) = un téléchargement ; le premier téléchargement automatique d'une page passe aussi.
+  // Au-delà, le fichier attend en pause la réponse (une fois par site) ; refusé, il est annulé avec un message.
+  const verdict = Q.tabs.downloadVerdict(wc);
+  if (!verdict.ask) { start(); return; }
+  item.pause();
+  allowMultipleDownloads(verdict.host).then((ok) => {
+    if (item.getState() !== 'progressing') return;
+    if (ok) { start(); item.resume(); } else { item.cancel(); command('toast', { text: t('download_blocked', verdict.host) }); }
   });
 }
 let lastDownload = null;
@@ -471,15 +562,32 @@ ipcMain.on('qafila:test:composited', (e, msg) => {
   const cb = Q.pending.get(id); if (cb) { Q.pending.delete(id); cb(dataURL); } });
 
 // ----- Fenêtre -----
+/**
+ * Menu de l'application. macOS : menus standard (Qafila, Édition, Présentation, Fenêtre) : Cmd+C / V / X / A / Z
+ * et Cmd+Q passent par leurs rôles. Windows / Linux : aucune barre de menus ; Chromium y gère lui-même les raccourcis
+ * d'édition (Ctrl+C / V / X / A / Z) dans les pages et les champs du chrome.
+ */
+function applicationMenu() {
+  if (process.platform !== 'darwin') return null;
+  return Menu.buildFromTemplate([
+    { role: 'appMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu', submenu: [{ role: 'togglefullscreen' }] },
+    { role: 'windowMenu' },
+  ]);
+}
+
 function createWindow() {
   const dark = isDark();
   Q.win = new BrowserWindow({
     ...DEFAULT_SIZE, minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height, title: 'Qafila', show: false,
     backgroundColor: dark ? '#000000' : '#ffffff', autoHideMenuBar: true, icon: path.join(__dirname, '..', 'build', 'icon.png'),
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    // Barre de titre native partout : sous macOS, les feux tricolores restent dans la barre de titre (jamais sur la
+    // capsule) et la fenêtre se déplace par elle, quelle que soit la position de la barre (haut ou bas).
+    titleBarStyle: 'default',
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
-  Menu.setApplicationMenu(null);
+  Menu.setApplicationMenu(applicationMenu());
 
   Q.favicons = new FaviconCache(() => broadcast());
   Q.blocker = new Blocker(() => Q.store.settings, (wcId) => Q.tabs.pageURLFor(wcId));
@@ -502,7 +610,7 @@ function createWindow() {
   Q.glass = new Glass({
     pageContents: () => (Q.store.selected ? Q.tabs.contents(Q.store.selected) : null),
     chromeContents: () => Q.chrome?.webContents || null,
-    stripRect: () => ((Q.store.settings.toolbar?.style || 'floating') === 'classic' ? null : stripRect()),
+    stripRect: () => ((Q.store.settings.toolbar?.style || 'floating') === 'classic' ? null : glassRect()),
   });
 
   Q.tabs.on('change', broadcast);
@@ -535,7 +643,7 @@ function createWindow() {
 
   // Téléchargements : dossier par défaut (réglage « downloadFolder », sinon Téléchargements du système), sans dialogue,
   // nom unique, notification dans la barre (début, fin, échec) et progression dans l'état poussé au chrome.
-  Q.tabs.on('download', (item) => onDownload(item));
+  Q.tabs.on('download', (item, wc) => onDownload(item, wc));
 
   Q.chrome.webContents.once('did-finish-load', () => {
     layout();
@@ -548,7 +656,12 @@ function createWindow() {
 }
 
 // ----- Démarrage -----
-app.whenReady().then(async () => {
+/** Adresses web passées en ligne de commande (raccourci, « Ouvrir avec », second lancement). */
+function urlsFromArgv(list) {
+  return (Array.isArray(list) ? list : []).filter((a) => typeof a === 'string' && /^https?:\/\/\S+$/i.test(a) && a.length <= 4096).slice(0, 20);
+}
+
+if (GOT_LOCK) app.whenReady().then(async () => {
   Q.store = new Store(app.getPath('userData'), { ephemeral: DEMO });
   Q.store.load();
   if (DEMO) demo.applyDemo(Q.store, { dark: DEMO_DARK, language: typeof arg('lang') === 'string' ? arg('lang') : 'fr' });
@@ -561,14 +674,22 @@ app.whenReady().then(async () => {
     get win() { return Q.win; }, get chrome() { return Q.chrome; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
     toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, focusUI, screenshot,
-    downloadFolder,
+    downloadFolder, forwardWheel,
   });
 
   createWindow();
+  if (!SMOKE_DIR) for (const url of urlsFromArgv(argv)) newTab({ url });
   if (SMOKE_DIR) runSmoke().catch((e) => { console.error('Smoke :', e); app.exit(1); });
 });
 
-app.on('second-instance', () => { if (Q.win) { if (Q.win.isMinimized()) Q.win.restore(); Q.win.focus(); } });
+// Second lancement : la première fenêtre revient au premier plan et ouvre les adresses transmises.
+app.on('second-instance', (_e, otherArgv) => {
+  if (!Q.win || Q.win.isDestroyed()) return;
+  if (Q.win.isMinimized()) Q.win.restore();
+  Q.win.show();
+  Q.win.focus();
+  for (const url of urlsFromArgv(otherArgv)) newTab({ url });
+});
 app.on('window-all-closed', () => { Q.store?.saveNow(); app.quit(); });
 app.on('before-quit', () => { Q.store?.saveNow(); });
 app.on('web-contents-created', (_e, wc) => {
@@ -623,7 +744,15 @@ Element.prototype.getAttribute = function () { return 'javascript:document.docum
   // 4) Schémas externes : rien sans geste de l'utilisateur, jamais magnet:/facetime:.
   if (await Q.tabs.openExternal('magnet:?xt=urn:btih:0', twc)) fail('externe : magnet: ouvert');
   if (await Q.tabs.openExternal('mailto:a@example.org', twc)) fail('externe : mailto: ouvert sans geste');
-  // 5) Icônes : file:, javascript: refusées ; le chrome ne reçoit que des adresses data:.
+  // 5) Téléchargements : le premier automatique d'une page passe, le second demande ; un geste en permet un de plus.
+  const d1 = Q.tabs.downloadVerdict(twc);
+  const d2 = Q.tabs.downloadVerdict(twc);
+  await wait(5);
+  Q.tabs.lastGesture.set(twc.id, Date.now());
+  const d3 = Q.tabs.downloadVerdict(twc);
+  const d4 = Q.tabs.downloadVerdict(twc);
+  if (d1.ask || !d2.ask || d3.ask || !d4.ask) fail(`téléchargements : verdicts ${[d1, d2, d3, d4].map((d) => (d.ask ? 'demande' : 'libre')).join(', ')}`);
+  // 6) Icônes : file:, javascript: refusées ; le chrome ne reçoit que des adresses data:.
   const { safeFaviconURL } = require('./favicon');
   if (safeFaviconURL('file://attacker.example/share/a.ico') || safeFaviconURL('javascript:alert(1)')) fail('icône : adresse file:/javascript: acceptée');
   if (describeTabs().some((x) => x.faviconData && !x.faviconData.startsWith('data:image/'))) fail('icône : adresse non data: envoyée au chrome');
@@ -665,6 +794,96 @@ async function focusChecks(report, wait) {
   key(chromeWC, 'Escape'); await wait(900);
   if (Q.chromeMode !== 'strip') fail('Échap après Ctrl+, : réglages toujours ouverts');
   if (!page.isFocused()) fail('fermeture des réglages : la page n\'a pas repris le focus');
+  // Ctrl+T : nouvel onglet sur la page de démarrage, frappe dans le champ d'adresse.
+  key(page, 'T', [mod]); await wait(1400);
+  const created = Q.store.selected;
+  if (created === sel) fail('Ctrl+T : aucun nouvel onglet');
+  if (!chromeWC.isFocused()) fail('Ctrl+T : le chrome n\'a pas le focus');
+  if ((await active()) !== 'edit-input') fail('Ctrl+T : le champ d\'adresse n\'a pas le focus');
+  key(chromeWC, 'Escape'); await wait(700);
+  if (created !== sel) closeTab(created);
+  if (Q.store.tabs.some((x) => x.id === sel)) selectTab(sel);
+  await wait(800);
+}
+
+/**
+ * Mise en page : en Fixe (défaut du PC), la page ne croise jamais la bande du chrome, barre en haut comme en bas et
+ * pour les trois styles. En Réduire, la page passe sous la barre, la molette au-dessus de la bande la fait défiler et
+ * les pages locales laissent la place de la barre.
+ */
+async function layoutChecks(report, wait, set, shot) {
+  const fail = (m) => { report.errors.push(m); console.error('mise en page :', m); };
+  const tb = { ...Q.store.settings.toolbar };
+  const scroll = Q.store.settings.scrollBehavior;
+  const sel = Q.store.selected;
+  const meets = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  const fmt = (r) => `${r.x},${r.y} ${r.width}×${r.height}`;
+  set('scrollBehavior', 'fixed');
+  for (const position of ['top', 'bottom']) {
+    for (const style of ['floating', 'glass', 'classic']) {
+      set('toolbar', { ...tb, position, style }); await wait(900);
+      const [, h] = Q.win.getContentSize();
+      const strip = stripRect();
+      const view = Q.tabs.view(Q.store.selected)?.getBounds() || Q.tabs.pageBounds;
+      const chrome = Q.chrome.getBounds();
+      const label = `Fixe, barre ${position}, ${style}`;
+      if (Q.chromeMode !== 'strip') fail(`${label} : chrome en mode ${Q.chromeMode}`);
+      if (meets(view, strip)) fail(`${label} : la page (${fmt(view)}) croise la bande (${fmt(strip)})`);
+      if (meets(view, chrome)) fail(`${label} : la page (${fmt(view)}) croise la vue du chrome (${fmt(chrome)})`);
+      if (view.height + strip.height !== h) fail(`${label} : page ${view.height} + bande ${strip.height} ≠ fenêtre ${h}`);
+      if (position === 'bottom' && style === 'floating') { Q.glass.refresh(0); await wait(500); await shot('27-bottom-fixed'); }
+    }
+  }
+  // Réduire : page plein cadre sous la barre (comportement d'origine), molette transmise depuis la bande.
+  set('toolbar', { ...tb, position: 'top', style: 'floating' });
+  set('scrollBehavior', 'shrink'); await wait(1000);
+  const [w, h] = Q.win.getContentSize();
+  const full = Q.tabs.view(Q.store.selected)?.getBounds() || {};
+  if (full.y !== 0 || full.height !== h || full.width !== w) fail(`Réduire : page ${fmt(full)} au lieu de la fenêtre entière`);
+  Q.glass.refresh(0); await wait(500); await shot('28-shrink');
+  const wc = Q.tabs.contents(Q.store.selected);
+  await wc.executeJavaScript('window.scrollTo(0, 0)', true).catch(() => {});
+  await wait(300);
+  const cwc = Q.chrome.webContents;
+  cwc.sendInputEvent({ type: 'mouseMove', x: 400, y: 6 });
+  cwc.sendInputEvent({ type: 'mouseWheel', x: 400, y: 6, deltaX: 0, deltaY: -240, canScroll: true });
+  await wait(1200);
+  const y = await wc.executeJavaScript('window.scrollY', true).catch(() => -1);
+  if (!(y > 0)) fail(`Réduire : la molette au-dessus de la bande n'a pas fait défiler la page (scrollY = ${y})`);
+  await wc.executeJavaScript('window.scrollTo(0, 0)', true).catch(() => {});
+  // Pages locales : marge de la bande en Réduire, aucune en Fixe (la page est déjà sous la bande).
+  const start = newTab();
+  await wait(1500);
+  const swc = Q.tabs.contents(start.id);
+  const pad = () => swc.executeJavaScript('getComputedStyle(document.body).paddingTop', true).catch(() => '?');
+  const want = `${stripRect().height}px`;
+  const p1 = await pad();
+  if (p1 !== want) fail(`page de démarrage en Réduire : marge ${p1} au lieu de ${want}`);
+  set('scrollBehavior', 'fixed'); await wait(800);
+  const p2 = await pad();
+  if (p2 !== '0px') fail(`page de démarrage en Fixe : marge ${p2} au lieu de 0px`);
+  closeTab(start.id);
+  set('scrollBehavior', scroll);
+  set('toolbar', tb);
+  if (Q.store.tabs.some((x) => x.id === sel)) selectTab(sel);
+  await wait(1000);
+}
+
+/** Plantage du moteur de rendu : un rechargement automatique, puis la page d'erreur au second plantage (< 1 min). */
+async function crashChecks(report, wait) {
+  const fail = (m) => { report.errors.push(m); console.error('plantage :', m); };
+  const before = Q.store.selected;
+  const tab = newTab();
+  await wait(1200);
+  const title = () => Q.tabs.contents(tab.id)?.executeJavaScript('document.title', true).catch(() => '?');
+  Q.tabs.contents(tab.id).forcefullyCrashRenderer(); await wait(1800);
+  if ((await title()) !== translator()('new_tab')) fail('premier plantage : la page n\'a pas été rechargée');
+  Q.tabs.contents(tab.id).forcefullyCrashRenderer(); await wait(1800);
+  const t2 = await title();
+  if (t2 !== translator()('error_page_title')) fail(`second plantage : « ${t2} » au lieu de la page d'erreur`);
+  closeTab(tab.id);
+  if (Q.store.tabs.some((x) => x.id === before)) selectTab(before);
+  await wait(800);
 }
 
 /** Barre « Auto » : une page avec <meta name=theme-color content=#c00> donne une barre rgb(204, 0, 0). */
@@ -758,6 +977,10 @@ async function runSmoke() {
   set('language', 'fr'); await wait(1200);
   await focusChecks(report, wait);
   await themeColorCheck(report, wait, set);
+  await layoutChecks(report, wait, set, shot);
+  await crashChecks(report, wait);
+  demoScreen('toolbar'); await wait(900); demoScreen('scroll', { top: 'end' }); await wait(500); await shot('29-toolbar-settings');
+  demoScreen('none'); await wait(600);
   // La vue du chrome doit être revenue à la bande (barre + 2 × 12 px) une fois les surcouches fermées.
   const cb = Q.chrome.getBounds();
   if (cb.height !== Q.barHeight + 2 * BAR_MARGIN) report.errors.push(`bande : hauteur ${cb.height} au lieu de ${Q.barHeight + 2 * BAR_MARGIN}`);

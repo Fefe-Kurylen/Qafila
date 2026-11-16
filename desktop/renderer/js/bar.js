@@ -2,7 +2,7 @@
 // (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
 import {
   q, S, $, t, esc, STRIP, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
-  shortURL, setOverlay, renderNow, toast, onRender,
+  shortURL, setOverlay, renderNow, toast, onRender, reservesStrip,
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
 import { perform, actionState, isActive, isEnabled } from './actions.js';
@@ -26,6 +26,12 @@ export function applyTheme() {
   root.style.setProperty('--card', p.card);
   root.style.setProperty('--sw', String(WEIGHTS[settings().buttonWeight] || 1.15));
   root.style.setProperty('--strip', STRIP() + 'px');
+  // Page posée à côté de la bande (Fixe) : la bande a son propre fond, couleur du thème ou du site (barre « Auto »).
+  const reserve = reservesStrip();
+  root.classList.toggle('reserve', reserve);
+  $('#strip-bg').hidden = !reserve;
+  root.style.setProperty('--strip-color', p.site ? `rgb(${p.site.join(',')})` : (st.dark ? '#000000' : '#ffffff'));
+  root.classList.toggle('mac', S.cfg?.app?.platform === 'darwin');
   const acc = accentRGB();
   if (acc) root.style.setProperty('--accent', `rgb(${acc.join(',')})`); else root.style.removeProperty('--accent');
   root.classList.toggle('accent-mono', !acc);
@@ -59,11 +65,11 @@ export function addressCard(tab, opts = {}) {
     inner = `<span class="dom-pill">${showFav ? favicon(tab, 16) : ''}<span class="h">${esc(domain)}</span>${reading ? `<span class="sub">· ${esc(reading)}</span>` : ''}</span>`;
   } else if (style === 'titleReading') {
     const sub = reading ? t('reading_time_label', reading) : domain;
-    inner = `${showFav ? favicon(tab, 20) : ''}<span class="txt"><span class="title strong">${esc(tab.title)}</span><span class="sub">${esc(sub)}</span></span>`;
+    inner = `${showFav ? favicon(tab, 20) : ''}<span class="txt"><span class="title strong"><bdi>${esc(tab.title)}</bdi></span><span class="sub">${esc(sub)}</span></span>`;
   } else if (style === 'centered') {
-    inner = `<span class="txt center"><span class="dom">${esc(domain)}</span><span class="title">${esc(tab.title)}${reading ? ` <span class="sub">${esc(reading)}</span>` : ''}</span></span>`;
+    inner = `<span class="txt center"><span class="dom">${esc(domain)}</span><span class="title"><bdi>${esc(tab.title)}</bdi>${reading ? ` <span class="sub">${esc(reading)}</span>` : ''}</span></span>`;
   } else {
-    inner = `${showFav ? favicon(tab, 20) : ''}<span class="txt"><span class="dom">${esc(domain)}</span><span class="title" dir="auto">${esc(tab.title)}</span></span>${pill}`;
+    inner = `${showFav ? favicon(tab, 20) : ''}<span class="txt"><span class="dom">${esc(domain)}</span><span class="title"><bdi>${esc(tab.title)}</bdi></span></span>${pill}`;
   }
   const loading = !opts.preview && tab?.loading;
   const progress = opts.preview ? '' : `<span class="progress" style="opacity:${loading ? 1 : 0};transform:scaleX(${loading ? Math.max(0.06, tab.progress || 0) : 1})"></span>`;
@@ -151,7 +157,7 @@ function renderSuggestions() {
   if (!box) return;
   const items = suggestionItems();
   if (!items.length) { box.hidden = true; box.innerHTML = ''; return; }
-  const engine = S.cfg.engines?.[settings().searchEngine] || '';
+  const engine = t('engine_' + (settings().searchEngine || 'duckduckgo'));
   const looksURL = (s) => /^[a-z]+:\/\//i.test(s) || (/^\S+\.\S+$/.test(s) && !/\s/.test(s));
   let html = '';
   let lastGroup = null;

@@ -1,5 +1,6 @@
 'use strict';
-// Moteurs de recherche et suggestions : mêmes gabarits d'URL que Settings.swift.
+// Moteurs de recherche et suggestions : mêmes gabarits d'URL que Settings.swift. Les noms affichés viennent de
+// l'i18n (clés engine_<id>), jamais de `label` (simple nom de marque, absent pour « custom »).
 
 const ENGINES = {
   duckduckgo: { label: 'DuckDuckGo', url: (q) => `https://duckduckgo.com/?q=${q}`, home: 'https://duckduckgo.com' },
@@ -12,7 +13,7 @@ const ENGINES = {
   bing: { label: 'Bing', url: (q) => `https://www.bing.com/search?q=${q}`, home: 'https://www.bing.com' },
   searxng: { label: 'SearXNG', url: (q, s) => `${base(s) || 'https://searx.be'}/search?q=${q}`, home: (s) => base(s) || 'https://searx.be' },
   qafila: { label: 'Qafila', url: (q, s) => `${base(s) || 'https://qafila.example.com'}/?q=${q}`, home: (s) => base(s) || 'https://qafila.example.com' },
-  custom: { label: 'Personnalisé', url: (q, s) => (s.customSearchTemplate.includes('%s') ? s.customSearchTemplate : 'https://duckduckgo.com/?q=%s').replace('%s', q), home: 'https://duckduckgo.com' },
+  custom: { url: (q, s) => (s.customSearchTemplate.includes('%s') ? s.customSearchTemplate : 'https://duckduckgo.com/?q=%s').replace('%s', q), home: 'https://duckduckgo.com' },
 };
 
 function base(s) { return String(s.searchBaseURL || '').replace(/^[\s/]+|[\s/]+$/g, ''); }

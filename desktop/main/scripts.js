@@ -42,7 +42,7 @@ const reader = `(function(){
   var tree = walk(best, 0);
   var title = (document.querySelector('h1') || {}).innerText || document.title;
   var byline = (document.querySelector('[rel=author], .author, .byline') || {}).innerText || '';
-  return JSON.stringify({ title: String(title || ''), byline: String(byline || ''), tree: tree });
+  return JSON.stringify({ title: String(title || ''), byline: String(byline || ''), lang: String(document.documentElement.lang || ''), tree: tree });
 })();`;
 
 function escape(s) {
@@ -112,14 +112,22 @@ function renderReaderTree(tree) {
 const CSP_READER = "default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
 const CSP_LOCAL = "default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
 const cspMeta = (csp) => `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
+// Marges laissées à la barre : variables posées par le processus principal (TabManager.applyInsets) quand la page
+// passe sous la bande du chrome (Réduire / Masquer) ; 0 quand elle est posée à côté (Fixe).
+const INSET_TOP = 'var(--qafila-inset-top, 0px)';
+const INSET_BOTTOM = 'var(--qafila-inset-bottom, 0px)';
+
+/** Code de langue BCP 47 plausible (attribut lang de l'article), sinon ''. */
+function safeLang(v) { const l = String(v || '').trim(); return /^[a-z]{2,3}(-[a-z0-9]{1,8}){0,3}$/i.test(l) ? l : ''; }
 
 /** Page du lecteur (mêmes couleurs et gabarit que le mobile). `host` vient du processus principal, jamais de la page. */
-function readerPage({ title, byline, tree, host }, dark) {
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8">${cspMeta(CSP_READER)}<meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1">
+function readerPage({ title, byline, tree, host, lang }, dark) {
+  const l = safeLang(lang);
+  return `<!doctype html><html${l ? ` lang="${l}"` : ''}><head><meta charset="utf-8">${cspMeta(CSP_READER)}<meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
 <style>
 :root { color-scheme: ${dark ? 'dark' : 'light'}; }
-body { margin: 0 auto; padding: 24px 20px 60px; font: 19px/1.6 Georgia, "Iowan Old Style", "Times New Roman", serif; background: ${dark ? '#141416' : '#fbfaf7'}; color: ${dark ? '#ececec' : '#1b1b1b'}; max-width: 680px; }
+body { margin: 0 auto; padding: calc(24px + ${INSET_TOP}) 20px calc(60px + ${INSET_BOTTOM}); font: 19px/1.6 Georgia, "Iowan Old Style", "Times New Roman", serif; background: ${dark ? '#141416' : '#fbfaf7'}; color: ${dark ? '#ececec' : '#1b1b1b'}; max-width: 680px; }
 h1 { font: 700 30px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0 0 8px; }
 .meta { color: #888; font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; margin-bottom: 28px; }
 img, video { max-width: 100%; height: auto; border-radius: 10px; }
@@ -138,7 +146,7 @@ function startPage({ dark, bookmarks = [], title = 'Qafila', rtl = false, lang =
 ${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <style>
 :root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${dark ? '#000000' : '#ffffff'}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? '#1c1c1e' : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; }
-body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
+body { margin: 0; min-height: 100vh; box-sizing: border-box; padding: ${INSET_TOP} 0 ${INSET_BOTTOM}; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
 .head { margin-top: 26vh; text-align: center; }
 h1 { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", serif; font-weight: 500; font-size: 40px; letter-spacing: -.02em; margin: 0; }
 .ar { font-family: "Geeza Pro", "Damascus", "Noto Naskh Arabic", serif; font-size: 19px; color: #8e8e93; margin-top: 2px; }
@@ -154,7 +162,7 @@ h1 { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", ser
 function errorPage({ title, message, url, lang = 'fr', rtl = false, dark = false }) {
   return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${cspMeta(CSP_LOCAL)}<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
-<style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:24px;background:${dark ? '#000000' : '#ffffff'};color:${dark ? '#f2f2f7' : '#1c1c1e'}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
+<style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:calc(24px + ${INSET_TOP}) 24px calc(24px + ${INSET_BOTTOM});background:${dark ? '#000000' : '#ffffff'};color:${dark ? '#f2f2f7' : '#1c1c1e'}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
 </head><body><h1>${escape(title)}</h1><p dir="auto">${escape(message)}</p><p dir="ltr" style="font-size:13px;word-break:break-all">${escape(url)}</p></body></html>`;
 }
 

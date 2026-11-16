@@ -1,6 +1,7 @@
 'use strict';
-// État persistant : ${userData}/state.json, écrit de façon atomique (fichier temporaire + renommage), avec un délai
-// de regroupement. Mêmes formes que sur mobile : tabs, selected, bookmarks {id,title,url,addedAt},
+// État persistant : ${userData}/state.json, écrit de façon atomique (fichier temporaire synchronisé sur disque, puis
+// renommage), avec un délai de regroupement et de nouvelles tentatives en cas d'échec. Un fichier illisible n'est
+// jamais écrasé : il est mis de côté (state.json.corrupt-<horodatage>) avant de repartir des défauts. Mêmes formes que sur mobile : tabs, selected, bookmarks {id,title,url,addedAt},
 // history {id,title,url,visitedAt}, settings (clés de shared/settings-keys.json). Les onglets privés ne sont jamais écrits.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -11,6 +12,7 @@ const { safeFaviconURL } = require('./favicon');
 
 const HISTORY_MAX = 2000;
 const AUTO_CLOSE_MS = { never: null, day: 86_400_000, week: 604_800_000, month: 2_592_000_000 };
+const RETRY_MS = [2_000, 10_000, 30_000, 60_000]; // nouvelles tentatives d'écriture après un échec
 
 class Store extends EventEmitter {
   constructor(dir, { ephemeral = false } = {}) {
@@ -26,12 +28,30 @@ class Store extends EventEmitter {
     this.closedTabs = []; // pile des onglets fermés (« Rouvrir l'onglet fermé »)
     this._timer = null;
     this._dirty = false;
+    this._failures = 0;
+    this._blocked = false; // fichier illisible qu'on n'a pas pu mettre de côté : on n'écrit pas par-dessus
+    this.corruptBackup = null; // chemin de la copie mise de côté, le cas échéant
   }
 
   // ----- Chargement / sauvegarde -----
   load() {
+    let text;
+    try { text = fs.readFileSync(this.file, 'utf8'); } catch (e) {
+      // Pas encore de fichier : premier lancement. Toute autre erreur de lecture = fichier à protéger.
+      if (e.code !== 'ENOENT') this.setAsideUnreadable(e);
+      this.closeExpiredTabs();
+      return;
+    }
+    let raw;
     try {
-      const raw = JSON.parse(fs.readFileSync(this.file, 'utf8'));
+      raw = JSON.parse(text);
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('racine JSON inattendue');
+    } catch (e) {
+      this.setAsideUnreadable(e);
+      this.closeExpiredTabs();
+      return;
+    }
+    try {
       this.tabs = (Array.isArray(raw.tabs) ? raw.tabs : []).filter((t) => t && !t.isPrivate).map(normalizeTab);
       this.bookmarks = (Array.isArray(raw.bookmarks) ? raw.bookmarks : []).filter((b) => b && b.url).map((b) => ({
         id: b.id || uuid(), title: String(b.title || ''), url: String(b.url), addedAt: num(b.addedAt),
@@ -43,10 +63,26 @@ class Store extends EventEmitter {
       // L'onglet sélectionné était privé (ou a disparu) : on reprend le dernier onglet visité.
       this.selected = this.tabs.some((t) => t.id === raw.selected) ? raw.selected
         : this.tabs.reduce((best, t) => (!best || t.lastVisited > best.lastVisited ? t : best), null)?.id ?? null;
-    } catch {
-      // Pas de fichier, ou illisible : on repart des défauts sans rien écraser avant la première écriture.
+    } catch (e) {
+      // Contenu inattendu malgré un JSON valide : même protection qu'un fichier corrompu.
+      this.tabs = []; this.bookmarks = []; this.history = []; this.selected = null; this.settings = settingsSchema.defaults();
+      this.setAsideUnreadable(e);
     }
     this.closeExpiredTabs();
+  }
+
+  /** state.json illisible : renommé en state.json.corrupt-<horodatage> avant toute écriture (jamais écrasé en silence). */
+  setAsideUnreadable(err) {
+    const backup = `${this.file}.corrupt-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    try {
+      fs.renameSync(this.file, backup);
+      this.corruptBackup = backup;
+      console.error(`state.json illisible (${err?.message || err}) : mis de côté sous ${path.basename(backup)}`);
+    } catch (e) {
+      // Impossible de le déplacer : on ne l'écrase pas non plus (les changements de cette session ne sont pas écrits).
+      this._blocked = true;
+      console.error(`state.json illisible et impossible à mettre de côté (${e.message}) : aucune écriture`);
+    }
   }
 
   snapshot() {
@@ -68,17 +104,36 @@ class Store extends EventEmitter {
     this._timer = setTimeout(() => this.saveNow(), 400);
   }
 
+  /** Écrit l'état maintenant ; renvoie true si le fichier est à jour. En cas d'échec, l'état reste « à écrire » et une
+   * nouvelle tentative est programmée (2 s, 10 s, 30 s, puis toutes les minutes). */
   saveNow() {
     clearTimeout(this._timer);
-    if (!this._dirty || this.ephemeral) return;
-    this._dirty = false;
+    if (!this._dirty || this.ephemeral) return true;
+    if (this._blocked) return false;
+    const tmp = path.join(this.dir, `.state.${process.pid}.${Date.now()}.tmp`);
+    let fd = null;
     try {
       fs.mkdirSync(this.dir, { recursive: true });
-      const tmp = path.join(this.dir, `.state.${process.pid}.${Date.now()}.tmp`);
-      fs.writeFileSync(tmp, JSON.stringify(this.snapshot()));
+      // Fichier temporaire écrit puis synchronisé sur disque AVANT le renommage : une coupure de courant laisse soit
+      // l'ancien état, soit le nouveau, jamais un fichier vide.
+      fd = fs.openSync(tmp, 'w', 0o600);
+      fs.writeSync(fd, JSON.stringify(this.snapshot()));
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
+      fd = null;
       fs.renameSync(tmp, this.file);
+      this._dirty = false;
+      this._failures = 0;
+      return true;
     } catch (e) {
-      console.error('Sauvegarde de state.json impossible :', e.message);
+      if (fd !== null) { try { fs.closeSync(fd); } catch { /* ignoré */ } }
+      try { fs.unlinkSync(tmp); } catch { /* absent */ }
+      const delay = RETRY_MS[Math.min(this._failures, RETRY_MS.length - 1)];
+      this._failures++;
+      console.error(`Sauvegarde de state.json impossible (${e.message}) : nouvel essai dans ${delay / 1000} s`);
+      this._timer = setTimeout(() => this.saveNow(), delay);
+      this._timer.unref?.();
+      return false;
     }
   }
 

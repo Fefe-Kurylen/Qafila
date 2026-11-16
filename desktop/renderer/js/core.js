@@ -109,7 +109,9 @@ export function palette(cfgOverride) {
   const key = dark ? s.barColorDark : s.barColorLight;
   const tab = selectedTab();
   const fallback = dark ? [28, 28, 30] : [242, 242, 247];
-  const bar = BAR_COLORS[key] || (key === 'auto' ? hexToRGB(tab?.themeColor) : null) || fallback;
+  // Couleur du site (barre « Auto ») : aussi le fond de la bande quand la page est posée à côté d'elle.
+  const site = key === 'auto' ? hexToRGB(tab?.themeColor) : null;
+  const bar = BAR_COLORS[key] || site || fallback;
   const l = lum(bar);
   const contentDark = l < 0.55;
   const style = (cfgOverride || toolbar()).style || 'floating';
@@ -119,7 +121,7 @@ export function palette(cfgOverride) {
   if (style === 'classic') card = contentDark ? `rgba(255,255,255,${l < 0.08 ? 0.13 : 0.16})` : (l > 0.985 ? 'rgb(239,239,244)' : 'rgba(255,255,255,.92)');
   else card = contentDark ? `rgba(255,255,255,${(0.12 + 0.04 * solid).toFixed(3)})` : `rgba(255,255,255,${(0.55 + 0.10 * solid).toFixed(3)})`;
   const alpha = style === 'classic' ? 1 : 1 - 0.6 * tr;
-  return { bar, card, contentDark, alpha, transparency: tr, style };
+  return { bar, card, contentDark, alpha, transparency: tr, style, site };
 }
 
 export function accentRGB() {
@@ -130,6 +132,9 @@ export function accentRGB() {
 // ----- Géométrie de la vue du chrome -----
 /** Hauteur déclarée au processus principal (bande = hauteur + 2 × 12) : capsule 64 → bande 88 ; Classique / Verre → bande 64. */
 export function barHeight() { return toolbar().style === 'floating' ? BAR.floating : BAR.full - 16; }
+
+/** La page est posée à côté de la bande (Classique, ou « Au défilement » = Fixe) : même règle que main/index.js. */
+export function reservesStrip() { return toolbar().style === 'classic' || (settings().scrollBehavior || 'fixed') === 'fixed'; }
 
 /** Bande (barre seule) ou fenêtre entière (menu, suggestions, écrans) ; le processus principal redimensionne la vue. */
 export async function syncChromeMode() {

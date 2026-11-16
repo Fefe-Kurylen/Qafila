@@ -38,5 +38,11 @@
   "use_system_folder": "Usar la carpeta del sistema",
   "external_open": "Abrir",
   "external_open_mail": "¿Abrir este enlace en tu aplicación de correo?",
-  "external_open_tel": "¿Abrir este número en tu aplicación de teléfono?"
+  "external_open_tel": "¿Abrir este número en tu aplicación de teléfono?",
+  "page_crashed": "Esta página se detuvo de forma inesperada. Recarga para volver a intentarlo.",
+  "download_multiple": "%1$s quiere descargar varios archivos.",
+  "download_allow": "Permitir",
+  "download_block": "Bloquear",
+  "download_blocked": "Descargas múltiples bloqueadas: %1$s",
+  "scroll_desktop_footer": "Fija: la página empieza debajo de la barra, nunca se oculta nada. Reducir y Ocultar: la página pasa bajo la barra de cristal."
 }

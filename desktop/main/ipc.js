@@ -50,7 +50,8 @@ function register(a) {
 
   // ----- Onglets -----
   handle('tabs:list', () => a.describeTabs());
-  handle('tabs:create', (p) => a.newTab({ url: str(p.url) || null, isPrivate: !!p.isPrivate, select: p.select !== false }).id);
+  // Bouton + / Nouvel onglet (privé) sans adresse : le champ d'adresse du nouvel onglet prend le focus.
+  handle('tabs:create', (p) => { const url = str(p.url) || null; return a.newTab({ url, isPrivate: !!p.isPrivate, select: p.select !== false, focus: !url }).id; });
   handle('tabs:close', (p) => a.closeTab(current(p)));
   handle('tabs:closeAll', (p) => a.closeAllTabs(typeof p.privateOnly === 'boolean' ? p.privateOnly : null));
   handle('tabs:reopen', () => a.reopenTab());
@@ -109,6 +110,12 @@ function register(a) {
   handle('page:zoom', (p) => a.zoom(Number(p.delta) || 0));
   handle('page:copyLink', () => { const u = store.selectedTab?.url; return u ? copyText(u) : false; });
   handle('page:share', () => { const u = store.selectedTab?.url; return u ? copyText(u) : false; });
+  handle('page:wheel', (p) => {
+    const n = (v, max) => (Number.isFinite(Number(v)) ? Math.max(-max, Math.min(max, Number(v))) : null);
+    const w = { x: n(p.x, 20000), y: n(p.y, 20000), deltaX: n(p.deltaX, 5000), deltaY: n(p.deltaY, 5000) };
+    if (Object.values(w).some((v) => v === null)) return false;
+    return a.forwardWheel(w);
+  });
 
   // ----- Données, suggestions, configuration -----
   handle('data:clear', () => a.clearData());
@@ -120,7 +127,8 @@ function register(a) {
     lang: a.t().lang,
     rtl: a.t().rtl,
     app: { version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, platform: process.platform, demo: !!a.demo },
-    engines: Object.fromEntries(Object.entries(search.ENGINES).map(([k, v]) => [k, v.label])),
+    // Noms des moteurs dans la langue de l'interface (« Personnalisé », « SearXNG (instance) »… passent par l'i18n).
+    engines: Object.fromEntries(Object.keys(search.ENGINES).map((k) => [k, a.t()('engine_' + k)])),
     theme: { dark: nativeTheme.shouldUseDarkColors },
   }));
   handle('openExternal', (p) => { const u = str(p.url); if (/^https?:\/\//i.test(u)) return shell.openExternal(u).then(() => true, () => false); return false; });

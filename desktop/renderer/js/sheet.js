@@ -95,7 +95,6 @@ const P = {};
 P.settings = () => {
   const s = settings();
   const sup = S.supportInfo?.configured;
-  const engines = S.cfg.engines || {};
   const lang = s.language ? t('lang_' + s.language) : t('language_system');
   return {
     title: actionLabel('settings'), root: true,
@@ -110,7 +109,7 @@ P.settings = () => {
       navRow('link', t('page_address'), addressStyleLabel(s.addressStyle), 'address'),
       navRow('squares', t('action_tabs'), t(s.tabsLayout === 'grid' ? 'layout_grid' : 'layout_list'), 'tabsSettings'),
     ]) + group([
-      navRow('search', t('page_search'), engines[s.searchEngine] || '', 'search'),
+      navRow('search', t('page_search'), t('engine_' + (s.searchEngine || 'duckduckgo')), 'search'),
       navRow('shieldHalf', t('page_privacy'), '', 'privacy'),
       navRow('reader', t('page_reading'), t('percent', s.textZoom || 100), 'reading'),
       navRow('download', t('downloads'), S.state.downloads?.active ? t('percent', Math.round((S.state.downloads.progress || 0) * 100)) : '', 'downloads'),
@@ -150,6 +149,8 @@ P.toolbar = () => {
     body: preview()
       + group([navRow('sliders', t('customize_bar_menu'), '', 'editor'), navRow('grid', t('page_gallery'), '', 'gallery')])
       + group([`<div class="s-row seg-row"><div class="seg">${[['top', 'position_top'], ['bottom', 'position_bottom']].map(([v, k]) => `<button class="${v === pos ? 'on' : ''}" data-tbset="position" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('position') })
+      // Au défilement (comme sur mobile) : Fixe pose la page sous la barre ; Réduire / Masquer la font passer dessous.
+      + group([segmented('scrollBehavior', [['fixed', t('scroll_fixed')], ['shrink', t('scroll_shrink')], ['hide', t('scroll_hide')]], s.scrollBehavior || 'fixed')], { header: t('on_scroll'), footer: t('scroll_desktop_footer') })
       + group([segmented('buttonWeight', [['thin', t('weight_thin')], ['regular', t('weight_regular')], ['bold', t('weight_bold')]])], { header: t('icon_weight') })
       + group([segmented('menuIcon', [['dots', t('menu_icon_dots'), 'dots'], ['dotsCircle', t('menu_icon_dots_circle'), 'dotsCircle'], ['linesCircle', t('menu_icon_lines_circle'), 'linesCircle']])], { header: t('menu_icon') })
       + group([buttonRow(t('reset_bar_menu'), 'resetToolbar', { red: true })]),

@@ -23,6 +23,13 @@ const GESTURE_EVENTS = new Set(['mouseDown', 'keyDown', 'rawKeyDown', 'gestureTa
 // Monde isolé de l'extracteur du lecteur (999 est celui des préchargements d'Electron).
 const READER_WORLD = 1001;
 const MAX_LIVE_VIEWS = 8;
+// Plantage du moteur de rendu : au plus un rechargement automatique par onglet et par minute, puis page d'erreur.
+const CRASH_RELOAD_MS = 60_000;
+// Permissions accordées sans question : aucune n'expose l'appareil ni l'utilisateur (plein écran, verrouillage du
+// pointeur, écriture filtrée du presse-papiers). Tout le reste est refusé : notifications, géolocalisation, caméra et
+// micro (media), MIDI, lecture du presse-papiers, gestion des fenêtres (getScreenDetails : écrans, positions,
+// libellés), capteurs, stockage partagé entre sites, ouverture d'applications (gérée à part, avec confirmation)…
+const GRANTED_PERMISSIONS = new Set(['fullscreen', 'pointerLock', 'clipboard-sanitized-write']);
 const MOBILE_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36';
 const ERR_ABORTED = -3;
 
@@ -59,6 +66,10 @@ class TabManager extends EventEmitter {
     this.httpOnlyHosts = new Set();
     this.lastGesture = new Map();  // webContentsId → instant du dernier clic / appui de touche dans la page
     this.externalPrompt = new Set(); // webContentsId dont une demande d'application externe est ouverte
+    this.downloadState = new Map(); // webContentsId → { used, at } : téléchargements de la page (geste / automatique)
+    this.crashReloads = new Map(); // tabId → instant du dernier rechargement après un plantage
+    this.localInsets = { top: 0, bottom: 0 }; // marges des pages locales quand la page passe sous la barre
+    this.insetKeys = new Map();    // webContentsId → clé du CSS des marges inséré (pour le remplacer)
     this.attached = null;        // onglet dont la vue est affichée
     this.pageBounds = { x: 0, y: 0, width: 0, height: 0 };
     this.userAgent = desktopUserAgent(userAgent);
@@ -73,10 +84,11 @@ class TabManager extends EventEmitter {
     ses.setSpellCheckerEnabled(false);
     // Téléchargements : traités par le processus principal (dossier par défaut, notification dans la barre).
     ses.on('will-download', (_e, item, wc) => this.emit('download', item, wc, ses === this.private));
-    // Permissions : rien n'est accordé en silence (pas de géolocalisation, notifications, capteurs, micro…).
-    const allowed = new Set(['fullscreen', 'pointerLock', 'clipboard-sanitized-write', 'window-management']);
-    ses.setPermissionRequestHandler((_wc, permission, cb) => cb(allowed.has(permission)));
-    ses.setPermissionCheckHandler((_wc, permission) => allowed.has(permission));
+    // Permissions : rien n'est accordé en silence qui révèle l'appareil ou l'utilisateur (voir GRANTED_PERMISSIONS).
+    ses.setPermissionRequestHandler((_wc, permission, cb) => cb(GRANTED_PERMISSIONS.has(permission)));
+    ses.setPermissionCheckHandler((_wc, permission) => GRANTED_PERMISSIONS.has(permission));
+    // Périphériques (USB, HID, série, Bluetooth) : jamais.
+    ses.setDevicePermissionHandler(() => false);
     // Un seul gestionnaire onBeforeRequest par session (un second appel remplacerait le premier) :
     // 1) HTTPS forcé : les navigations principales en http partent en https ; en cas d'échec, retour en http (did-fail-load) ;
     // 2) bloqueur : requêtes tierces vers les domaines publicitaires / traqueurs / bandeaux annulées.
@@ -226,6 +238,8 @@ class TabManager extends EventEmitter {
     this.upgradedFrom.delete(wc.id);
     this.lastGesture.delete(wc.id);
     this.externalPrompt.delete(wc.id);
+    this.downloadState.delete(wc.id);
+    this.insetKeys.delete(wc.id);
     this.views.delete(tabId);
     this.live.delete(tabId);
     this.readerActive.delete(tabId);
@@ -245,6 +259,7 @@ class TabManager extends EventEmitter {
       const { url, isMainFrame, isSameDocument } = e;
       if (!isMainFrame || isSameDocument) return;
       this.blocker.resetCount(wc.id);
+      this.downloadState.delete(wc.id); // nouvelle page : de nouveau un téléchargement automatique permis
       update({ blocked: 0, progress: 0.2 });
       // Les navigations JavaScript désactivé / activé se décident à la navigation (réglage par site).
       const enabled = this.isJavaScriptEnabled(url);
@@ -257,6 +272,8 @@ class TabManager extends EventEmitter {
       if (css) wc.insertCSS(css).catch(() => {});
       const tab = this.store.tabs.find((x) => x.id === tabId);
       if (tab && this.isDarkened(tab)) wc.insertCSS(scripts.darkenCSS).catch(() => {});
+      this.insetKeys.delete(wc.id);
+      if (this.isLocal(url)) this.applyInsets(wc);
     });
     wc.on('did-navigate', (_e, url, code) => {
       this.trackURL(tabId, url);
@@ -303,16 +320,18 @@ class TabManager extends EventEmitter {
         return;
       }
       if (code === -302 /* ERR_UNKNOWN_URL_SCHEME */) { this.openExternal(validatedURL, wc); return; }
-      const t = this.t();
-      const html = scripts.errorPage({ title: t('error_page_title'), message: description, url: validatedURL, lang: t.lang, rtl: t.rtl, dark: this.isDark() });
-      // Origine opaque (data: sans baseURLForDataURL) : la page d'erreur n'hérite jamais des droits du site.
-      wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch(() => {});
+      this.showError(wc, description, validatedURL);
     });
     wc.on('render-process-gone', () => {
       this.readerActive.delete(tabId);
+      if (wc.isDestroyed()) return;
       if (this.store.selected !== tabId) { this.discard(tabId); return; }
       const tab = this.store.tabs.find((x) => x.id === tabId);
-      if (tab) this.open(tabId, tab.url);
+      if (!tab) return;
+      const now = Date.now();
+      if (now - (this.crashReloads.get(tabId) || 0) >= CRASH_RELOAD_MS) { this.crashReloads.set(tabId, now); this.open(tabId, tab.url); return; }
+      // Second plantage en moins d'une minute : page d'erreur plutôt qu'une boucle plantage / rechargement.
+      this.showError(wc, this.t()('page_crashed'), tab.url || '');
     });
     wc.on('will-navigate', (e, url) => {
       let scheme = '';
@@ -340,6 +359,48 @@ class TabManager extends EventEmitter {
       else if (channel === 'qafila:page:nav') { if (data?.dir === 'back') this.back(tabId); else if (data?.dir === 'forward') this.forward(tabId); }
     });
     wc.on('zoom-changed', (_e, dir) => this.emit('zoom', dir));
+  }
+
+  /** Page d'erreur locale dans la langue de l'interface. */
+  showError(wc, message, url) {
+    const t = this.t();
+    const html = scripts.errorPage({ title: t('error_page_title'), message, url, lang: t.lang, rtl: t.rtl, dark: this.isDark() });
+    // Origine opaque (data: sans baseURLForDataURL) : la page d'erreur n'hérite jamais des droits du site.
+    wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch(() => {});
+  }
+
+  /**
+   * Marges des pages locales (démarrage, lecteur, erreur) : hauteur de la bande quand la page passe sous la barre
+   * (Réduire / Masquer), 0 quand elle est posée à côté (Fixe). Variables CSS lues par ces pages (scripts.js).
+   */
+  setLocalInsets({ top = 0, bottom = 0 }) {
+    if (top === this.localInsets.top && bottom === this.localInsets.bottom) return;
+    this.localInsets = { top, bottom };
+    for (const v of this.views.values()) { const wc = v.webContents; if (!wc.isDestroyed() && this.isLocal(wc.getURL())) this.applyInsets(wc); }
+  }
+
+  applyInsets(wc) {
+    const { top, bottom } = this.localInsets;
+    const old = this.insetKeys.get(wc.id);
+    if (old) wc.removeInsertedCSS(old).catch(() => {});
+    this.insetKeys.delete(wc.id);
+    wc.insertCSS(`:root{--qafila-inset-top:${top}px;--qafila-inset-bottom:${bottom}px}`).then((k) => { if (!wc.isDestroyed()) this.insetKeys.set(wc.id, k); }, () => {});
+  }
+
+  /**
+   * Téléchargement lancé par une page (règle de Chrome) : un geste de l'utilisateur (clic, touche) permet un
+   * téléchargement, et le premier téléchargement automatique d'une page passe aussi. Au-delà, il faut demander
+   * (une fois par site). Renvoie { ask: false } ou { ask: true, host }.
+   */
+  downloadVerdict(wc) {
+    if (!wc || wc.isDestroyed?.()) return { ask: false };
+    const now = Date.now();
+    const st = this.downloadState.get(wc.id) || { used: false, at: 0 };
+    const gesture = this.lastGesture.get(wc.id) || 0;
+    if (gesture > st.at || !st.used) { this.downloadState.set(wc.id, { used: true, at: now }); return { ask: false }; }
+    let host = '';
+    try { host = new URL(wc.getURL()).host; } catch { host = ''; }
+    return { ask: true, host: host || String(wc.getURL()).slice(0, 80) };
   }
 
   onPageInfo(tabId, wc, info) {
@@ -413,7 +474,7 @@ class TabManager extends EventEmitter {
       items.push({ label: t('open_in_new_tab'), click: () => this.emit('open-tab', { url: params.linkURL, isPrivate: !!tab?.isPrivate, select: false }) });
       items.push({ label: t('open_in_private_tab'), click: () => this.emit('open-tab', { url: params.linkURL, isPrivate: true, select: true }) });
       items.push({ label: t('action_copy_link'), click: () => copyText(params.linkURL) });
-      items.push({ label: t('save_link_as'), click: () => wc.downloadURL(params.linkURL) });
+      items.push({ label: t('save_link_as'), click: () => { this.lastGesture.set(wc.id, Date.now()); wc.downloadURL(params.linkURL); } });
       sep();
     } else if (params.linkURL) {
       items.push({ label: t('action_copy_link'), click: () => copyText(params.linkURL) });
@@ -421,7 +482,7 @@ class TabManager extends EventEmitter {
     }
     if (params.mediaType === 'image' && params.srcURL) {
       items.push({ label: t('copy_image'), click: () => wc.copyImageAt(params.x, params.y) });
-      items.push({ label: t('save_image_as'), click: () => wc.downloadURL(params.srcURL) });
+      items.push({ label: t('save_image_as'), click: () => { this.lastGesture.set(wc.id, Date.now()); wc.downloadURL(params.srcURL); } });
       items.push({ label: t('copy_image_address'), click: () => copyText(params.srcURL) });
       sep();
     }
@@ -501,7 +562,7 @@ class TabManager extends EventEmitter {
     const tab = this.store.tabs.find((x) => x.id === tabId);
     const html = scripts.readerPage({
       title: String(obj.title || '').slice(0, 500), byline: String(obj.byline || '').slice(0, 300),
-      tree: obj.tree, host: stripWWW(hostOf(tab?.url || wc.getURL())),
+      tree: obj.tree, host: stripWWW(hostOf(tab?.url || wc.getURL())), lang: obj.lang,
     }, this.isDark());
     this.readerActive.add(tabId);
     // Origine opaque : pas de baseURLForDataURL (sinon la page du lecteur prendrait l'origine, les cookies et le

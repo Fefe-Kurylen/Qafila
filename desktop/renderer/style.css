@@ -75,9 +75,16 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 @keyframes fade { from { opacity: 0; } }
 
 /* ===== Barre ===== */
+/* Fond de la bande quand la page est posée à côté d'elle (Fixe) : la capsule flotte sur la couleur du thème (ou du site). */
+.strip-bg { position: fixed; left: 0; right: 0; top: 0; height: var(--strip); background: var(--strip-color, transparent); z-index: 0; }
+:root.bottom .strip-bg { top: auto; bottom: 0; }
+/* Ombre contenue dans la marge de 12 px (décalage 3 + flou 8 < 12) : jamais coupée net par le bord de la bande. */
 .bar { position: fixed; left: 12px; right: 12px; top: 12px; height: 64px; border-radius: 32px; overflow: hidden; z-index: 3; isolation: isolate;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, calc(.06 + .06 * var(--alpha))), 0 1px 2px rgba(0, 0, 0, .06); }
-:root.bar-dark .bar { box-shadow: 0 6px 18px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .2); }
+  box-shadow: 0 3px 8px rgba(0, 0, 0, calc(.05 + .05 * var(--alpha))), 0 1px 2px rgba(0, 0, 0, .06); }
+:root.bar-dark .bar { box-shadow: 0 3px 8px rgba(0, 0, 0, .3), 0 1px 2px rgba(0, 0, 0, .2); }
+/* macOS : la barre et la bande déplacent la fenêtre (comme la barre d'outils de Safari) ; jamais les commandes. */
+:root.mac:not(.overlay-open) .bar, :root.mac:not(.overlay-open) .strip-bg { -webkit-app-region: drag; }
+:root.mac .bar button, :root.mac .bar input, :root.mac .bar label, :root.mac .bar [data-address], :root.mac .bar a { -webkit-app-region: no-drag; }
 :root.bottom .bar { top: auto; bottom: 12px; }
 :root.overlay-tabs .bar { visibility: hidden; }
 .bar .glass { position: absolute; inset: 0; overflow: hidden; }
@@ -166,11 +173,11 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .m-tiles { display: flex; align-items: center; }
 .m-tile { flex: 1; min-width: 0; height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--bfg); transition: background-color .12s; }
 .m-tiles.labelled .m-tile { height: 62px; }
-.m-tile span { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 4px; }
+.m-tile span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 4px; }
 .m-tile:disabled { opacity: .3; }
 .m-vsep { width: .5px; height: 24px; background: var(--bsep); flex: none; }
 .m-tiles.labelled .m-vsep { height: 36px; }
-.m-line { width: 100%; height: 43px; display: flex; align-items: center; gap: 12px; padding: 0 16px; font-size: 15.5px; text-align: start; color: var(--bfg); transition: background-color .12s; }
+.m-line { width: 100%; height: 42px; display: flex; align-items: center; gap: 12px; padding: 0 16px; font-size: 15px; text-align: start; color: var(--bfg); transition: background-color .12s; }
 .m-line .l { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .m-line svg.ic, .m-line .tabs-glyph { flex: none; }
 .m-tile:hover:not(:disabled), .m-line:hover { background: var(--bfill); }
@@ -207,7 +214,7 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .t-search input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 16px; color: var(--text); height: 38px; }
 .t-search input::placeholder { color: var(--secondary); }
 .t-search input::-webkit-search-cancel-button { filter: grayscale(1); }
-.t-head { display: flex; justify-content: space-between; padding: 22px 20px 9px; font-size: 12.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--secondary); }
+.t-head { display: flex; justify-content: space-between; padding: 22px 20px 9px; font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--secondary); }
 .t-group { background: var(--cell); border-radius: 22px; overflow: hidden; }
 .t-head + .t-group, .t-head + .g-grid { margin-top: 0; }
 .t-group + .t-head { margin-top: 12px; }
@@ -216,8 +223,8 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .t-row:hover { background: rgba(118, 118, 128, .06); }
 .t-row .fav { color: var(--text); background: transparent; font-size: 17px !important; }
 .t-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.t-title { font-size: 15.5px; font-weight: 500; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.t-dom { font-size: 11px; font-weight: 500; letter-spacing: .9px; text-transform: uppercase; color: var(--secondary); }
+.t-title { font-size: 14px; font-weight: 500; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.t-dom { font-size: 10px; font-weight: 500; letter-spacing: .9px; text-transform: uppercase; color: var(--secondary); }
 .t-row .pill { font-size: 12.5px; padding: 4px 9px; }
 .t-check { color: var(--secondary); display: grid; }
 .t-close { width: 24px; height: 24px; border-radius: 12px; display: grid; place-items: center; background: var(--fill); color: var(--secondary); opacity: 0; transition: opacity .15s; flex: none; }
@@ -234,7 +241,7 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .g-ph .fav { color: var(--secondary); background: var(--fill); }
 .g-close { position: absolute; top: 8px; inset-inline-end: 8px; width: 24px; height: 24px; border-radius: 12px; display: grid; place-items: center; background: rgba(0, 0, 0, .45); color: #fff; backdrop-filter: blur(6px); }
 .g-close svg { stroke-width: 2.2; }
-.g-cap { display: flex; align-items: center; gap: 7px; margin-top: 9px; font-size: 12.5px; padding: 0 2px; --bfg2: var(--secondary); --bfill: var(--fill); }
+.g-cap { display: flex; align-items: center; gap: 7px; margin-top: 9px; font-size: 12px; padding: 0 2px; --bfg2: var(--secondary); --bfill: var(--fill); }
 .g-cap span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .glass-pill { background: rgba(var(--cell-rgb), .94); box-shadow: 0 8px 28px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .06); }
 :root.dark .glass-pill { background: rgba(44, 44, 46, .96); box-shadow: 0 8px 28px rgba(0, 0, 0, .5), 0 0 0 .5px rgba(255, 255, 255, .08); }

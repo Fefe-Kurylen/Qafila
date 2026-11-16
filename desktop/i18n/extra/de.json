@@ -38,5 +38,11 @@
   "use_system_folder": "Systemordner verwenden",
   "external_open": "Öffnen",
   "external_open_mail": "Diesen Link in deiner E-Mail-App öffnen?",
-  "external_open_tel": "Diese Nummer in deiner Telefon-App öffnen?"
+  "external_open_tel": "Diese Nummer in deiner Telefon-App öffnen?",
+  "page_crashed": "Diese Seite wurde unerwartet beendet. Neu laden, um es erneut zu versuchen.",
+  "download_multiple": "%1$s möchte mehrere Dateien herunterladen.",
+  "download_allow": "Zulassen",
+  "download_block": "Blockieren",
+  "download_blocked": "Mehrere Downloads blockiert: %1$s",
+  "scroll_desktop_footer": "Fixiert: Die Seite beginnt unter der Leiste, nichts wird verdeckt. Verkleinern und Ausblenden: Die Seite läuft unter der Glasleiste."
 }

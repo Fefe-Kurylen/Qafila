@@ -43,7 +43,7 @@ export function menuHTML(entries, st = actionState()) {
     row.items.forEach((e, i) => {
       const a = action(e.action);
       if (i > 0) html += '<div class="m-sep"></div>';
-      html += `<button class="m-line${a?.destructive ? ' red' : ''}${isActive(e.action, st) ? ' on' : ''}" data-menu="${e.action}"><span class="l">${esc(lineLabel(e.action, actionLabel(e.action)))}</span>${glyph(e.action, 16)}</button>`;
+      html += `<button class="m-line${a?.destructive ? ' red' : ''}${isActive(e.action, st) ? ' on' : ''}" data-menu="${e.action}"><span class="l">${esc(lineLabel(e.action, actionLabel(e.action)))}</span>${glyph(e.action, 17)}</button>`;
     });
   }
   return html || `<div class="m-empty">${esc(S.cfg ? actionLabel('menu') : '')}</div>`;

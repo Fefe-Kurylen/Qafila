@@ -39,7 +39,7 @@ function rowHTML(tab) {
   const sel = tab.id === S.state.selected;
   return `<div class="t-row${sel ? ' sel' : ''}" data-tab="${tab.id}">
     ${favicon(tab, 26)}
-    <span class="t-txt"><span class="t-title" dir="auto">${esc(tab.title)}</span><span class="t-dom">${esc(tab.host || '')}</span></span>
+    <span class="t-txt"><span class="t-title"><bdi>${esc(tab.title)}</bdi></span><span class="t-dom">${esc(tab.host || '')}</span></span>
     ${reading ? `<span class="pill">${esc(reading)}</span>` : ''}
     ${sel ? `<span class="t-check">${icon('check', 18)}</span>` : ''}
     <button class="t-close" data-close="${tab.id}" title="${esc(t('action_close_tab'))}">${icon('xmark', 14)}</button>
@@ -52,7 +52,7 @@ function cardHTML(tab) {
   const ph = `<span class="g-ph">${favicon(tab, 36)}</span>`;
   return `<div class="gt-card${sel ? ' sel' : ''}" data-tab="${tab.id}">
     <div class="g-thumb">${snap ? `<img src="${snap}" alt="">` : ph}<button class="g-close" data-close="${tab.id}" title="${esc(t('action_close_tab'))}">${icon('xmark', 12)}</button></div>
-    <div class="g-cap">${favicon(tab, 14)}<span>${esc(tab.title)}</span></div>
+    <div class="g-cap">${favicon(tab, 14)}<span><bdi>${esc(tab.title)}</bdi></span></div>
   </div>`;
 }
 
