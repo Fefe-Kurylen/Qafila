@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.Canvas
@@ -309,29 +310,71 @@ private fun BarColorSection(title: String, selected: BarColor, dark: Boolean, on
     }
 }
 
-/** Aperçu des icônes de l'application : la pyramide, mêmes couleurs que les ressources du lanceur. */
+/**
+ * Aperçu des icônes de l'application : grande pyramide 3D au centre d'un atome (trois orbites tissées et trois électrons),
+ * mêmes géométrie et couleurs que les ressources du lanceur (shared/icon/generate.py). L'icône classique n'a pas de fond :
+ * elle est montrée sur une tuile claire neutre.
+ */
 @Composable
 fun AppIconTile(icon: AppIcon, selected: Boolean, size: Dp = 58.dp, locked: Boolean = false) {
     val q = LocalQ.current
-    fun solid(c: Long) = SolidColor(Color(c))
-    fun grad(a: Long, b: Long) = Brush.verticalGradient(listOf(Color(a), Color(b)))
-    val (bg, lit, shade) = when (icon) {
-        AppIcon.CLASSIC -> Triple(Color.White, solid(0xFF4A4E57), solid(0xFF17191C))
-        AppIcon.DARK -> Triple(Color(0xFF17191C), solid(0xFFF2F4F7), solid(0xFF9FA6B0))
-        AppIcon.INK -> Triple(Color(0xFF14233C), solid(0xFFF3EEE3), solid(0xFFBFB49C))
-        AppIcon.DESERT -> Triple(Color(0xFFE9D7B7), solid(0xFFC0703E), solid(0xFF7A4E25))
-        AppIcon.GOLD -> Triple(Color(0xFF0E0E10), grad(0xFFF8DC8C, 0xFFD6A548), grad(0xFFB8862E, 0xFF7E5A1C))
+    // couleurs : fond de tuile, face éclairée, face d'ombre, orbites, électrons (paires = dégradé clair → foncé), arête
+    val bg: Color; val lit: Pair<Long, Long>; val shade: Pair<Long, Long>; val orbit: Pair<Long, Long>; val electron: Pair<Long, Long>; val ridge: Long
+    when (icon) {
+        AppIcon.CLASSIC -> { bg = Color(0xFFF2F2F5); lit = 0xFFFFA552 to 0xFFE06A1B; shade = 0xFFB8500F to 0xFF7A2E06
+            orbit = 0xFFF08A3A to 0xFFA2410C; electron = 0xFFFFB36B to 0xFFD2591A; ridge = 0xFFFFE2C2 }
+        AppIcon.DARK -> { bg = Color(0xFF17191C); lit = 0xFFF2F4F7 to 0xFFF2F4F7; shade = 0xFF9FA6B0 to 0xFF9FA6B0
+            orbit = 0xFFF2F4F7 to 0xFFF2F4F7; electron = 0xFFF2F4F7 to 0xFFF2F4F7; ridge = 0xFFFFFFFF }
+        AppIcon.INK -> { bg = Color(0xFF14233C); lit = 0xFFF3EEE3 to 0xFFF3EEE3; shade = 0xFFBFB49C to 0xFFBFB49C
+            orbit = 0xFFF3EEE3 to 0xFFF3EEE3; electron = 0xFFF3EEE3 to 0xFFF3EEE3; ridge = 0xFFFFFFFF }
+        AppIcon.DESERT -> { bg = Color(0xFFE9D7B7); lit = 0xFFC0703E to 0xFFC0703E; shade = 0xFF7A4E25 to 0xFF7A4E25
+            orbit = 0xFF7A4E25 to 0xFF7A4E25; electron = 0xFFC0703E to 0xFFC0703E; ridge = 0xFFF6DFC0 }
+        AppIcon.GOLD -> { bg = Color(0xFF0E0E10); lit = 0xFFF8DC8C to 0xFFD6A548; shade = 0xFFB8862E to 0xFF7E5A1C
+            orbit = 0xFFF8DC8C to 0xFFB8862E; electron = 0xFFFCEBB4 to 0xFFC9983C; ridge = 0xFFFFF4D2 }
     }
     Box(Modifier.size(size)) {
         Box(Modifier.fillMaxSize().border(if (selected) 2.dp else 0.5.dp, if (selected) q.text else q.separator, RoundedCornerShape(size * 0.26f)).padding(3.dp)
             .clip(RoundedCornerShape(size * 0.21f)).background(bg)) {
             Canvas(Modifier.fillMaxSize()) {
+                // grille 108 de l'icône, réduite de 0,988 comme les ressources, agrandie pour remplir la tuile
+                val z = 0.988f * 1.32f
                 val k = this.size.width / 108f
-                val z = 1.6f
-                fun p(x: Float, y: Float) = Offset((54f + (x - 54f) * z) * k, (54f + (y - 52.5f) * z) * k)
-                val a = p(50f, 33f); val l = p(26f, 72f); val f = p(59f, 72f); val r = p(82f, 72f)
-                drawPath(Path().apply { moveTo(a.x, a.y); lineTo(l.x, l.y); lineTo(f.x, f.y); close() }, lit)
-                drawPath(Path().apply { moveTo(a.x, a.y); lineTo(f.x, f.y); lineTo(r.x, r.y); close() }, shade)
+                fun p(x: Float, y: Float) = Offset((54f + (x - 54f) * z) * k, (54f + (y - 54f) * z) * k)
+                fun u(v: Float) = v * z * k
+                fun lin(c: Pair<Long, Long>, a: Offset, b: Offset) = Brush.linearGradient(listOf(Color(c.first), Color(c.second)), a, b)
+                val orbitBrush = lin(orbit, p(20.7f, 24.2f), p(87.3f, 83.8f))
+                // point d'une orbite (rotation en degrés, angle paramétrique t en radians), demi-axes 32 × 13
+                fun ell(rot: Float, t: Double): Offset {
+                    val a = Math.toRadians(rot.toDouble()); val x = 32.0 * kotlin.math.cos(t); val y = 13.0 * kotlin.math.sin(t)
+                    return p((54.0 + x * kotlin.math.cos(a) - y * kotlin.math.sin(a)).toFloat(), (54.0 + x * kotlin.math.sin(a) + y * kotlin.math.cos(a)).toFloat())
+                }
+                fun half(rot: Float, from: Double) = Path().apply {
+                    for (i in 0..48) { val o = ell(rot, from + Math.PI * i / 48); if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) }
+                }
+                // moitiés avant : les trois moitiés basses à l'écran (t de 0 à π pour 0° et 60°, de π à 2π pour 120°)
+                val orbits = listOf(0f to 0.0, 60f to 0.0, 120f to Math.PI)
+                val fronts = orbits.map { (r, f) -> half(r, f) }
+                val backs = orbits.map { (r, f) -> half(r, f + Math.PI) }
+                val ow = u(2.6f)
+                backs.forEach { drawPath(it, orbitBrush, style = Stroke(width = ow)) }
+                // pyramide : sommet, base gauche, sommet avant de la base, base droite ; espace de 1,4 autour
+                val a = p(54f, 30f); val l = p(32f, 62.95f); val f = p(57.52f, 66.45f); val r = p(76f, 62.95f)
+                val silhouette = Path().apply { moveTo(a.x, a.y); lineTo(l.x, l.y); lineTo(f.x, f.y); lineTo(r.x, r.y); close() }
+                drawPath(silhouette, bg, style = Stroke(width = u(2.8f), join = StrokeJoin.Round))
+                drawPath(silhouette, lin(lit, Offset(a.x + (l.x - a.x) * 0.25f, a.y + (l.y - a.y) * 0.25f), f))
+                drawPath(Path().apply { moveTo(a.x, a.y); lineTo(f.x, f.y); lineTo(r.x, r.y); close() }, lin(shade, a, Offset((r.x + f.x) / 2, (r.y + f.y) / 2)))
+                drawLine(Brush.linearGradient(listOf(Color(ridge).copy(alpha = 0.95f), Color(ridge).copy(alpha = 0.35f)), a, f), a, f, strokeWidth = u(0.8f))
+                // orbites avant, détachées de la pyramide et des orbites arrière par un espace
+                fronts.forEach { drawPath(it, bg, style = Stroke(width = ow + u(2.2f))) }
+                fronts.forEach { drawPath(it, orbitBrush, style = Stroke(width = ow)) }
+                // électrons à 120° les uns des autres
+                val e0 = ell(0f, Math.toRadians(-35.0)); val c = p(54f, 54f)
+                for (i in 0 until 3) {
+                    val t = Math.toRadians(120.0 * i); val dx = e0.x - c.x; val dy = e0.y - c.y
+                    val e = Offset((c.x + dx * kotlin.math.cos(t) - dy * kotlin.math.sin(t)).toFloat(), (c.y + dx * kotlin.math.sin(t) + dy * kotlin.math.cos(t)).toFloat())
+                    val er = u(3.1f)
+                    drawCircle(Brush.radialGradient(listOf(Color(electron.first), Color(electron.second)), Offset(e.x - er * 0.35f, e.y - er * 0.35f), er * 1.35f), er, e)
+                }
             }
         }
         if (locked) Box(Modifier.align(Alignment.BottomEnd).size(20.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.75f)), contentAlignment = Alignment.Center) {

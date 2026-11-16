@@ -94,6 +94,7 @@ Navigation à sous-pages, style réglages iOS sobre (icônes au trait, monochrom
 - Couleur de la barre — mode sombre : mêmes choix
 - Style de la barre : Classique (couleur pleine) / Verre (translucide)
 - Icône de l'application : Classique, Sombre, Encre, Désert (icônes alternatives)
+- Icône : pyramide 3D orange foncé au centre d'un atome (trois orbites et électrons), sans fond
 - Vibrations
 
 **Barre d'outils**
