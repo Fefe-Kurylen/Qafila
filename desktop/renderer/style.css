@@ -347,7 +347,6 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .slider-row input[type=range] { flex: 1; accent-color: var(--accent-ui); height: 28px; }
 .about-head { text-align: center; padding: 10px 0 26px; }
 .about-head .serif { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", serif; font-size: 42px; font-weight: 500; letter-spacing: -.02em; }
-.about-head .ar { font-family: "Geeza Pro", "Damascus", "Noto Naskh Arabic", serif; font-size: 19px; color: var(--secondary); margin-top: 2px; }
 
 /* Aperçus (réglages, galerie, éditeur) */
 .preview { position: relative; height: 210px; border-radius: 22px; background: var(--cell); overflow: hidden; margin-bottom: 28px; box-shadow: 0 1px 3px rgba(0, 0, 0, .05); }

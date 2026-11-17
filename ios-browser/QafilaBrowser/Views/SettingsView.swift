@@ -636,7 +636,6 @@ struct AboutSettings: View {
                 VStack(spacing: 4) {
                     Image(store.settings.appIcon.preview).resizable().frame(width: 72, height: 72).clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     Text("Qafila").font(.system(size: 28, weight: .medium, design: .serif)).padding(.top, 8)
-                    Text("قافلة").font(.system(size: 17)).foregroundStyle(.secondary)
                     Text("« caravane » en arabe").font(.system(size: 13)).foregroundStyle(.tertiary)
                     if store.support.isSupporter {
                         Text("Merci pour votre soutien ♥").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary).padding(.top, 6)

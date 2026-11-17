@@ -140,7 +140,7 @@ pre { white-space: pre-wrap; font-size: 15px; }
 </style></head><body><h1>${escape(title)}</h1><div class="meta">${byline ? escape(byline) + ' · ' : ''}${escape(host)}</div>${renderReaderTree(tree)}</body></html>`;
 }
 
-/** Page de démarrage locale : « Qafila » en serif, « قافلة » en gris, tuiles de favoris (aucune requête réseau). */
+/** Page de démarrage locale : « Qafila » en serif, tuiles de favoris (aucune requête réseau). */
 function startPage({ dark, bookmarks = [], title = 'Qafila', rtl = false, lang = 'fr' }) {
   const tiles = bookmarks.slice(0, 12).map((b) => {
     const letter = String(b.title || '').trim().slice(0, 1).toUpperCase();
@@ -153,13 +153,12 @@ ${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
 .head { margin-top: 26vh; text-align: center; }
 h1 { font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", serif; font-weight: 500; font-size: 40px; letter-spacing: -.02em; margin: 0; }
-.ar { font-family: "Geeza Pro", "Damascus", "Noto Naskh Arabic", serif; font-size: 19px; color: #8e8e93; margin-top: 2px; }
 /* Au plus 6 colonnes, autant que de favoris en dessous : la grille reste centrée avec 1 à 5 favoris. */
 .grid { display: grid; grid-template-columns: repeat(${Math.max(1, Math.min(6, bookmarks.slice(0, 12).length))}, 72px); gap: 18px 14px; margin-top: 44px; }
 .tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
 .ic { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font: 500 22px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
 .t { font-size: 11px; color: #8e8e93; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-</style></head><body><div class="head"><h1>Qafila</h1><div class="ar" lang="ar" dir="rtl">قافلة</div></div>
+</style></head><body><div class="head"><h1>Qafila</h1></div>
 <div class="grid">${tiles}</div></body></html>`;
 }
 

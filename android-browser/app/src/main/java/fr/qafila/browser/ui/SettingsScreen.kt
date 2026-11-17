@@ -162,7 +162,6 @@ private fun RootPage(store: BrowserStore, onDismiss: () -> Unit, open: (Settings
             Spacer(Modifier.height(28.dp))
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(stringResource(R.string.app_name), color = q.secondary, fontSize = 15.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
-                Text(stringResource(R.string.app_name_arabic), color = q.tertiary, fontSize = 13.sp)
             }
         }
     }
@@ -714,7 +713,6 @@ private fun AboutPage(store: BrowserStore) {
             AppIconTile(settingsOf(store).appIcon, selected = false)
             Spacer(Modifier.height(10.dp))
             Text(stringResource(R.string.app_name), color = q.text, fontSize = 26.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
-            Text(stringResource(R.string.app_name_arabic), color = q.secondary, fontSize = 16.sp)
             if (store.support.isSupporter.collectAsState().value) {
                 Spacer(Modifier.height(8.dp))
                 Text(stringResource(R.string.support_thanks), color = SupportPink, fontSize = 14.sp, fontWeight = FontWeight.Medium)

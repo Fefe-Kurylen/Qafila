@@ -81,7 +81,7 @@ Plein écran, fond gris groupé (`#F2F2F7` / noir en sombre).
 
 ## 5. Page de démarrage
 
-Minimaliste : « Qafila » en serif, « قافلة » dessous en gris, puis les favoris en tuiles (favicon + nom), centrés.
+Minimaliste : « Qafila » en serif, puis les favoris en tuiles (favicon + nom), centrés.
 
 ## 6. Réglages (tous ajustables)
 

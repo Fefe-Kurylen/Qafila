@@ -316,7 +316,7 @@ P.about = () => {
   const a = S.cfg.app;
   return {
     title: t('page_about'),
-    body: `<div class="about-head"><div class="serif">Qafila</div><div class="ar" lang="ar" dir="rtl">${esc(t('app_name_arabic'))}</div></div>`
+    body: `<div class="about-head"><div class="serif">Qafila</div></div>`
       + group([`<div class="s-row"><span class="s-l">${esc(t('version'))}</span><span class="s-v">${esc(a.version)}</span></div>`,
         `<div class="s-row"><span class="s-l">${esc(t('engine_label'))}</span><span class="s-v">${esc(t('about_engine_desktop', a.electron, a.chrome))}</span></div>`], { footer: t('about_privacy') })
       + updatesGroup()

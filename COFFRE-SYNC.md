@@ -771,7 +771,7 @@ Une fenêtre = une barre + une page. Pas de bandeau d'onglets classique.
   de 42 pour les autres, destructifs en rouge, séparateurs 0,5, ressort 0,92 → 1 depuis le coin du bouton.
 - **Onglets** : la même surcouche plein écran Liste / Grille 2–3 colonnes (captures `webContents.capturePage`),
   groupement par site, tris ; Ctrl/Cmd+Maj+A.
-- **Page de démarrage** : « Qafila » en serif, « قافلة » en gris, tuiles de favoris et de dossiers.
+- **Page de démarrage** : « Qafila » en serif, tuiles de favoris et de dossiers.
 - **Réglages** : la même arborescence et les **mêmes clés** (feuille centrée ≤ 560 px, ou deux colonnes au-delà de
   1 100 px), aperçu de la barre en direct ; grâce à la synchro des réglages, le PC hérite de la barre, du style
   d'adresse, de l'accent et du moteur du téléphone dès l'association ; les clés sans sens sur PC sont ignorées.

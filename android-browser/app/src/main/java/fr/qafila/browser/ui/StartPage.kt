@@ -34,7 +34,7 @@ import fr.qafila.browser.R
 import fr.qafila.browser.data.BrowserStore
 import fr.qafila.browser.data.BrowserTab
 
-/** Page de démarrage (DESIGN.md §5) : « Qafila » en serif, « قافلة » dessous en gris, puis les favoris en tuiles. */
+/** Page de démarrage (DESIGN.md §5) : « Qafila » en serif, puis les favoris en tuiles. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StartPage(store: BrowserStore, tab: BrowserTab, modifier: Modifier = Modifier) {
@@ -47,7 +47,6 @@ fun StartPage(store: BrowserStore, tab: BrowserTab, modifier: Modifier = Modifie
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Spacer(Modifier.height(48.dp))
             Text(stringResource(R.string.app_name), color = q.text, fontSize = 46.sp, fontFamily = FontFamily.Serif, letterSpacing = (-1).sp)
-            Text(stringResource(R.string.app_name_arabic), color = q.secondary, fontSize = 24.sp, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Medium)
             if (tab.isPrivate) {
                 Spacer(Modifier.height(18.dp))
                 Text(stringResource(R.string.private_browsing_note), color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)

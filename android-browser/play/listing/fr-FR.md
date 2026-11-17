@@ -6,7 +6,7 @@
 
 **Description complète (4000 car. max)** :
 
-Qafila (قافلة) signifie « caravane » en arabe.
+Qafila signifie « caravane » en arabe.
 
 Qafila est un navigateur rapide, privé et entièrement personnalisable.
 

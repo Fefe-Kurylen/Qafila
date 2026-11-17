@@ -6,7 +6,7 @@
 
 **Full description (4000 chars max)**:
 
-Qafila (قافلة) means “caravan” in Arabic.
+Qafila means “caravan” in Arabic.
 
 Qafila is a fast, private and fully customizable web browser.
 

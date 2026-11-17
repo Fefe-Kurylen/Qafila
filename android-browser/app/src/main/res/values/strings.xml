@@ -2,7 +2,6 @@
 <resources>
     <!-- Marques et noms propres : jamais traduits. -->
     <string name="app_name" translatable="false">Qafila</string>
-    <string name="app_name_arabic" translatable="false">قافلة</string>
     <string name="javascript" translatable="false">JavaScript</string>
     <string name="webview" translatable="false">WebView</string>
     <string name="engine_duckduckgo" translatable="false">DuckDuckGo</string>

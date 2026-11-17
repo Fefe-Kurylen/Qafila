@@ -6,7 +6,7 @@
 
 **Vollständige Beschreibung (max. 4000 Zeichen)**:
 
-Qafila (قافلة) bedeutet auf Arabisch „Karawane“.
+Qafila bedeutet auf Arabisch „Karawane“.
 
 Qafila ist ein schneller, privater und vollständig anpassbarer Browser.
 
