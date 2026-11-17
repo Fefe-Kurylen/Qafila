@@ -144,6 +144,26 @@ function register(a) {
 
   // ----- Extensions (main/extensions.js) -----
   const extId = (p) => (typeof p?.id === 'string' && /^[a-p]{32}$/.test(p.id) ? p.id : null);
+  // Importer et exporter.
+  handle('transfer:sources', () => a.transfer.sources(true));
+  handle('transfer:importBrowser', (p) => a.transfer.importFrom(str(p.id, 32)));
+  handle('transfer:importFile', () => a.transfer.importFile());
+  handle('transfer:exportBookmarks', () => a.transfer.exportBookmarks());
+  handle('transfer:exportBackup', () => a.transfer.exportBackup());
+  handle('transfer:exportPasswords', (p) => a.transfer.exportPasswords(str(p.pass, 1024)));
+  handle('transfer:undo', () => a.transfer.undo());
+  // Coffre de mots de passe : les mots de passe ne sortent du processus principal que pour « Afficher ».
+  const vaultCall = async (fn) => { try { return { ok: true, value: await fn() }; } catch (e) { return { ok: false, error: String(e?.message || 'E') }; } };
+  handle('vault:create', (p) => vaultCall(() => a.vault.create(str(p.pass, 1024), !!p.remember)));
+  handle('vault:unlock', (p) => vaultCall(async () => { await a.vault.unlock(str(p.pass, 1024)); if (p.remember) a.vault.setRemember(true); return true; }));
+  handle('vault:lock', () => { a.vault.lock(); return true; });
+  handle('vault:list', () => vaultCall(() => a.vault.list()));
+  handle('vault:reveal', (p) => vaultCall(() => a.vault.reveal(id(p.id))));
+  handle('vault:copy', (p) => vaultCall(() => a.vault.copy(id(p.id), p.field === 'username' ? 'username' : 'password')));
+  handle('vault:remove', (p) => vaultCall(() => a.vault.remove(id(p.id))));
+  handle('vault:add', (p) => vaultCall(() => a.vault.add({ url: str(p.url), username: str(p.username, 1024), password: str(p.password, 4096) })));
+  handle('vault:remember', (p) => vaultCall(() => a.vault.setRemember(!!p.on)));
+  handle('vault:undo', () => vaultCall(() => a.vault.undoImport()));
   handle('extensions:store', () => { a.extensions?.openStore(); });
   handle('extensions:remove', (p) => { const id = extId(p); return id && a.extensions ? a.extensions.remove(id) : false; });
   handle('extensions:options', (p) => { const id = extId(p); return id && a.extensions ? a.extensions.openOptions(id) : false; });

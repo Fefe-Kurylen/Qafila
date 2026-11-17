@@ -470,3 +470,19 @@ browser-action-list.ext-actions::part(badge) { font-size: 9px; }
 
 /* Réglages › Extensions : icône de chaque extension. */
 .ext-row .ext-ic { width: 24px; height: 24px; flex: none; margin-inline-end: 12px; border-radius: 5px; }
+
+/* Mots de passe et Importer / exporter */
+.v-intro { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 6px 18px 22px; color: var(--text); }
+.v-intro svg { width: 30px; height: 30px; color: var(--accent, var(--text)); }
+.v-intro-t { font-size: 19px; font-weight: 600; }
+.v-intro-s { font-size: 14.5px; line-height: 1.45; color: var(--secondary); max-width: 460px; }
+.v-error .s-l { color: #d93025 !important; }
+.v-login .s-x { opacity: .6; }
+.v-login .s-x:hover { opacity: 1; }
+.v-pass { display: block; margin-top: 3px; font: 13px ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--text); word-break: break-all; }
+.v-guide { margin: -8px 4px 26px; padding: 12px 14px; border-radius: 14px; background: var(--fill); font-size: 13px; line-height: 1.5; color: var(--secondary); }
+.v-guide-t { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.v-guide-t svg { width: 15px; height: 15px; }
+.v-guide-r b { color: var(--text); font-weight: 600; }
+.s-v.accent { color: var(--accent, var(--text)); font-weight: 600; }
+.pill-btn.small { height: 32px; padding: 0 14px; font-size: 14px; flex: none; }

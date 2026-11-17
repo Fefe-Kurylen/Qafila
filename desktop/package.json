@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "smoke": "node test/smoke.mjs",
-    "test": "node --test test/unit.test.mjs",
+    "test": "node --test test/unit.test.mjs test/vault.test.mjs",
     "i18n": "node scripts/i18n-from-android.mjs",
     "dist:win": "electron-builder --win nsis --x64",
     "dist:linux": "electron-builder --linux AppImage",
@@ -69,6 +69,10 @@
       {
         "from": "../shared/support.json",
         "to": "shared/support.json"
+      },
+      {
+        "from": "../shared/import/parse.mjs",
+        "to": "shared/import/parse.mjs"
       }
     ],
     "win": {
@@ -134,6 +138,7 @@
   "dependencies": {
     "electron-chrome-extensions": "^4.10.0",
     "electron-chrome-web-store": "^0.13.0",
-    "electron-updater": "^6.8.11"
+    "electron-updater": "^6.8.11",
+    "hash-wasm": "^4.13.0"
   }
 }

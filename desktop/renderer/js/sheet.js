@@ -5,7 +5,9 @@ import { icon, actionIcon } from './icons.js';
 import { rowHTML, addressCard } from './bar.js';
 import { menuHTML } from './menu.js';
 
-const local = { history: [], historyQuery: '', bookmarksQuery: '', confirmClear: false, adding: null, drag: null };
+const local = { history: [], historyQuery: '', bookmarksQuery: '', confirmClear: false, adding: null, drag: null,
+  // Mots de passe et transferts : champs de saisie (jamais écrits dans le HTML), liste du coffre, valeurs affichées.
+  fields: {}, vaultList: null, vaultQuery: '', revealed: {}, vaultError: '', sources: null, addingLogin: false, busy: false };
 
 /** Ouvre une page ; `reset` = nouvelle pile (sinon la page s'empile, bouton Retour). */
 export async function openSheet(page, reset = false) {
@@ -15,6 +17,8 @@ export async function openSheet(page, reset = false) {
   local.confirmClear = false;
   if (page === 'settings' || page === 'about') S.supportInfo = await q.support.info().catch(() => ({ configured: false }));
   if (page === 'history') await loadHistory();
+  if (page === 'passwords' || page === 'transfer') { local.fields = {}; local.revealed = {}; local.vaultError = ''; await loadVault(); }
+  if (page === 'transfer') { local.sources = null; q.transfer.sources().then((s) => { local.sources = s || []; render(); }).catch(() => { local.sources = []; render(); }); }
   if (S.overlay !== 'sheet') await setOverlay('sheet'); else render();
   const body = $('#sheet-body');
   if (body) body.scrollTop = 0;
@@ -24,6 +28,11 @@ export function sheetBack() {
   if (S.sheet.length > 1) { S.sheet.pop(); local.adding = null; render(); return true; }
   setOverlay('none');
   return false;
+}
+
+async function loadVault() {
+  const r = await q.vault.list().catch(() => null);
+  local.vaultList = r?.ok ? r.value : null;
 }
 
 async function loadHistory() { local.history = await q.history.list({ query: local.historyQuery, limit: 500 }).catch(() => []); }
@@ -110,6 +119,8 @@ P.settings = () => {
       navRow('squares', t('action_tabs'), t(s.tabsLayout === 'grid' ? 'layout_grid' : 'layout_list'), 'tabsSettings'),
     ]) + group([
       navRow('search', t('page_search'), t('engine_' + (s.searchEngine || 'google')), 'search'),
+      navRow('key', t('page_passwords'), vaultLabel(), 'passwords'),
+      navRow('sync', t('page_transfer'), '', 'transfer'),
       navRow('shieldHalf', t('page_privacy'), '', 'privacy'),
       navRow('puzzle', t('extensions'), String(S.state.extensions?.list?.length || ''), 'extensions'),
       navRow('reader', t('page_reading'), t('percent', s.textZoom || 100), 'reading'),
@@ -117,6 +128,93 @@ P.settings = () => {
       navRow('globe', t('language'), lang, 'language'),
     ]) + group([navRow('info', t('page_about'), '', 'about')]),
   };
+};
+
+function vaultLabel() {
+  const v = S.state.vault || {};
+  if (v.state === 'none') return t('vault_not_created');
+  if (v.state === 'locked') return t('vault_locked');
+  return v.count != null ? String(v.count) : '';
+}
+
+// ----- Mots de passe -----
+const field = (name, type, placeholder, extra = '') => `<div class="s-row"><input class="s-input" data-field="${name}" type="${type}" placeholder="${esc(placeholder)}" autocomplete="off" spellcheck="false" ${extra}></div>`;
+function rememberRow(v) {
+  if (!v.canRemember) return '';
+  const on = local.fields.remember !== undefined ? local.fields.remember : true;
+  return `<button class="s-row" data-vremember-field><span class="s-l">${esc(t('vault_remember'))}<span class="s-sub">${esc(t('vault_remember_sub'))}</span></span><span class="switch${on ? ' on' : ''}"><span></span></span></button>`;
+}
+const errorRow = () => (local.vaultError ? `<div class="s-row muted v-error"><span class="s-l">${esc(local.vaultError)}</span></div>` : '');
+
+P.passwords = () => {
+  const v = S.state.vault || { state: 'none' };
+  if (v.state === 'open' && local.vaultList == null && !local.loadingVault) { local.loadingVault = true; loadVault().finally(() => { local.loadingVault = false; render(); }); }
+  if (v.state === 'none') {
+    return { title: t('page_passwords'), body:
+      `<div class="v-intro">${icon('key', 30)}<div class="v-intro-t">${esc(t('vault_intro_title'))}</div><div class="v-intro-s">${esc(t('vault_intro'))}</div></div>`
+      + group([field('pass', 'password', t('vault_new_pass')), field('pass2', 'password', t('vault_confirm_pass')), errorRow()], { header: t('vault_master'), footer: t('vault_master_footer') })
+      + group([rememberRow(v)])
+      + group([buttonRow(t('vault_create'), 'vaultCreate', { center: true })]) };
+  }
+  if (v.state === 'locked') {
+    return { title: t('page_passwords'), body:
+      `<div class="v-intro">${icon('lock', 30)}<div class="v-intro-t">${esc(t('vault_locked_title'))}</div></div>`
+      + group([field('pass', 'password', t('vault_master'), 'data-enter="vaultUnlock"'), errorRow()])
+      + group([v.remember ? '' : rememberRow(v)])
+      + group([buttonRow(t('vault_unlock'), 'vaultUnlock', { center: true })]) };
+  }
+  const list = (local.vaultList || []).filter((l) => !local.vaultQuery || `${l.title} ${l.username} ${l.origin}`.toLowerCase().includes(local.vaultQuery.toLowerCase()));
+  let body = `<label class="t-search">${icon('search', 17)}<input data-search="vaultQuery" type="search" placeholder="${esc(t('vault_search'))}" value="${esc(local.vaultQuery)}"></label>`;
+  if (!local.vaultList?.length) body += `<div class="t-empty">${esc(t('vault_empty'))}</div>`;
+  else body += group(list.map((l) => {
+    const shown = local.revealed[l.id];
+    return `<div class="s-row v-login">${faviconLetter(hostOf(l.origin))}<span class="s-l">${esc(l.title)}<span class="s-sub">${esc(l.username || t('vault_no_username'))}</span>${shown != null ? `<span class="v-pass" dir="ltr">${esc(shown)}</span>` : ''}</span>
+      <button class="s-x" data-vcopy="${esc(l.id)}" data-f="username" title="${esc(t('vault_copy_user'))}">${icon('copy', 17)}</button>
+      <button class="s-x" data-vcopy="${esc(l.id)}" data-f="password" title="${esc(t('vault_copy_pass'))}">${icon('key', 17)}</button>
+      <button class="s-x" data-vreveal="${esc(l.id)}" title="${esc(t(shown != null ? 'vault_hide' : 'vault_show'))}">${icon(shown != null ? 'xmark' : 'textSearch', 17)}</button>
+      <button class="s-x" data-vremove="${esc(l.id)}" title="${esc(t('delete'))}">${icon('trash', 17)}</button></div>`;
+  }), { header: t('vault_count', local.vaultList.length), footer: t('vault_copy_footer') });
+  body += local.addingLogin
+    ? group([field('url', 'text', 'https://exemple.fr'), field('user', 'text', t('vault_username')), field('pw', 'password', t('vault_password')), errorRow(), buttonRow(t('vault_add_save'), 'vaultAdd', { center: true })], { header: t('vault_add') })
+    : group([`<button class="s-row center" data-do="vaultAddOpen"><span class="s-ic">${icon('plus', 18)}</span><span class="s-l">${esc(t('vault_add'))}</span></button>`]);
+  body += group([navRow('sync', t('page_transfer'), '', 'transfer')]);
+  body += group([
+    v.canRemember ? `<button class="s-row" data-vremember><span class="s-l">${esc(t('vault_remember'))}<span class="s-sub">${esc(t('vault_remember_sub'))}</span></span><span class="switch${v.remember ? ' on' : ''}"><span></span></span></button>` : '',
+    buttonRow(t('vault_lock_now'), 'vaultLock', { center: true }),
+  ], { footer: t('vault_autolock_footer') });
+  return { title: t('page_passwords'), body };
+};
+
+// ----- Importer et exporter -----
+P.transfer = () => {
+  const v = S.state.vault || { state: 'none' };
+  const tr = S.state.transfer || {};
+  const src = local.sources;
+  const browserRows = src == null
+    ? [`<div class="s-row muted"><span class="s-l">${esc(t('transfer_searching'))}</span></div>`]
+    : src.length
+      ? src.map((s) => `<button class="s-row" data-do="importBrowser" data-v="${esc(s.id)}"><span class="s-ic">${icon('globe', 20)}</span><span class="s-l">${esc(s.label)}<span class="s-sub">${esc(t('transfer_found', s.count))}</span></span><span class="s-v accent">${esc(t('transfer_import'))}</span></button>`)
+      : [`<div class="s-row muted"><span class="s-l">${esc(t('transfer_no_browser'))}</span></div>`];
+  let body = group(browserRows, { header: t('transfer_from_browser'), footer: t('transfer_from_browser_footer') });
+  body += group([`<button class="s-row" data-do="importFile"><span class="s-ic">${icon('folder', 20)}</span><span class="s-l">${esc(t('transfer_choose_file'))}<span class="s-sub">${esc(t('transfer_file_sub'))}</span></span><span class="s-chev">${icon('chevronRight', 15)}</span></button>`],
+    { header: t('transfer_from_file'), footer: t(v.state === 'none' ? 'transfer_file_footer_novault' : 'transfer_file_footer') });
+  if (v.state === 'none') body += group([navRow('key', t('vault_create_to_import'), '', 'passwords')]);
+  body += `<div class="v-guide"><div class="v-guide-t">${icon('info', 15)} ${esc(t('transfer_guide_title'))}</div>${['chrome', 'edge', 'firefox'].map((b) => `<div class="v-guide-r"><b>${esc(t('transfer_guide_' + b + '_name'))}</b> · ${esc(t('transfer_guide_' + b))}</div>`).join('')}</div>`;
+  const exp = [
+    `<button class="s-row" data-do="exportBookmarks"><span class="s-ic">${icon('book', 20)}</span><span class="s-l">${esc(t('transfer_export_bookmarks'))}<span class="s-sub">${esc(t('transfer_export_bookmarks_sub', S.state.bookmarks?.length || 0))}</span></span><span class="s-chev">${icon('chevronRight', 15)}</span></button>`,
+    `<button class="s-row" data-do="exportBackup"><span class="s-ic">${icon('gear', 20)}</span><span class="s-l">${esc(t('transfer_export_backup'))}<span class="s-sub">${esc(t('transfer_export_backup_sub'))}</span></span><span class="s-chev">${icon('chevronRight', 15)}</span></button>`,
+  ];
+  if (v.state !== 'none') {
+    exp.push(local.fields.exporting
+      ? `<div class="s-row"><span class="s-ic">${icon('key', 20)}</span><input class="s-input" data-field="exportPass" type="password" placeholder="${esc(t('vault_master'))}" autocomplete="off" data-enter="exportPasswords"><button class="pill-btn small" data-do="exportPasswords">${esc(t('transfer_export'))}</button></div>${errorRow()}`
+      : `<button class="s-row" data-do="exportPasswordsOpen"><span class="s-ic">${icon('key', 20)}</span><span class="s-l">${esc(t('transfer_export_passwords'))}<span class="s-sub">${esc(t('transfer_export_passwords_sub'))}</span></span><span class="s-chev">${icon('chevronRight', 15)}</span></button>`);
+  }
+  body += group(exp, { header: t('transfer_export_header'), footer: t('transfer_export_footer') });
+  const undo = [];
+  if (tr.last) undo.push(`<button class="s-row red" data-do="undoBookmarks"><span class="s-l">${esc(t('transfer_undo_bookmarks', tr.last.count, tr.last.source))}</span></button>`);
+  if (v.lastBatch) undo.push(`<button class="s-row red" data-do="undoPasswords"><span class="s-l">${esc(t('transfer_undo_passwords', v.lastBatch.count, v.lastBatch.source))}</span></button>`);
+  if (undo.length) body += group(undo, { header: t('transfer_last_import') });
+  return { title: t('page_transfer'), body };
 };
 
 const ADDRESS_STYLES = [['card', 'address_card'], ['fullURL', 'address_full'], ['domainPill', 'address_centered'], ['titleReading', 'address_title_read'], ['centered', 'address_plain'], ['hidden', 'address_hidden']];
@@ -431,6 +529,7 @@ function renderSheet() {
   const def = (P[page] || P.settings)();
   const sub = S.sheet.length > 1;
   const focused = document.activeElement?.dataset?.search || document.activeElement?.dataset?.text;
+  const focusedField = document.activeElement?.dataset?.field;
   const caret = document.activeElement?.selectionStart;
   const scroll = $('#sheet-body')?.scrollTop || 0;
   el.innerHTML = `<div class="sheet-card" role="dialog" aria-label="${esc(def.title)}">
@@ -442,12 +541,70 @@ function renderSheet() {
     <div class="sheet-body" id="sheet-body">${def.body}</div></div>`;
   const body = $('#sheet-body');
   body.scrollTop = scroll;
+  // Champs du coffre : valeurs reposées après chaque rendu (jamais écrites dans le HTML).
+  for (const inp of el.querySelectorAll('[data-field]')) { const v = local.fields[inp.dataset.field]; if (typeof v === 'string') inp.value = v; }
+  if (focusedField) { const i = el.querySelector(`[data-field="${focusedField}"]`); if (i) { i.focus(); try { i.setSelectionRange(caret, caret); } catch { /* */ } } }
+  else if (!focused) { const first = el.querySelector('[data-field]'); if (first && !first.value && (S.sheet.at(-1) === 'passwords')) first.focus(); }
   if (focused) {
     const i = el.querySelector(`[data-search="${focused}"], [data-text="${focused}"]`);
     if (i) { i.focus(); try { i.setSelectionRange(caret, caret); } catch { /* champ sans sélection */ } }
   }
 }
 onRender(renderSheet);
+
+// ----- Actions du coffre et des transferts -----
+const VAULT_ERRORS = { E_WEAK: 'vault_err_weak', E_WRONG: 'vault_err_wrong', E_INVALID: 'vault_err_invalid', E_NO_KEYCHAIN: 'vault_err_keychain', E_LOCKED: 'vault_err_locked' };
+const vaultErr = (r) => t(VAULT_ERRORS[r?.error] || 'vault_err_generic');
+async function vaultAction(d, b) {
+  const f = local.fields;
+  const busy = async (fn) => { if (local.busy) return; local.busy = true; try { await fn(); } finally { local.busy = false; } };
+  switch (d) {
+    case 'vaultCreate':
+      if ((f.pass || '') !== (f.pass2 || '')) { local.vaultError = t('vault_err_mismatch'); render(); return true; }
+      await busy(async () => {
+        local.vaultError = t('vault_working'); render();
+        const r = await q.vault.create(f.pass || '', f.remember !== undefined ? f.remember : true);
+        local.vaultError = r?.ok ? '' : vaultErr(r);
+        if (r?.ok) { local.fields = {}; await loadVault(); toast(t('vault_created')); }
+        render();
+      });
+      return true;
+    case 'vaultUnlock':
+      await busy(async () => {
+        local.vaultError = t('vault_working'); render();
+        const r = await q.vault.unlock(f.pass || '', !!f.remember && !S.state.vault?.remember);
+        local.vaultError = r?.ok ? '' : vaultErr(r);
+        if (r?.ok) { local.fields = {}; await loadVault(); }
+        render();
+      });
+      return true;
+    case 'vaultLock': await q.vault.lock(); local.vaultList = null; local.revealed = {}; render(); return true;
+    case 'vaultAddOpen': local.addingLogin = true; local.vaultError = ''; render(); return true;
+    case 'vaultAdd': {
+      const r = await q.vault.add(f.url || '', f.user || '', f.pw || '');
+      if (!r?.ok) { local.vaultError = vaultErr(r); render(); return true; }
+      local.addingLogin = false; local.vaultError = ''; delete f.url; delete f.user; delete f.pw;
+      await loadVault(); toast(t('vault_added')); render(); return true;
+    }
+    case 'importBrowser': await busy(() => q.transfer.importBrowser(b.dataset.v)); await loadVault(); render(); return true;
+    case 'importFile': await busy(() => q.transfer.importFile()); await loadVault(); render(); return true;
+    case 'exportBookmarks': await busy(() => q.transfer.exportBookmarks()); return true;
+    case 'exportBackup': await busy(() => q.transfer.exportBackup()); return true;
+    case 'exportPasswordsOpen': f.exporting = true; local.vaultError = ''; render(); return true;
+    case 'exportPasswords':
+      await busy(async () => {
+        local.vaultError = t('vault_working'); render();
+        const r = await q.transfer.exportPasswords(f.exportPass || '');
+        local.vaultError = r?.error === 'wrong' ? t('vault_err_wrong') : '';
+        if (r?.error !== 'wrong') { delete f.exportPass; f.exporting = false; }
+        render();
+      });
+      return true;
+    case 'undoBookmarks': { const n = await q.transfer.undo(); toast(t('transfer_undone', n || 0)); return true; }
+    case 'undoPasswords': { const r = await q.vault.undo(); toast(t('transfer_undone', r?.value || 0)); await loadVault(); render(); return true; }
+    default: return false;
+  }
+}
 
 // ----- Événements -----
 export function installSheetEvents() {
@@ -480,8 +637,19 @@ export function installSheetEvents() {
     if ((b = g('[data-remove]'))) { const list = b.dataset.remove; const arr = [...toolbar()[list]]; arr.splice(Number(b.dataset.i), 1); await saveToolbar({ [list]: arr }); return; }
     if ((b = g('[data-size]'))) { const arr = toolbar().bar.map((x) => ({ ...x })); arr[Number(b.dataset.size)].size = b.dataset.v; await saveToolbar({ bar: arr }); return; }
     if ((b = g('[data-label]'))) { const arr = toolbar().menu.map((x) => ({ ...x })); arr[Number(b.dataset.label)].showsLabel = b.dataset.v === 'true'; await saveToolbar({ menu: arr }); return; }
+    if ((b = g('[data-vcopy]'))) { const r = await q.vault.copy(b.dataset.vcopy, b.dataset.f); if (r?.ok) toast(t(b.dataset.f === 'username' ? 'vault_copied_user' : 'vault_copied_pass')); else { await loadVault(); render(); } return; }
+    if ((b = g('[data-vreveal]'))) {
+      const id = b.dataset.vreveal;
+      if (local.revealed[id] != null) delete local.revealed[id];
+      else { const r = await q.vault.reveal(id); if (r?.ok && r.value != null) local.revealed[id] = r.value; }
+      render(); return;
+    }
+    if ((b = g('[data-vremove]'))) { await q.vault.remove(b.dataset.vremove); delete local.revealed[b.dataset.vremove]; await loadVault(); render(); return; }
+    if ((b = g('[data-vremember-field]'))) { local.fields.remember = !(local.fields.remember !== undefined ? local.fields.remember : true); render(); return; }
+    if ((b = g('[data-vremember]'))) { await q.vault.remember(!S.state.vault?.remember); return; }
     if ((b = g('[data-do]'))) {
       const d = b.dataset.do;
+      if (await vaultAction(d, b)) return;
       if (d === 'support') { if (!(await q.support.open())) toast(t('support_open_failed')); else setOverlay('none'); return; }
       if (d === 'chooseDownloads') { await q.downloads.chooseFolder(); return; }
       if (d === 'resetDownloads') { await q.downloads.resetFolder(); return; }
@@ -519,11 +687,13 @@ export function installSheetEvents() {
       clearTimeout(rangeTimer);
       rangeTimer = setTimeout(() => q.settings.set(d.range, v / scale), 40);
     }
+    if (d.field) { local.fields[d.field] = e.target.value; if (local.vaultError && local.vaultError !== t('vault_working')) { local.vaultError = ''; const er = el.querySelector('.v-error'); if (er) er.remove(); } }
     if (d.search) { local[d.search] = e.target.value; if (d.search === 'historyQuery') await loadHistory(); render(); }
   });
   el.addEventListener('change', (e) => { const d = e.target.dataset; if (d.text) q.settings.set(d.text, e.target.value.trim()); });
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.dataset.text) e.target.blur();
+    if (e.key === 'Enter' && e.target.dataset.field) { const act = e.target.dataset.enter || el.querySelector('[data-do="vaultCreate"], [data-do="vaultUnlock"], [data-do="vaultAdd"]')?.dataset.do; if (act) vaultAction(act, e.target); }
     // Éléments « bouton » qui ne peuvent pas être des <button> (ils contiennent des aperçus) : Entrée / Espace.
     if ((e.key === 'Enter' || e.key === ' ') && e.target.getAttribute?.('role') === 'button') { e.preventDefault(); e.target.click(); }
   });

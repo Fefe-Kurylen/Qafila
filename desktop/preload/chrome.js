@@ -88,6 +88,29 @@ contextBridge.exposeInMainWorld('qafila', {
     info: () => invoke('support:info'),
     open: () => invoke('support:open'),
   },
+  /** Importer et exporter : navigateurs trouvés, imports (navigateur, fichier), exports, annulation. */
+  transfer: {
+    sources: () => invoke('transfer:sources'),
+    importBrowser: (id) => invoke('transfer:importBrowser', { id }),
+    importFile: () => invoke('transfer:importFile'),
+    exportBookmarks: () => invoke('transfer:exportBookmarks'),
+    exportBackup: () => invoke('transfer:exportBackup'),
+    exportPasswords: (pass) => invoke('transfer:exportPasswords', { pass }),
+    undo: () => invoke('transfer:undo'),
+  },
+  /** Coffre de mots de passe (chiffré dans le processus principal). */
+  vault: {
+    create: (pass, remember) => invoke('vault:create', { pass, remember }),
+    unlock: (pass, remember) => invoke('vault:unlock', { pass, remember }),
+    lock: () => invoke('vault:lock'),
+    list: () => invoke('vault:list'),
+    reveal: (id) => invoke('vault:reveal', { id }),
+    copy: (id, field) => invoke('vault:copy', { id, field }),
+    remove: (id) => invoke('vault:remove', { id }),
+    add: (url, username, password) => invoke('vault:add', { url, username, password }),
+    remember: (on) => invoke('vault:remember', { on }),
+    undo: () => invoke('vault:undo'),
+  },
   /** Extensions : Chrome Web Store, suppression, page d'options. */
   extensions: {
     openStore: () => invoke('extensions:store'),

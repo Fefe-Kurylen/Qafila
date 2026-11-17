@@ -3,7 +3,7 @@
 // transparente (desktop/renderer) qui occupe une bande en haut ou en bas, ou toute la fenêtre quand un menu, les
 // suggestions ou un écran (onglets, réglages…) sont ouverts. Lancer avec --demo pour les onglets de démonstration,
 // --smoke=<dossier> pour les captures d'écran de test (quitte avec le code 0).
-const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, session, Menu, dialog, screen } = require('electron');
+const { app, BrowserWindow, WebContentsView, nativeTheme, ipcMain, session, Menu, dialog, screen, safeStorage, clipboard } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -15,6 +15,8 @@ const { Glass } = require('./glass');
 const search = require('./search');
 const i18n = require('./i18n');
 const ipc = require('./ipc');
+const { Vault } = require('./vault');
+const { Transfer } = require('./transfer');
 const demo = require('./demo');
 const { FaviconCache } = require('./favicon');
 const shortcuts = require('./shortcuts');
@@ -246,7 +248,7 @@ function describeState() {
   return {
     tabs: describeTabs(), selected: Q.store.selected, bookmarks: Q.store.bookmarks, historyCount: Q.store.history.length,
     settings: Q.store.settings, dark: isDark(), lang: t.lang, rtl: t.rtl, closedTabs: Q.store.closedTabs.length,
-    downloads: describeDownloads(), sitePermissions: Q.store.sitePermissions, extensions: describeExtensions(), update: Q.updater ? Q.updater.state : { status: 'disabled' }, collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
+    downloads: describeDownloads(), sitePermissions: Q.store.sitePermissions, extensions: describeExtensions(), vault: Q.vault ? Q.vault.status() : { state: 'none' }, transfer: Q.transfer ? Q.transfer.describe() : null, update: Q.updater ? Q.updater.state : { status: 'disabled' }, collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
     fullscreenNotice: Q.isFullscreenPage && Q.fullscreenNotice !== null ? { host: Q.fullscreenNotice } : null,
     window: { fullscreen: Q.win?.isFullScreen() || false, maximized: Q.win?.isMaximized() || false, focused: Q.win?.isFocused() || false },
   };
@@ -1042,6 +1044,11 @@ if (GOT_LOCK) app.whenReady().then(async () => {
   if (!Q.store.selected) Q.store.selected = Q.store.tabs[0].id;
   translator();
 
+  // Coffre de mots de passe (démonstration et tests : dossier temporaire, jamais celui de l'utilisateur).
+  const vaultDir = DEMO ? fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'qafila-vault-')) : app.getPath('userData');
+  Q.vault = new Vault({ dir: vaultDir, safeStorage, clipboard, onChange: () => broadcast() });
+  Q.transfer = new Transfer({ store: Q.store, vault: Q.vault, win: () => Q.win, t: (...x) => translator()(...x), onChange: () => broadcast(), onSettingChanged, refresh: () => Q.tabs?.refreshStartPages() });
+
   ipc.register({
     get win() { return Q.win; }, get chrome() { return Q.chrome; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
@@ -1049,6 +1056,8 @@ if (GOT_LOCK) app.whenReady().then(async () => {
     downloadFolder, expandBar: () => setCollapse('none'), updateTitlebar,
     get updater() { return Q.updater; },
     get extensions() { return Q.extensions; },
+    get vault() { return Q.vault; },
+    get transfer() { return Q.transfer; },
   });
 
   createWindow();
@@ -1586,6 +1595,16 @@ async function runSmoke() {
   Q.store.setSitePermission('meet.google.com', 'camera', 'allow'); Q.store.setSitePermission('meet.google.com', 'microphone', 'allow'); Q.store.setSitePermission('pub.example.com', 'notifications', 'block');
   demoScreen('sitePermissions'); await wait(1200); await shot('42-site-permissions');
   demoScreen('none'); Q.store.resetSitePermissions(); await wait(400);
+  // Mots de passe : coffre à créer, puis coffre ouvert avec deux identifiants ; Importer et exporter.
+  demoScreen('passwords'); await wait(1200); await shot('43-passwords-new');
+  demoScreen('none'); await wait(300);
+  await Q.vault.create('phrase de démonstration', false);
+  Q.vault.add({ url: 'https://fr.wikipedia.org/w/index.php?title=Connexion', username: 'lina@example.org', password: 'Zéphyr-2026!' });
+  Q.vault.add({ url: 'https://github.com/login', username: 'lina-dev', password: 'caravane-du-désert' });
+  if (Q.vault.list().length !== 2) fail('coffre : 2 identifiants attendus');
+  demoScreen('passwords'); await wait(1500); await shot('44-passwords-list');
+  demoScreen('transfer'); await wait(1500); await shot('45-transfer');
+  demoScreen('none'); await wait(300);
   // Tailles : tout en Grande, puis tout en Petite, puis retour à Normale.
   for (const [size, name] of [['large', '37-sizes-large'], ['small', '38-sizes-small']]) {
     set('barSize', size); set('titleBarSize', size); set('bookmarksBarSize', size);

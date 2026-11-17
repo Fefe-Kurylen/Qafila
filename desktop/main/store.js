@@ -229,6 +229,27 @@ class Store extends EventEmitter {
     return b;
   }
 
+  /** Ajout en lot (import) à la suite des favoris existants ; renvoie les favoris créés. */
+  addBookmarks(list) {
+    const added = [];
+    for (const it of list) {
+      if (!it?.url) continue;
+      const b = { id: uuid(), title: String(it.title || it.url).slice(0, 512), url: String(it.url), addedAt: Number(it.addedAt) || Date.now() };
+      this.bookmarks.push(b);
+      added.push(b);
+    }
+    if (added.length) this.scheduleSave();
+    return added;
+  }
+
+  /** Retrait en lot (annulation d'un import) ; renvoie le nombre retiré. */
+  removeBookmarks(ids) {
+    const n = this.bookmarks.length;
+    this.bookmarks = this.bookmarks.filter((b) => !ids.has(b.id));
+    if (this.bookmarks.length !== n) this.scheduleSave();
+    return n - this.bookmarks.length;
+  }
+
   removeBookmark(idOrUrl) {
     const n = this.bookmarks.length;
     this.bookmarks = this.bookmarks.filter((b) => b.id !== idOrUrl && b.url !== idOrUrl);
