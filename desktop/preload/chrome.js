@@ -88,6 +88,14 @@ contextBridge.exposeInMainWorld('qafila', {
     info: () => invoke('support:info'),
     open: () => invoke('support:open'),
   },
+  /** Extensions : Chrome Web Store, suppression, page d'options. */
+  extensions: {
+    openStore: () => invoke('extensions:store'),
+    remove: (id) => invoke('extensions:remove', { id }),
+    options: (id) => invoke('extensions:options', { id }),
+  },
+  /** Autorisations des sites : oublier celles d'un site (hôte) ou de tous (null). */
+  permissions: { reset: (host) => invoke('permissions:reset', { host }) },
   /** Mises à jour : recherche manuelle (renvoie l'état) et installation de la version téléchargée (redémarrage). */
   update: {
     check: () => invoke('update:check'),

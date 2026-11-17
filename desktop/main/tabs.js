@@ -3,6 +3,7 @@
 // par tous les onglets privés et vidée avec le dernier), navigation, comportements web portés du mobile (HTTPS forcé
 // avec repli, schémas externes, fenêtres surgissantes → onglets, lecteur, assombrissement, user agent, zoom, bloqueur).
 const { WebContentsView, session, shell, clipboard, Menu, dialog } = require('electron');
+const { SitePermissions } = require('./permissions');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 const scripts = require('./scripts');
@@ -17,7 +18,7 @@ function copyText(text) { return clipboard.writeText(String(text)).then(() => tr
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 // file: n'en fait pas partie : une page locale aurait accès aux autres fichiers de l'ordinateur (le chrome, chargé en
 // file://, a besoin du fusible grantFileProtocolExtraPrivileges). Les fichiers ne s'ouvrent jamais dans un onglet.
-const INTERNAL_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:', 'chrome:', 'devtools:', 'chrome-error:']);
+const INTERNAL_SCHEMES = new Set(['http:', 'https:', 'about:', 'data:', 'blob:', 'chrome:', 'devtools:', 'chrome-error:', 'chrome-extension:']);
 const isFileURL = (url) => /^\s*file:/i.test(String(url || ''));
 // Applications externes : courriel et téléphone seulement, après un geste récent de l'utilisateur et sa confirmation.
 const EXTERNAL_SCHEMES = new Set(['mailto:', 'tel:']);
@@ -28,11 +29,7 @@ const READER_WORLD = 1001;
 const MAX_LIVE_VIEWS = 8;
 // Plantage du moteur de rendu : au plus un rechargement automatique par onglet et par minute, puis page d'erreur.
 const CRASH_RELOAD_MS = 60_000;
-// Permissions accordées sans question : aucune n'expose l'appareil ni l'utilisateur (plein écran, verrouillage du
-// pointeur, écriture filtrée du presse-papiers). Tout le reste est refusé : notifications, géolocalisation, caméra et
-// micro (media), MIDI, lecture du presse-papiers, gestion des fenêtres (getScreenDetails : écrans, positions,
-// libellés), capteurs, stockage partagé entre sites, ouverture d'applications (gérée à part, avec confirmation)…
-const GRANTED_PERMISSIONS = new Set(['fullscreen', 'pointerLock', 'clipboard-sanitized-write']);
+// Autorisations des sites : main/permissions.js (question à l'utilisateur, réponse mémorisée par site).
 // User agent mobile : même version majeure de Chrome que le moteur (sinon l'écart UA / moteur distingue l'utilisateur).
 const CHROME_MAJOR = String(process.versions.chrome || '140').split('.')[0];
 const MOBILE_UA = `Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_MAJOR}.0.0.0 Mobile Safari/537.36`;
@@ -83,6 +80,8 @@ class TabManager extends EventEmitter {
     this.attached = null;        // onglet dont la vue est affichée
     this.pageBounds = { x: 0, y: 0, width: 0, height: 0 };
     this.userAgent = desktopUserAgent(userAgent);
+    this.permissions = new SitePermissions({ store, win: () => this.win, t });
+    this.popups = new Set();       // fenêtres de connexion ouvertes par les sites (window.open avec dimensions)
     this.persistent = session.fromPartition('persist:qafila');
     this.private = null;
     this.privateClearing = null;   // effacement de la session privée en cours (attendu avant toute nouvelle page privée)
@@ -95,9 +94,13 @@ class TabManager extends EventEmitter {
     ses.setSpellCheckerEnabled(false);
     // Téléchargements : traités par le processus principal (dossier par défaut, notification dans la barre).
     ses.on('will-download', (_e, item, wc) => this.emit('download', item, wc, ses === this.private));
-    // Permissions : rien n'est accordé en silence qui révèle l'appareil ou l'utilisateur (voir GRANTED_PERMISSIONS).
-    ses.setPermissionRequestHandler((_wc, permission, cb) => cb(GRANTED_PERMISSIONS.has(permission)));
-    ses.setPermissionCheckHandler((_wc, permission) => GRANTED_PERMISSIONS.has(permission));
+    // Autorisations (caméra, micro, position, notifications…) : question à l'utilisateur, réponse mémorisée par site
+    // (main/permissions.js) ; en privé, réponses gardées en mémoire seulement.
+    const isPrivate = ses !== this.persistent;
+    ses.setPermissionRequestHandler((wc, permission, cb, details) => { this.permissions.request(wc, permission, details, isPrivate).then(cb, () => cb(false)); });
+    ses.setPermissionCheckHandler((_wc, permission, origin, details) => this.permissions.check(permission, origin, details, isPrivate));
+    // Partage d'écran (visioconférences) : choix de l'écran ou de la fenêtre.
+    ses.setDisplayMediaRequestHandler((request, callback) => { this.permissions.displayMedia(request, callback, isPrivate); });
     // Périphériques (USB, HID, série, Bluetooth) : jamais.
     ses.setDevicePermissionHandler(() => false);
     // Fichiers locaux : aucune requête file: ne sort des sessions des onglets (dernier rempart derrière les gardes de
@@ -156,6 +159,8 @@ class TabManager extends EventEmitter {
     if (!this.private) return null;
     const s = this.private;
     this.privateHttpOnlyHosts.clear();
+    this.closePopups({ privateOnly: true });
+    this.permissions.privateAnswers.clear();
     this.emit('private-dropped');
     const run = () => Promise.all([
       s.closeAllConnections(), s.clearStorageData(), s.clearCache(), s.clearAuthCache(), s.clearHostResolverCache(),
@@ -203,6 +208,7 @@ class TabManager extends EventEmitter {
     this.views.set(tabId, view);
     this.live.set(tabId, { loading: false, progress: 0, canGoBack: false, canGoForward: false, blocked: 0 });
     this.wire(view.webContents, tabId);
+    this.emit('view', tabId, view.webContents); // extensions : nouvel onglet à suivre
     this.applyUserAgent(tabId);
     this.open(tabId, tab.url, { initial: true });
     setImmediate(() => this.evictIfNeeded(tabId));
@@ -401,18 +407,23 @@ class TabManager extends EventEmitter {
       if (scheme === 'file:') { e.preventDefault(); setImmediate(() => { if (!wc.isDestroyed()) this.showError(wc, this.t()('file_blocked'), url); }); return; }
       if (!INTERNAL_SCHEMES.has(scheme)) { e.preventDefault(); this.openExternal(url, wc); }
     });
-    wc.setWindowOpenHandler(({ url }) => {
+    wc.setWindowOpenHandler(({ url, disposition }) => {
       // target=_blank / window.open : un nouvel onglet dans Qafila (privé si l'onglet d'origine l'est), seulement
       // juste après un geste de l'utilisateur, un onglet par geste (bloqueur de fenêtres surgissantes : Electron n'en a
       // pas). Sans geste, rien ne s'ouvre et la barre le signale. « Ouvrir dans un nouvel onglet » (menu) n'est pas concerné.
+      // window.open avec des dimensions (disposition « new-window ») : vraie petite fenêtre reliée à la page (opener),
+      // indispensable aux connexions « Se connecter avec Google / Apple / Microsoft », aux paiements 3-D Secure…
       const tab = this.store.tabs.find((x) => x.id === tabId);
-      if (!/^https?:/.test(url)) { this.openExternal(url, wc); return { action: 'deny' }; }
+      const popup = disposition === 'new-window';
+      if (!/^https?:/.test(url) && !(popup && (url === 'about:blank' || url === ''))) { this.openExternal(url, wc); return { action: 'deny' }; }
       const gesture = this.lastGesture.get(wc.id) || 0;
       if (!this.recentGesture(wc) || this.popupGesture.get(wc.id) === gesture) { this.emit('popup-blocked', tabId, url); return { action: 'deny' }; }
       this.popupGesture.set(wc.id, gesture);
+      if (popup) return { action: 'allow', overrideBrowserWindowOptions: this.popupOptions() };
       this.emit('open-tab', { url, isPrivate: !!tab?.isPrivate, select: true });
       return { action: 'deny' };
     });
+    wc.on('did-create-window', (win) => this.wirePopup(win, tabId));
     wc.on('enter-html-full-screen', () => this.emit('fullscreen', true, stripWWW(hostOf(wc.getURL()))));
     wc.on('leave-html-full-screen', () => this.emit('fullscreen', false));
     wc.on('found-in-page', (_e, result) => this.emit('found', tabId, result));
@@ -430,6 +441,55 @@ class TabManager extends EventEmitter {
       else if (channel === 'qafila:page:nav') { if (data?.dir === 'back') this.back(tabId); else if (data?.dir === 'forward') this.forward(tabId); }
     });
     wc.on('zoom-changed', (_e, dir) => this.emit('zoom', dir));
+  }
+
+  // ----- Fenêtres de connexion (window.open) -----
+  popupOptions() {
+    return {
+      width: 520, height: 680, minWidth: 320, minHeight: 240,
+      autoHideMenuBar: true,
+      backgroundColor: this.isDark() ? '#000000' : '#ffffff',
+      title: 'Qafila',
+      webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, webviewTag: false, spellcheck: false, safeDialogs: true },
+    };
+  }
+
+  /** Fenêtre ouverte par un site : mêmes gardes que les onglets ; ses propres liens s'ouvrent en onglets. */
+  wirePopup(win, tabId) {
+    if (!win || win.isDestroyed()) return;
+    this.popups.add(win);
+    win.removeMenu();
+    const wc = win.webContents;
+    const tab = this.store.tabs.find((x) => x.id === tabId);
+    wc.on('input-event', (_e, ev) => { if (GESTURE_EVENTS.has(ev?.type)) this.lastGesture.set(wc.id, Date.now()); });
+    wc.on('will-navigate', (e) => {
+      let scheme = '';
+      try { scheme = new URL(e.url).protocol; } catch { return; }
+      if (scheme === 'file:') { e.preventDefault(); return; }
+      if (!INTERNAL_SCHEMES.has(scheme)) { e.preventDefault(); this.openExternal(e.url, wc); }
+    });
+    wc.setWindowOpenHandler(({ url }) => {
+      if (/^https?:/.test(url) && this.recentGesture(wc)) this.emit('open-tab', { url, isPrivate: !!tab?.isPrivate, select: true });
+      return { action: 'deny' };
+    });
+    wc.on('context-menu', (_e, p) => {
+      const t = this.t();
+      const items = [];
+      if (p.isEditable) items.push({ label: t('ctx_cut'), click: () => wc.cut() }, { label: t('ctx_copy'), click: () => wc.copy() }, { label: t('ctx_paste'), click: () => wc.paste() });
+      else if (p.selectionText) items.push({ label: t('ctx_copy'), click: () => wc.copy() });
+      if (p.linkURL) items.push({ label: t('action_copy_link'), click: () => copyText(p.linkURL) });
+      if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
+    });
+    win.on('closed', () => { this.popups.delete(win); this.lastGesture.delete(wc.id); });
+  }
+
+  /** Ferme les fenêtres de connexion (fin de la navigation privée, fermeture de Qafila). */
+  closePopups({ privateOnly = false } = {}) {
+    for (const w of [...this.popups]) {
+      if (w.isDestroyed()) { this.popups.delete(w); continue; }
+      if (privateOnly && w.webContents.session === this.persistent) continue;
+      w.destroy();
+    }
   }
 
   /** Page d'erreur locale dans la langue de l'interface. */
@@ -563,6 +623,9 @@ class TabManager extends EventEmitter {
       items.push({ label: t('action_reload'), click: () => this.reload(tabId) });
       sep();
     }
+    // Entrées ajoutées par les extensions (chrome.contextMenus).
+    const extra = this.extensionMenuItems ? this.extensionMenuItems(wc, params) : [];
+    if (extra.length) { items.push(...extra); sep(); }
     items.push({ label: t('inspect'), click: () => { wc.inspectElement(params.x, params.y); if (wc.isDevToolsOpened()) wc.devToolsWebContents?.focus(); } });
     Menu.buildFromTemplate(items).popup({ window: this.win });
   }

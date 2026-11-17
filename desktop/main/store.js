@@ -14,6 +14,20 @@ const HISTORY_MAX = 2000;
 const AUTO_CLOSE_MS = { never: null, day: 86_400_000, week: 604_800_000, month: 2_592_000_000 };
 const RETRY_MS = [2_000, 10_000, 30_000, 60_000]; // nouvelles tentatives d'écriture après un échec
 
+// Autorisations mémorisées par site (main/permissions.js) : clés connues seulement, valeurs allow / block.
+const PERMISSION_KEYS = new Set(['camera', 'microphone', 'geolocation', 'notifications', 'clipboard-read', 'midi', 'storage-access', 'window-management', 'idle-detection', 'speaker-selection', 'screen']);
+function sanitizePermissions(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [host, perms] of Object.entries(raw)) {
+    if (typeof host !== 'string' || !/^[a-z0-9.\-\[\]:]{1,253}$/i.test(host) || !perms || typeof perms !== 'object') continue;
+    const clean = {};
+    for (const [k, v] of Object.entries(perms)) if (PERMISSION_KEYS.has(k) && (v === 'allow' || v === 'block')) clean[k] = v;
+    if (Object.keys(clean).length) out[host.toLowerCase()] = clean;
+  }
+  return out;
+}
+
 class Store extends EventEmitter {
   constructor(dir, { ephemeral = false } = {}) {
     super();
@@ -26,6 +40,7 @@ class Store extends EventEmitter {
     this.history = [];
     this.settings = settingsSchema.defaults();
     this.closedTabs = []; // pile des onglets fermés (« Rouvrir l'onglet fermé »)
+    this.sitePermissions = {}; // autorisations par site : { hôte: { camera: 'allow' | 'block', … } } (main/permissions.js)
     this._timer = null;
     this._dirty = false;
     this._failures = 0;
@@ -60,6 +75,7 @@ class Store extends EventEmitter {
         id: h.id || uuid(), title: String(h.title || ''), url: String(h.url), visitedAt: num(h.visitedAt),
       })).slice(0, HISTORY_MAX);
       this.settings = settingsSchema.sanitize(raw.settings);
+      this.sitePermissions = sanitizePermissions(raw.sitePermissions);
       // L'onglet sélectionné était privé (ou a disparu) : on reprend le dernier onglet visité.
       this.selected = this.tabs.some((t) => t.id === raw.selected) ? raw.selected
         : this.tabs.reduce((best, t) => (!best || t.lastVisited > best.lastVisited ? t : best), null)?.id ?? null;
@@ -93,6 +109,7 @@ class Store extends EventEmitter {
       bookmarks: this.bookmarks,
       history: this.history,
       settings: this.settings,
+      sitePermissions: this.sitePermissions,
     };
   }
 
@@ -187,6 +204,21 @@ class Store extends EventEmitter {
   }
 
   // ----- Favoris & historique -----
+  // ----- Autorisations des sites -----
+  setSitePermission(host, key, value) {
+    if (!host || !PERMISSION_KEYS.has(key) || !['allow', 'block'].includes(value)) return;
+    this.sitePermissions = { ...this.sitePermissions, [host]: { ...(this.sitePermissions[host] || {}), [key]: value } };
+    this.scheduleSave();
+    this.emit('change');
+  }
+
+  /** Oublie les autorisations d'un site (hôte), ou de tous les sites sans argument. */
+  resetSitePermissions(host) {
+    if (host) { const next = { ...this.sitePermissions }; delete next[host]; this.sitePermissions = next; } else this.sitePermissions = {};
+    this.scheduleSave();
+    this.emit('change');
+  }
+
   isBookmarked(url) { return !!url && this.bookmarks.some((b) => b.url === url); }
 
   addBookmark(title, url) {

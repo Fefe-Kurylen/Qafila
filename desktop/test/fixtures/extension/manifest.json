@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Extension d'essai Qafila",
+  "version": "1.0.0",
+  "description": "Extension utilisée par les tests de Qafila : bouton, badge, fenêtre et menu contextuel.",
+  "action": { "default_popup": "popup.html", "default_title": "Essai Qafila", "default_icon": { "32": "icon.png" } },
+  "icons": { "32": "icon.png" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["contextMenus", "storage"]
+}

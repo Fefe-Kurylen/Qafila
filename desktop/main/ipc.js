@@ -142,6 +142,15 @@ function register(a) {
   handle('support:info', () => support.info());
   handle('support:open', () => support.open());
 
+  // ----- Extensions (main/extensions.js) -----
+  const extId = (p) => (typeof p?.id === 'string' && /^[a-p]{32}$/.test(p.id) ? p.id : null);
+  handle('extensions:store', () => { a.extensions?.openStore(); });
+  handle('extensions:remove', (p) => { const id = extId(p); return id && a.extensions ? a.extensions.remove(id) : false; });
+  handle('extensions:options', (p) => { const id = extId(p); return id && a.extensions ? a.extensions.openOptions(id) : false; });
+
+  // ----- Autorisations des sites -----
+  handle('permissions:reset', (p) => { const h = typeof p?.host === 'string' && p.host.length <= 253 ? p.host.toLowerCase() : null; a.store.resetSitePermissions(h); });
+
   // ----- Mises à jour de l'application (main/updater.js) -----
   handle('update:check', () => (a.updater ? a.updater.check() : { status: 'disabled' }));
   handle('update:install', () => (a.updater ? a.updater.install() : false));

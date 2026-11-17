@@ -14,13 +14,13 @@ rmSync(out, { recursive: true, force: true });
 const expected = ['01-page', '02-menu', '03-address', '04-tabs', '05-tabs-grid', '06-tabs-popup', '07-settings', '08-appearance', '09-gallery',
   '10-editor', '11-find', '12-start', '13-dark', '14-dark-menu', '15-dark-tabs', '16-dark-settings', '17-bottom-glass', '18-chrome-strip', '19-history', '20-bookmarks',
   '21-ar-page', '22-ar-settings', '23-ar-menu', '24-appearance-style', '25-about', '26-reader', '27-bottom-fixed', '28-shrink', '29-toolbar-settings',
-  '34-update-button', '35-update-about', '36-update-dark', '37-sizes-large', '38-sizes-small'];
+  '34-update-button', '35-update-about', '36-update-dark', '37-sizes-large', '38-sizes-small', '39-extension-button', '40-extension-popup', '41-extensions', '42-site-permissions'];
 const useXvfb = process.platform === 'linux' && !process.env.DISPLAY;
 const electronArgs = ['electron', '.', '--no-sandbox', `--smoke=${out}`];
 const [cmd, args] = useXvfb ? ['xvfb-run', ['-a', '-s', '-screen 0 1440x900x24', 'npx', ...electronArgs]] : ['npx', electronArgs];
 
 const child = spawn(cmd, args, { cwd: root, stdio: 'inherit', env: { ...process.env, ELECTRON_ENABLE_LOGGING: '0' } });
-const timer = setTimeout(() => { console.error('Smoke : délai dépassé (300 s)'); child.kill('SIGKILL'); }, 300_000);
+const timer = setTimeout(() => { console.error('Smoke : délai dépassé (480 s)'); child.kill('SIGKILL'); }, 480_000);
 child.on('exit', (code) => {
   clearTimeout(timer);
   const missing = expected.filter((n) => { const f = join(out, `${n}.png`); return !existsSync(f) || statSync(f).size < 2000; });

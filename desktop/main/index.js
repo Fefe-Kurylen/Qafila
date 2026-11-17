@@ -21,6 +21,7 @@ const shortcuts = require('./shortcuts');
 const { APP_ID } = require('./app-id');
 const { safeFilename, extensionOf, zoneIdentifier } = require('./filename');
 const { Updater } = require('./updater');
+const { Extensions } = require('./extensions');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -64,7 +65,7 @@ const Q = {
   win: null, chrome: null, store: null, tabs: null, blocker: null, glass: null,
   chromeMode: 'strip', barHeight: 92, t: null, demo: DEMO, isFullscreenPage: false, fullscreenNotice: null,
   collapse: 'none', scrollAcc: 0, collapseQuiet: 0, // Au défilement : 'none' | 'mini' (Réduire) | 'hidden' (Masquer)
-  pending: new Map(), broadcastTimer: null, favicons: null, updater: null,
+  pending: new Map(), broadcastTimer: null, favicons: null, updater: null, extensions: null,
 };
 
 function isDark() { return nativeTheme.shouldUseDarkColors; }
@@ -79,6 +80,15 @@ function translator() {
 const MINI_STRIP = 28;          // Réduire : mini-adresse (domaine seul, 11 px)
 const COLLAPSE_AFTER = 48;      // défilement cumulé (px) qui réduit / masque la barre, ou la rouvre en remontant
 const COLLAPSE_QUIET_MS = 300;  // après un changement, la page se redimensionne : défilements ignorés (pas d'oscillation)
+
+/** Extensions : liste et onglet dont la barre montre les boutons (jamais un onglet privé). */
+function describeExtensions() {
+  const x = Q.extensions;
+  if (!x || !x.ready) return { ready: false, list: [], actionTab: -1 };
+  const tab = Q.store.selectedTab;
+  const wc = tab && !tab.isPrivate ? Q.tabs.contents(tab.id) : null;
+  return { ready: true, list: x.list(), actionTab: wc && !wc.isDestroyed() ? wc.id : -1 };
+}
 
 /** Hauteur de la barre de titre Qafila (0 hors Windows, en plein écran de la fenêtre ou d'une page). */
 function titleH() {
@@ -236,7 +246,7 @@ function describeState() {
   return {
     tabs: describeTabs(), selected: Q.store.selected, bookmarks: Q.store.bookmarks, historyCount: Q.store.history.length,
     settings: Q.store.settings, dark: isDark(), lang: t.lang, rtl: t.rtl, closedTabs: Q.store.closedTabs.length,
-    downloads: describeDownloads(), update: Q.updater ? Q.updater.state : { status: 'disabled' }, collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
+    downloads: describeDownloads(), sitePermissions: Q.store.sitePermissions, extensions: describeExtensions(), update: Q.updater ? Q.updater.state : { status: 'disabled' }, collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
     fullscreenNotice: Q.isFullscreenPage && Q.fullscreenNotice !== null ? { host: Q.fullscreenNotice } : null,
     window: { fullscreen: Q.win?.isFullScreen() || false, maximized: Q.win?.isMaximized() || false, focused: Q.win?.isFocused() || false },
   };
@@ -935,6 +945,10 @@ function createWindow() {
   Q.blocker = new Blocker(() => Q.store.settings, (wcId) => Q.tabs.pageURLFor(wcId));
   Q.tabs = new TabManager({ win: Q.win, store: Q.store, blocker: Q.blocker, t: translator, isDark, offline: OFFLINE, userAgent: app.userAgentFallback });
 
+  // Boutons des extensions dans la barre (<browser-action-list>) : préchargement de la session du chrome.
+  try {
+    session.defaultSession.registerPreloadScript({ type: 'frame', id: 'qafila-browser-action', filePath: path.join(__dirname, '..', 'preload', 'browser-action.js') });
+  } catch { /* déjà enregistré */ }
   Q.chrome = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'chrome.js'),
@@ -1037,10 +1051,20 @@ if (GOT_LOCK) app.whenReady().then(async () => {
     toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, focusUI, screenshot,
     downloadFolder, expandBar: () => setCollapse('none'), updateTitlebar,
     get updater() { return Q.updater; },
+    get extensions() { return Q.extensions; },
   });
 
   createWindow();
   Q.updater = new Updater({ onChange: broadcast, isAutomatic: () => Q.store.settings.autoUpdate !== false, demo: DEMO });
+  // Extensions Chrome (Chrome Web Store, boutons dans la barre, menus) : session normale seulement.
+  Q.extensions = new Extensions({
+    tabs: Q.tabs, win: () => Q.win, t: translator, newTab, selectTab, closeTab,
+    chromeOffset: () => (Q.chrome ? Q.chrome.getBounds().y : 0), onChange: broadcast,
+  });
+  Q.tabs.extensionMenuItems = (wc, params) => Q.extensions.contextMenuItems(wc, params);
+  Q.extensions.init({ webStore: !DEMO })
+    .then(() => (SMOKE_DIR ? Q.extensions.loadUnpacked(path.join(__dirname, '..', 'test', 'fixtures', 'extension')) : null))
+    .catch((e) => console.error('extensions :', e?.message || e));
   Q.updater.start();
   if (!SMOKE_DIR) for (const url of urlsFromArgv(argv)) newTab({ url });
   if (SMOKE_DIR) runSmoke().catch((e) => { console.error('Smoke :', e); app.exit(1); });
@@ -1055,7 +1079,7 @@ app.on('second-instance', (_e, otherArgv) => {
   for (const url of urlsFromArgv(otherArgv)) newTab({ url });
 });
 app.on('window-all-closed', () => { Q.store?.saveNow(); app.quit(); });
-app.on('before-quit', () => { Q.store?.saveNow(); });
+app.on('before-quit', () => { Q.store?.saveNow(); Q.extensions?.shutdown(); });
 // Fichiers jamais confirmés (question sans réponse, navigation privée) : rien ne reste après la fermeture.
 app.on('will-quit', () => { if (Q.store) clearPendingDirs(); });
 // Certificat client demandé par un site (TLS) : Electron enverrait sans rien demander le premier certificat du
@@ -1543,6 +1567,28 @@ async function runSmoke() {
   set('appearance', 'dark'); await wait(1500); Q.glass.refresh(0); await wait(400); await shot('36-update-dark');
   set('appearance', 'light');
   Q.updater.state = { status: 'disabled', version: null, percent: null, manual: false };
+  // Extensions : bouton de l'extension d'essai dans la barre, sa fenêtre, réglages ; autorisations des sites.
+  const fail = (m) => { report.errors.push(m); console.error('smoke :', m); };
+  for (let i = 0; i < 30 && !(Q.extensions?.ready && Q.extensions.list().length); i++) await wait(200);
+  if (!Q.extensions?.list().length) fail('extension d\'essai non chargée');
+  broadcast(); await wait(1500); Q.glass.refresh(0); await wait(400); await shot('39-extension-button');
+  const clicked = await Q.chrome.webContents.executeJavaScript(`(() => { const l = document.querySelector('browser-action-list'); const b = l && l.shadowRoot && l.shadowRoot.querySelector('.action'); if (!b) return false; b.click(); return true; })()`).catch(() => false);
+  if (!clicked) fail('bouton de l\'extension introuvable dans la barre');
+  await wait(1800);
+  const popup = BrowserWindow.getAllWindows().find((w) => w !== Q.win && w.webContents.getURL().startsWith('chrome-extension://'));
+  if (!popup) fail('fenêtre de l\'extension non ouverte');
+  else {
+    const img = await popup.webContents.capturePage();
+    fs.writeFileSync(path.join(SMOKE_DIR, '40-extension-popup.png'), img.toPNG());
+    const pb = popup.getBounds(); const cb = Q.chrome.getBounds(); const wb = Q.win.getContentBounds();
+    if (pb.y < wb.y + cb.y) fail(`fenêtre de l'extension au-dessus de la barre (${pb.y} < ${wb.y + cb.y})`);
+    popup.destroy();
+  }
+  demoScreen('extensions'); await wait(1200); await shot('41-extensions');
+  demoScreen('none'); await wait(400);
+  Q.store.setSitePermission('meet.google.com', 'camera', 'allow'); Q.store.setSitePermission('meet.google.com', 'microphone', 'allow'); Q.store.setSitePermission('pub.example.com', 'notifications', 'block');
+  demoScreen('sitePermissions'); await wait(1200); await shot('42-site-permissions');
+  demoScreen('none'); Q.store.resetSitePermissions(); await wait(400);
   // Tailles : tout en Grande, puis tout en Petite, puis retour à Normale.
   for (const [size, name] of [['large', '37-sizes-large'], ['small', '38-sizes-small']]) {
     set('barSize', size); set('titleBarSize', size); set('bookmarksBarSize', size);
@@ -1586,5 +1632,6 @@ async function runSmoke() {
   report.finished = Date.now();
   fs.writeFileSync(path.join(SMOKE_DIR, 'smoke.json'), JSON.stringify(report, null, 2));
   console.log('smoke terminé :', report.shots.length, 'captures,', report.errors.length, 'erreurs');
+  Q.extensions?.shutdown();
   app.exit(report.errors.length ? 1 : 0);
 }

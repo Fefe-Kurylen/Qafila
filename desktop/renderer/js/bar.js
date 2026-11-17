@@ -131,8 +131,8 @@ export function rowHTML(cfgBar, opts = {}) {
     if (slot.action === 'address') return addressCard(tab, { preview: opts.preview, settings: opts.settings });
     return button(slot, st, count);
   });
-  // Barre réelle : le bouton « Mettre à jour » se glisse juste avant le bouton du menu (sinon en fin de rangée).
-  const upd = opts.preview ? '' : updateButton();
+  // Barre réelle : boutons des extensions puis « Mettre à jour », juste avant le bouton du menu (sinon en fin de rangée).
+  const upd = opts.preview ? '' : extensionSlot() + updateButton();
   if (upd) {
     const m = slots.findIndex((x) => x.action === 'menu');
     parts.splice(m >= 0 ? m : parts.length, 0, upd);
@@ -319,8 +319,32 @@ function updateFindCount() {
   el.textContent = f.text ? (f.matches ? t('find_count', f.active, f.matches) : t('find_none')) : '';
 }
 
+// ----- Boutons des extensions -----
+// <browser-action-list> (préchargement preload/browser-action.js) : un seul élément, déplacé dans la rangée à chaque
+// reconstruction, pour garder ses icônes, badges et fenêtre ouverte.
+let extEl = null;
+function extensionSlot() {
+  const x = S.state?.extensions;
+  return x?.ready && x.actionTab >= 0 && x.list.some((e) => e.hasAction) && customElements.get('browser-action-list') ? '<span class="ext-slot"></span>' : '';
+}
+function placeExtensionActions(host) {
+  const slot = host.querySelector('.ext-slot');
+  if (!slot) return;
+  if (!extEl) {
+    extEl = document.createElement('browser-action-list');
+    extEl.className = 'ext-actions';
+    extEl.setAttribute('partition', 'persist:qafila');
+  }
+  const tab = String(S.state.extensions.actionTab);
+  if (extEl.getAttribute('tab') !== tab) extEl.setAttribute('tab', tab);
+  const align = toolbar().position === 'bottom' ? 'top left' : 'bottom left';
+  if (extEl.getAttribute('alignment') !== align) extEl.setAttribute('alignment', align);
+  slot.replaceWith(extEl);
+}
+
 // ----- Rendu de la barre -----
 let mode = null; // 'row' | 'editing' | 'find' : la saisie n'est pas reconstruite à chaque mise à jour
+let lastRowHTML = '';
 function renderBar() {
   if (!S.state || !S.cfg) return;
   applyTheme();
@@ -333,8 +357,14 @@ function renderBar() {
     if (mode !== 'find') { host.innerHTML = findHTML(); mode = 'find'; const i = $('#find-input'); if (i) i.value = S.find.text || ''; }
     updateFindCount();
   } else {
-    host.innerHTML = rowHTML(toolbar().bar);
-    mode = 'row';
+    // La rangée n'est reconstruite que si elle change (les boutons des extensions gardent leur état).
+    const html = rowHTML(toolbar().bar);
+    if (mode !== 'row' || html !== lastRowHTML) {
+      host.innerHTML = html;
+      lastRowHTML = html;
+      mode = 'row';
+      placeExtensionActions(host);
+    }
   }
   renderBookmarksBar();
   const sg = $('#suggest');

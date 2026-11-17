@@ -111,6 +111,7 @@ P.settings = () => {
     ]) + group([
       navRow('search', t('page_search'), t('engine_' + (s.searchEngine || 'google')), 'search'),
       navRow('shieldHalf', t('page_privacy'), '', 'privacy'),
+      navRow('puzzle', t('extensions'), String(S.state.extensions?.list?.length || ''), 'extensions'),
       navRow('reader', t('page_reading'), t('percent', s.textZoom || 100), 'reading'),
       navRow('download', t('downloads'), S.state.downloads?.active ? t('percent', Math.round((S.state.downloads.progress || 0) * 100)) : '', 'downloads'),
       navRow('globe', t('language'), lang, 'language'),
@@ -215,10 +216,37 @@ P.privacy = () => ({
   body: group([toggleRow(t('block_ads'), 'blockAds'), toggleRow(t('block_trackers'), 'blockTrackers'), toggleRow(t('hide_cookie_banners'), 'blockCookieBanners')])
     + group(hostList('blockerDisabledHosts', t('blocker_off_empty', t('menu_blocker_off_here'))), { header: t('blocker_off_sites') })
     + group([toggleRow(t('javascript'), 'javascriptEnabled')].concat(hostList('javascriptDisabledHosts', t('js_off_empty'))), { header: t('javascript') })
+    + group([navRow('hand', t('site_permissions'), String(Object.keys(S.state.sitePermissions || {}).length || ''), 'sitePermissions')])
     + group([toggleRow(t('upgrade_https'), 'upgradeToHTTPS')], { header: t('security') })
     + group([buttonRow(local.confirmClear ? t('tap_again_to_clear') : t('clear_history_data'), 'clearData', { red: true }), toggleRow(t('clear_on_close_all'), 'clearDataOnCloseAll')], { header: t('data') })
     + group([textRow('customUserAgent', t('custom_user_agent'))], { header: t('advanced'), footer: t('privacy_footer') }),
 });
+
+/** Extensions Chrome : installées depuis le Chrome Web Store ; options et suppression. */
+P.extensions = () => {
+  const x = S.state.extensions || { ready: false, list: [] };
+  const rows = x.list.map((e) => `<div class="s-row ext-row"><img class="ext-ic" src="${esc(e.icon)}" alt=""><span class="s-l">${esc(e.name)}<span class="s-sub">${esc(t('version_n', e.version))}${e.description ? ' · ' + esc(e.description) : ''}</span></span>${e.hasOptions ? `<button class="s-x" data-extopt="${esc(e.id)}" title="${esc(t('ext_options'))}">${icon('sliders', 18)}</button>` : ''}<button class="s-x" data-extrm="${esc(e.id)}" title="${esc(t('ext_remove'))}">${icon('trash', 18)}</button></div>`);
+  return {
+    title: t('extensions'),
+    body: group([`<button class="s-row center" data-do="extStore"><span class="s-ic">${icon('plus', 18)}</span><span class="s-l">${esc(t('ext_add'))}</span></button>`], { footer: t('ext_add_footer') })
+      + group(rows.length ? rows : [`<div class="s-row muted"><span class="s-l">${esc(x.ready ? t('ext_none') : t('ext_loading'))}</span></div>`], { header: t('ext_installed'), footer: t('ext_private_footer') }),
+  };
+};
+
+/** Autorisations mémorisées par site (caméra, micro, position, notifications…). */
+P.sitePermissions = () => {
+  const all = S.state.sitePermissions || {};
+  const hosts = Object.keys(all).sort();
+  const rows = hosts.map((h) => {
+    const perms = Object.entries(all[h]).map(([k, v]) => `<span class="perm ${v}">${esc(t('perm_' + k))} ${v === 'allow' ? '✓' : '✕'}</span>`).join('');
+    return `<div class="s-row"><span class="s-l" dir="ltr">${esc(h)}<span class="s-sub perms">${perms}</span></span><button class="s-x" data-unperm="${enc(h)}" title="${esc(t('perm_reset_site'))}">${icon('xmarkCircle', 18)}</button></div>`;
+  });
+  return {
+    title: t('site_permissions'),
+    body: group(rows.length ? rows : [`<div class="s-row muted"><span class="s-l">${esc(t('perm_none'))}</span></div>`], { footer: t('perm_footer') })
+      + (rows.length ? group([buttonRow(t('perm_reset_all'), 'resetPerms', { red: true, center: true })]) : ''),
+  };
+};
 
 P.reading = () => {
   const s = settings();
@@ -431,6 +459,9 @@ export function installSheetEvents() {
     if ((b = g('[data-toggle]'))) { const k = b.dataset.toggle; await q.settings.set(k, !settings()[k]); return; }
     if ((b = g('[data-set]'))) { await q.settings.set(b.dataset.set, JSON.parse(b.dataset.v)); return; }
     if ((b = g('[data-tbset]'))) { await saveToolbar({ [b.dataset.tbset]: JSON.parse(b.dataset.v), preset: toolbar().preset }); return; }
+    if ((b = g('[data-extrm]'))) { await q.extensions.remove(b.dataset.extrm); return; }
+    if ((b = g('[data-extopt]'))) { await q.extensions.options(b.dataset.extopt); setOverlay('none'); return; }
+    if ((b = g('[data-unperm]'))) { await q.permissions.reset(JSON.parse(b.dataset.unperm)); return; }
     if ((b = g('[data-unhost]'))) { const k = b.dataset.unhost; const v = JSON.parse(b.dataset.v); await q.settings.set(k, (settings()[k] || []).filter((h) => h !== v)); return; }
     if ((b = g('[data-preset]'))) { await q.settings.applyPreset(b.dataset.preset); return; }
     if ((b = g('[data-unbookmark]'))) { e.stopPropagation(); await q.bookmarks.remove(b.dataset.unbookmark); return; }
@@ -463,6 +494,8 @@ export function installSheetEvents() {
       }
       if (d === 'source') { q.openExternal('https://github.com/Fefe-Kurylen/qafila'); return; }
       if (d === 'resetToolbar') { await q.settings.applyPreset('complete'); toast(t('reset_bar_menu')); return; }
+      if (d === 'extStore') { await q.extensions.openStore(); setOverlay('none'); return; }
+      if (d === 'resetPerms') { await q.permissions.reset(null); return; }
       if (d === 'clearHistory') { await q.history.clear(); await loadHistory(); render(); return; }
       if (d === 'clearData') {
         if (!local.confirmClear) { local.confirmClear = true; render(); setTimeout(() => { local.confirmClear = false; render(); }, 3000); return; }

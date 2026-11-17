@@ -16,11 +16,13 @@
     "i18n": "node scripts/i18n-from-android.mjs",
     "dist:win": "electron-builder --win nsis --x64",
     "dist:linux": "electron-builder --linux AppImage",
-    "dist:mac": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg"
+    "dist:mac": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg",
+    "build:preload": "esbuild preload/src/browser-action-entry.js --bundle --platform=node --format=cjs --external:electron --target=node20 --legal-comments=none --outfile=preload/browser-action.js --log-level=warning"
   },
   "devDependencies": {
     "electron": "^45.3.3",
-    "electron-builder": "^26.18.0"
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.25.12"
   },
   "build": {
     "appId": "fr.qafila.desktop",
@@ -48,7 +50,8 @@
       "i18n/**/*",
       "config/**/*",
       "build/icon.png",
-      "package.json"
+      "package.json",
+      "!preload/src/**"
     ],
     "extraResources": [
       {
@@ -128,6 +131,8 @@
     ]
   },
   "dependencies": {
+    "electron-chrome-extensions": "^4.10.0",
+    "electron-chrome-web-store": "^0.13.0",
     "electron-updater": "^6.8.11"
   }
 }

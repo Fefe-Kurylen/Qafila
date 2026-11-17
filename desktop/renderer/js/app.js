@@ -75,7 +75,7 @@ async function demo(c) {
   if (s === 'tabs') { setTabsDemo({ popup: false }); return openTabs({ privateMode: false }); }
   if (s === 'tabs-popup') { setTabsDemo({ popup: true }); return render(); }
   if (['settings', 'history', 'bookmarks', 'gallery', 'editor'].includes(s)) return openSheet(s, true);
-  if (['appearance', 'toolbar', 'address', 'privacy', 'reading', 'about', 'search', 'tabsSettings', 'downloads', 'language'].includes(s)) { await openSheet('settings', true); return openSheet(s); }
+  if (['appearance', 'toolbar', 'address', 'privacy', 'reading', 'about', 'search', 'tabsSettings', 'downloads', 'language', 'extensions', 'sitePermissions'].includes(s)) { await openSheet('settings', true); return openSheet(s); }
   return null;
 }
 

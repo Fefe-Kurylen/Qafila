@@ -431,3 +431,20 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 :root.mac .bmbar button { -webkit-app-region: no-drag; }
 :root.mac:not(.overlay-open) .bmbar { -webkit-app-region: drag; }
 .slot { display: contents; }
+
+/* Autorisations des sites : petites pastilles « Caméra ✓ » / « Micro ✕ ». */
+.s-sub.perms { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.perm { font-size: 11.5px; padding: 1px 7px; border-radius: 9px; background: rgba(52, 199, 89, .14); color: #1e8e3e; }
+.perm.block { background: rgba(255, 59, 48, .12); color: #d70015; }
+:root.dark .perm { color: #4cd964; }
+:root.dark .perm.block { color: #ff6961; }
+
+/* Boutons des extensions (<browser-action-list>) : mêmes pastilles rondes que les boutons de la barre. */
+browser-action-list.ext-actions { flex: none; display: flex; align-items: center; gap: 2px; margin: 0 2px; }
+browser-action-list.ext-actions::part(action) { width: calc(var(--pill-h, 40px) - 4px); height: calc(var(--pill-h, 40px) - 4px);
+  border-radius: 50%; background-size: 18px 18px; background-color: transparent; transition: background-color .12s; }
+browser-action-list.ext-actions::part(action):hover { background-color: color-mix(in srgb, var(--bfg) 8%, transparent); }
+browser-action-list.ext-actions::part(badge) { font-size: 9px; }
+
+/* Réglages › Extensions : icône de chaque extension. */
+.ext-row .ext-ic { width: 24px; height: 24px; flex: none; margin-inline-end: 12px; border-radius: 5px; }
