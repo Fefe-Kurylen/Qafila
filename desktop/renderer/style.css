@@ -486,3 +486,5 @@ browser-action-list.ext-actions::part(badge) { font-size: 9px; }
 .v-guide-r b { color: var(--text); font-weight: 600; }
 .s-v.accent { color: var(--accent, var(--text)); font-weight: 600; }
 .pill-btn.small { height: 32px; padding: 0 14px; font-size: 14px; flex: none; }
+
+.upd.upd-dl { opacity: .65; cursor: default; pointer-events: none; font-variant-numeric: tabular-nums; }

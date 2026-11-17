@@ -123,6 +123,8 @@ function button(slot, st, count) {
 /** Bouton « Mettre à jour » : visible seulement quand une nouvelle version est prête (macOS : disponible). */
 export function updateButton() {
   const u = S.state?.update;
+  // Téléchargement en cours : pastille discrète avec le pourcentage (le bouton arrive quand c'est prêt).
+  if (u?.status === 'downloading') return `<span class="upd upd-dl" title="${esc(t('update_status_downloading', u.percent ?? 0))}">${icon('update', 17)}<span>${esc(t('percent', u.percent ?? 0))}</span></span>`;
   if (!u || !(u.status === 'ready' || (u.manual && u.status === 'available'))) return '';
   const title = t(u.manual ? 'update_button_title_manual' : 'update_button_title', u.version || '');
   return `<button class="upd" data-update title="${esc(title)}" aria-label="${esc(title)}">${icon('update', 17)}<span>${esc(t('update_button'))}</span></button>`;

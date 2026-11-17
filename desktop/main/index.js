@@ -1079,6 +1079,7 @@ if (GOT_LOCK) app.whenReady().then(async () => {
     .then(() => (SMOKE_DIR ? Q.extensions.loadUnpacked(path.join(__dirname, '..', 'test', 'fixtures', 'extension')) : null))
     .catch((e) => console.error('extensions :', e?.message || e));
   Q.updater.start();
+  Q.win.on('focus', () => Q.updater?.maybeCheck());
   if (!SMOKE_DIR) for (const url of urlsFromArgv(argv)) newTab({ url });
   if (SMOKE_DIR) runSmoke().catch((e) => { console.error('Smoke :', e); app.exit(1); });
 });

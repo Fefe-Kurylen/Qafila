@@ -1,4 +1,6 @@
 'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
 // Mises à jour de Qafila pour PC (electron-updater). Deux canaux, choisis d'après le numéro de version :
 //  - stable (« 0.9.1 ») : releases GitHub « vX.Y.Z » de Fefe-Kurylen/Qafila ;
 //  - test (« 0.9.1-test.12 », versions construites à chaque envoi sur main) : la release « test », qui contient aussi
@@ -22,6 +24,8 @@ function channelOf(version) {
 }
 const FIRST_CHECK_MS = 12_000;
 const PERIOD_MS = 6 * 60 * 60 * 1000;
+// Versions de test : recherche toutes les 30 min, et au retour sur la fenêtre si la dernière date de plus de 30 min.
+const TEST_PERIOD_MS = 30 * 60 * 1000;
 
 /**
  * Flux de test local (QAFILA_UPDATE_URL) : uniquement http://127.0.0.1 ou http://localhost, jamais une adresse
@@ -57,8 +61,24 @@ class Updater {
   }
 
   set(patch) {
+    const before = this.state.status;
     this.state = { ...this.state, ...patch };
+    if (this.state.status !== before) this.log('info', `état : ${before} → ${this.state.status}${this.state.version ? ` (${this.state.version})` : ''}`);
     this.onChange();
+  }
+
+  /** Journal des mises à jour : <userData>/logs/mises-a-jour.log (200 Kio maximum, pour comprendre un échec). */
+  log(level, ...args) {
+    try {
+      if (!this.logFile) {
+        const dir = path.join(app.getPath('userData'), 'logs');
+        fs.mkdirSync(dir, { recursive: true });
+        this.logFile = path.join(dir, 'mises-a-jour.log');
+        try { if (fs.statSync(this.logFile).size > 200 * 1024) fs.renameSync(this.logFile, this.logFile + '.old'); } catch { /* absent */ }
+      }
+      const msg = args.map((a) => (a instanceof Error ? `${a.message}` : typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+      fs.appendFileSync(this.logFile, `${new Date().toISOString()} [${level}] v${app.getVersion()} ${msg}\n`);
+    } catch { /* journal facultatif */ }
   }
 
   /** Charge electron-updater au premier usage (rien n'est chargé si les mises à jour ne sont pas prises en charge). */
@@ -66,7 +86,7 @@ class Updater {
     if (this.au || !this.supported) return this.au;
     const { autoUpdater } = require('electron-updater');
     const au = autoUpdater;
-    au.logger = null;
+    au.logger = { info: (...a) => this.log('info', ...a), warn: (...a) => this.log('warn', ...a), error: (...a) => this.log('error', ...a), debug: () => {} };
     au.allowPrerelease = this.channel === 'test';
     au.allowDowngrade = false;
     au.autoDownload = !this.manual;
@@ -84,7 +104,7 @@ class Updater {
     au.on('download-progress', (p) => this.set({ status: 'downloading', percent: Math.max(0, Math.min(100, Math.round(p?.percent || 0))) }));
     au.on('update-downloaded', (info) => this.set({ status: 'ready', version: info?.version || this.state.version, percent: 100 }));
     // Une erreur réseau après le téléchargement ne retire pas le bouton : la version prête reste installable.
-    au.on('error', () => { if (this.state.status !== 'ready') this.set({ status: 'error', percent: null }); });
+    au.on('error', (e) => { this.log('error', e); if (this.state.status !== 'ready') this.set({ status: 'error', percent: null }); });
     this.au = au;
     return au;
   }
@@ -95,7 +115,15 @@ class Updater {
     clearTimeout(this.timer);
     clearInterval(this.interval);
     this.timer = setTimeout(() => { if (this.isAutomatic()) this.check(); }, FIRST_CHECK_MS);
-    this.interval = setInterval(() => { if (this.isAutomatic()) this.check(); }, PERIOD_MS);
+    this.interval = setInterval(() => { if (this.isAutomatic()) this.check(); }, this.period());
+  }
+
+  period() { return this.channel === 'test' ? TEST_PERIOD_MS : PERIOD_MS; }
+
+  /** Retour sur la fenêtre : nouvelle recherche si la précédente est ancienne (versions de test). */
+  maybeCheck() {
+    if (!this.supported || !this.isAutomatic() || this.channel !== 'test') return;
+    if (Date.now() - (this.lastCheckAt || 0) >= TEST_PERIOD_MS) this.check();
   }
 
   /** Recherche une mise à jour ; renvoie l'état final (bouton « Rechercher les mises à jour » des réglages). */
@@ -104,8 +132,9 @@ class Updater {
     if (['downloading', 'ready'].includes(this.state.status)) return this.state;
     if (this.pending) return this.pending;
     const au = this.updater();
+    this.lastCheckAt = Date.now();
     this.pending = (async () => {
-      try { await au.checkForUpdates(); } catch { if (this.state.status !== 'ready') this.set({ status: 'error', percent: null }); }
+      try { await au.checkForUpdates(); } catch (e) { this.log('error', 'checkForUpdates', e); if (this.state.status !== 'ready') this.set({ status: 'error', percent: null }); }
       // Avec le téléchargement automatique, checkForUpdates rend la main avant la fin du téléchargement : l'état
       // « downloading » puis « ready » arrivera par les événements.
       return this.state;
