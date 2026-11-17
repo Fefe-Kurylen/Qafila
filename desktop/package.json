@@ -128,7 +128,8 @@
         "repo": "Qafila",
         "releaseType": "release"
       }
-    ]
+    ],
+    "detectUpdateChannel": false
   },
   "dependencies": {
     "electron-chrome-extensions": "^4.10.0",

@@ -272,3 +272,10 @@ test('Zone.Identifier : ni identifiant, ni mot de passe, ni fragment ; rien en p
   assert.equal(filename.zoneIdentifier('https://example.org/a.exe', true), '[ZoneTransfer]\r\nZoneId=3\r\n');
   assert.equal(filename.zoneIdentifier('blob:https://example.org/x', false), '[ZoneTransfer]\r\nZoneId=3\r\n');
 });
+
+test('mises à jour : canal test seulement pour « X.Y.Z-test.N »', () => {
+  const { channelOf } = require('../main/updater.js');
+  assert.equal(channelOf('0.9.1-test.12'), 'test');
+  assert.equal(channelOf('1.0.0-test.1'), 'test');
+  for (const v of ['0.9.1', '0.9.1-beta.1', '0.9.1-test', '0.9.1-test.1x', 'test', '', undefined]) assert.equal(channelOf(v), 'stable', String(v));
+});

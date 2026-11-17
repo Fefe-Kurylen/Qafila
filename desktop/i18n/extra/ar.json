@@ -139,5 +139,10 @@
   "ext_perm_storage": "حفظ البيانات",
   "ext_perm_nativeMessaging": "التواصل مع تطبيقات الحاسوب",
   "ext_perm_proxy": "تغيير إعدادات الوكيل",
-  "ext_perm_management": "إدارة الإضافات الأخرى"
+  "ext_perm_management": "إدارة الإضافات الأخرى",
+  "bar_layout": "ترتيب الشريط",
+  "bar_layout_one": "سطر واحد",
+  "bar_layout_two": "سطران",
+  "bar_layout_footer": "سطران: العنوان في الأعلى، والأزرار (الألسنة، +، القائمة…) تحته.",
+  "bookmarks_bar_add": "إضافة هذه الصفحة"
 }

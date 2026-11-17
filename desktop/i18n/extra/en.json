@@ -139,5 +139,10 @@
   "ext_perm_storage": "Store data",
   "ext_perm_nativeMessaging": "Communicate with apps on your computer",
   "ext_perm_proxy": "Change proxy settings",
-  "ext_perm_management": "Manage other extensions"
+  "ext_perm_management": "Manage other extensions",
+  "bar_layout": "Bar layout",
+  "bar_layout_one": "One row",
+  "bar_layout_two": "Two rows",
+  "bar_layout_footer": "Two rows: the address on top, the buttons (tabs, +, menu…) below.",
+  "bookmarks_bar_add": "Add this page"
 }

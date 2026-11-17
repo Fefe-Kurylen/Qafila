@@ -139,5 +139,10 @@
   "ext_perm_storage": "Daten speichern",
   "ext_perm_nativeMessaging": "Mit Apps auf Ihrem Computer kommunizieren",
   "ext_perm_proxy": "Proxy-Einstellungen ändern",
-  "ext_perm_management": "Andere Erweiterungen verwalten"
+  "ext_perm_management": "Andere Erweiterungen verwalten",
+  "bar_layout": "Leistenanordnung",
+  "bar_layout_one": "Eine Zeile",
+  "bar_layout_two": "Zwei Zeilen",
+  "bar_layout_footer": "Zwei Zeilen: oben die Adresse, darunter die Schaltflächen (Tabs, +, Menü …).",
+  "bookmarks_bar_add": "Diese Seite hinzufügen"
 }

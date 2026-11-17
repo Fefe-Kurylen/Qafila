@@ -23,10 +23,11 @@ const DESKTOP_ONLY = [
   { key: 'searchDefaultGoogle', section: 'search', type: 'boolean', default: false, sync: false, platforms: ['desktop'] },
   // Tailles (Apparence › Tailles) : barre d'adresse, barre de titre Windows, barre de favoris.
   { key: 'barSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
+  { key: 'barLayout', section: 'appearance', type: 'enum:BarLayout', default: 'two', sync: false, platforms: ['desktop'] },
   { key: 'titleBarSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
   { key: 'bookmarksBarSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
 ];
-const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] }, UiSize: { values: ['small', 'medium', 'large'] } };
+const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] }, UiSize: { values: ['small', 'medium', 'large'] }, BarLayout: { values: ['one', 'two'] } };
 
 let schema = null;
 

@@ -140,5 +140,10 @@
   "ext_perm_storage": "Enregistrer des données",
   "ext_perm_nativeMessaging": "Communiquer avec des applications de l'ordinateur",
   "ext_perm_proxy": "Modifier les réglages de proxy",
-  "ext_perm_management": "Gérer les autres extensions"
+  "ext_perm_management": "Gérer les autres extensions",
+  "bar_layout": "Disposition de la barre",
+  "bar_layout_one": "Une ligne",
+  "bar_layout_two": "Deux lignes",
+  "bar_layout_footer": "Deux lignes : l'adresse en haut, les boutons (onglets, +, menu…) dessous.",
+  "bookmarks_bar_add": "Ajouter cette page"
 }

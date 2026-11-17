@@ -1,7 +1,7 @@
 // Barre de Qafila : capsule flottante en faux verre (ou barre Classique / Verre pleine largeur), carte d'adresse
 // (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
 import {
-  q, S, $, t, esc, STRIP, barSizes, bookmarkSizes, bookmarksBarOn, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
+  q, S, $, t, esc, STRIP, barSizes, bookmarkSizes, bookmarksBarOn, twoRows, row2H, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
   shortURL, setOverlay, renderNow, toast, onRender,
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
@@ -29,7 +29,11 @@ export function applyTheme() {
   root.style.setProperty('--strip', STRIP() + 'px');
   const bs = barSizes();
   const bk = bookmarkSizes();
-  root.style.setProperty('--bar-h', bs.bar + 'px');
+  const two = twoRows();
+  root.classList.toggle('two-rows', two);
+  root.style.setProperty('--bar-h', (bs.bar + row2H()) + 'px');
+  root.style.setProperty('--row1-h', ((tb.style || 'floating') === 'floating' ? bs.bar : bs.full + 8) + 'px');
+  root.style.setProperty('--row2-h', row2H() + 'px');
   root.style.setProperty('--pill-h', bs.pill + 'px');
   root.style.setProperty('--btn-w', bs.btn + 'px');
   root.style.setProperty('--bm', (bookmarksBarOn() ? bk.h : 0) + 'px');
@@ -101,6 +105,15 @@ export function rowSlots(bar, addressStyle) {
   return list;
 }
 
+/**
+ * Disposition de la barre. Deux lignes (PC, par défaut) : l'adresse seule sur la première, tous les boutons
+ * (précédent, onglets, +, menu…) sur la deuxième. Une ligne : l'adresse au milieu des boutons.
+ */
+function layout(bar, s) {
+  const two = twoRows(s);
+  return { two, slots: two ? (bar || []).filter((x) => x.action !== 'address') : rowSlots(bar, s.addressStyle) };
+}
+
 function button(slot, st, count) {
   const id = slot.action;
   const size = SIZES[slot.size] || 20;
@@ -124,8 +137,8 @@ export function rowHTML(cfgBar, opts = {}) {
   const st = opts.state || (opts.preview ? { ...actionState(), isWeb: true } : actionState());
   const tab = opts.tab !== undefined ? opts.tab : selectedTab();
   const count = opts.count ?? (S.state?.tabs.filter((x) => !x.isPrivate).length || 0);
-  const slots = rowSlots(cfgBar, s.addressStyle);
-  const inline = slots.some((x) => x.action === 'address');
+  const { two, slots } = layout(cfgBar, opts.oneRow ? { ...s, barLayout: 'one' } : s);
+  const inline = !two && slots.some((x) => x.action === 'address');
   const parts = slots.map((slot) => {
     if (slot.action === 'separator') return '<span class="gap"></span>';
     if (slot.action === 'address') return addressCard(tab, { preview: opts.preview, settings: opts.settings });
@@ -137,7 +150,8 @@ export function rowHTML(cfgBar, opts = {}) {
     const m = slots.findIndex((x) => x.action === 'menu');
     parts.splice(m >= 0 ? m : parts.length, 0, upd);
   }
-  return `<div class="row${inline ? ' inline' : ' spread'}">${parts.join('')}</div>`;
+  const row = `<div class="row${inline ? ' inline' : ' spread'}${two ? ' row2' : ''}">${parts.join('')}</div>`;
+  return two ? `<div class="row inline row1">${addressCard(tab, { preview: opts.preview, settings: opts.settings })}</div>${row}` : row;
 }
 
 // ----- Saisie d'adresse -----
@@ -233,14 +247,15 @@ function commit(text) {
  * reconstruire le champ, qui garde sa frappe et son focus.
  */
 function editingHTML() {
-  const slots = rowSlots(toolbar().bar, 'card');
+  const { two, slots } = layout(toolbar().bar, { ...settings(), addressStyle: 'card' });
   const field = `<label class="address edit-field">${icon('search')}<input id="edit-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('search_or_enter_address'))}" dir="auto"><button class="clear" data-edit-clear title="${esc(t('clear'))}">${icon('xmarkCircle')}</button></label>`;
   const parts = slots.map((slot, i) => (slot.action === 'address' ? field : slot.action === 'separator' ? '<span class="gap"></span>' : `<span class="slot" data-slot="${i}"></span>`));
+  if (two) return `<div class="row inline editing row1">${field}</div><div class="row spread row2">${parts.join('')}</div>`;
   return `<div class="row inline editing">${parts.join('')}</div>`;
 }
 
 function refreshEditingButtons() {
-  const slots = rowSlots(toolbar().bar, 'card');
+  const { slots } = layout(toolbar().bar, { ...settings(), addressStyle: 'card' });
   const st = actionState();
   const count = S.state?.tabs.filter((x) => !x.isPrivate).length || 0;
   for (const el of document.querySelectorAll('#bar [data-slot]')) {
@@ -269,7 +284,7 @@ function renderBookmarksBar() {
   const mac = S.cfg?.app?.platform === 'darwin';
   const items = list.length
     ? list.map((b) => `<button class="bm" data-bm="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span><bdi>${esc(b.title)}</bdi></span></button>`).join('')
-    : `<span class="bm-empty">${esc(t('bookmarks_bar_empty', mac ? '⌘D' : t('kbd_ctrl') + '+D'))}</span>`;
+    : `<button class="bm bm-add" data-action="addBookmark">${icon(actionIcon('addBookmark', {}), 14)}<span>${esc(t('bookmarks_bar_add'))}</span></button><span class="bm-empty">${esc(t('bookmarks_bar_empty', mac ? '⌘D' : t('kbd_ctrl') + '+D'))}</span>`;
   const html = `<div class="bm-list">${items}</div><button class="bm-all" data-bm-all title="${esc(t('bookmarks'))}" aria-label="${esc(t('bookmarks'))}">${icon('book', 15)}</button>`;
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
 }
@@ -305,11 +320,11 @@ export function closeFind() {
 function findHTML() {
   const f = S.find;
   const count = f.text ? (f.matches ? t('find_count', f.active, f.matches) : t('find_none')) : '';
-  return `<div class="row inline finding">
+  return `<div class="row inline finding${twoRows() ? ' row1' : ''}">
     <label class="address edit-field">${icon('textSearch')}<input id="find-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('find_placeholder'))}" dir="auto"><span class="count" id="find-count">${esc(count)}</span></label>
     <button class="btn" data-find="prev" title="${esc(t('find_previous'))}">${icon('chevronDown', 20).replace('<svg', '<svg style="transform:rotate(180deg)"')}</button>
     <button class="btn" data-find="next" title="${esc(t('find_next'))}">${icon('chevronDown', 20)}</button>
-    <button class="text-btn" data-find="done">${esc(t('done'))}</button></div>`;
+    <button class="text-btn" data-find="done">${esc(t('done'))}</button></div>${twoRows() ? '<div class="row spread row2"></div>' : ''}`;
 }
 
 function updateFindCount() {
@@ -481,6 +496,7 @@ export function installBarEvents() {
   bm.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); }); // pas de défilement automatique
   bm.addEventListener('click', (e) => {
     if (e.target.closest('[data-bm-all]')) { import('./sheet.js').then((m) => m.openSheet('bookmarks', true)); return; }
+    if (e.target.closest('.bm-add')) { perform('addBookmark'); return; }
     const it = e.target.closest('[data-bm]');
     if (it) openBookmark(e, it);
   });

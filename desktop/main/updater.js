@@ -1,6 +1,9 @@
 'use strict';
-// Mises à jour de Qafila pour PC (electron-updater, releases GitHub « vX.Y.Z » de Fefe-Kurylen/Qafila, jamais la
-// release « test »). Windows et Linux (AppImage) : recherche au démarrage puis toutes les 6 heures, téléchargement en
+// Mises à jour de Qafila pour PC (electron-updater). Deux canaux, choisis d'après le numéro de version :
+//  - stable (« 0.9.1 ») : releases GitHub « vX.Y.Z » de Fefe-Kurylen/Qafila ;
+//  - test (« 0.9.1-test.12 », versions construites à chaque envoi sur main) : la release « test », qui contient aussi
+//    latest.yml / latest-linux.yml / latest-mac.yml. Une version de test se met donc à jour toute seule vers la
+//    suivante, sans réinstallation ; une version stable ne reçoit jamais de version de test. Windows et Linux (AppImage) : recherche au démarrage puis toutes les 6 heures, téléchargement en
 // arrière-plan, puis le bouton « Mettre à jour » apparaît dans la barre ; un clic redémarre sur la nouvelle version.
 // Sans clic, la version téléchargée s'installe à la fermeture. macOS (application non signée, que Squirrel.Mac refuse
 // d'installer) : seule la recherche se fait, le bouton ouvre la page de téléchargement dans le navigateur du système.
@@ -10,6 +13,13 @@ const { app, shell } = require('electron');
 const OWNER = 'Fefe-Kurylen';
 const REPO = 'Qafila';
 const RELEASES_URL = `https://github.com/${OWNER}/${REPO}/releases/latest`;
+const TEST_RELEASE_URL = `https://github.com/${OWNER}/${REPO}/releases/tag/test`;
+const TEST_FEED = `https://github.com/${OWNER}/${REPO}/releases/download/test/`;
+
+/** Canal de mise à jour d'après le numéro de version : « 0.9.1-test.12 » → test, sinon stable. */
+function channelOf(version) {
+  return /^\d+\.\d+\.\d+-test\.\d+$/.test(String(version || '')) ? 'test' : 'stable';
+}
 const FIRST_CHECK_MS = 12_000;
 const PERIOD_MS = 6 * 60 * 60 * 1000;
 
@@ -35,10 +45,11 @@ class Updater {
     this.isAutomatic = isAutomatic;
     this.testFeed = localTestFeed();
     this.manual = process.platform === 'darwin';
+    this.channel = channelOf(app.getVersion());
     const linuxOK = process.platform !== 'linux' || !!process.env.APPIMAGE || !!this.testFeed;
     this.supported = !demo && (app.isPackaged || !!this.testFeed) && linuxOK && ['win32', 'darwin', 'linux'].includes(process.platform);
     /** status : disabled | idle | checking | none | available | downloading | ready | error */
-    this.state = { status: this.supported ? 'idle' : 'disabled', version: null, percent: null, manual: this.manual };
+    this.state = { status: this.supported ? 'idle' : 'disabled', version: null, percent: null, manual: this.manual, channel: this.channel };
     this.au = null;
     this.timer = null;
     this.interval = null;
@@ -56,7 +67,7 @@ class Updater {
     const { autoUpdater } = require('electron-updater');
     const au = autoUpdater;
     au.logger = null;
-    au.allowPrerelease = false;
+    au.allowPrerelease = this.channel === 'test';
     au.allowDowngrade = false;
     au.autoDownload = !this.manual;
     au.autoInstallOnAppQuit = !this.manual;
@@ -64,6 +75,8 @@ class Updater {
     if (this.testFeed) {
       au.forceDevUpdateConfig = true;
       au.setFeedURL({ provider: 'generic', url: this.testFeed });
+    } else if (this.channel === 'test') {
+      au.setFeedURL({ provider: 'generic', url: TEST_FEED });
     }
     au.on('checking-for-update', () => { if (!['downloading', 'ready'].includes(this.state.status)) this.set({ status: 'checking' }); });
     au.on('update-not-available', () => this.set({ status: 'none', version: null, percent: null }));
@@ -108,7 +121,8 @@ class Updater {
       return true;
     }
     if (this.manual && this.state.status === 'available') {
-      try { await shell.openExternal(RELEASES_URL, { activate: true }); return true; } catch { return false; }
+      const url = this.channel === 'test' ? TEST_RELEASE_URL : RELEASES_URL;
+      try { await shell.openExternal(url, { activate: true }); return true; } catch { return false; }
     }
     return false;
   }
@@ -116,4 +130,4 @@ class Updater {
   stop() { clearTimeout(this.timer); clearInterval(this.interval); }
 }
 
-module.exports = { Updater, RELEASES_URL, localTestFeed };
+module.exports = { Updater, RELEASES_URL, TEST_FEED, channelOf, localTestFeed };
