@@ -45,7 +45,7 @@
       "note": "Android propose quatre langues de plus ; iOS les conserve sur le fil et affiche son défaut (règle unknownValue). À aligner en ajoutant les cas Swift." }
   },
   "settings": [
-    { "key": "searchEngine", "section": "search", "label": "Moteur", "type": "enum:SearchEngine", "default": "duckduckgo", "iosType": "SearchEngine", "androidType": "SearchEngine", "sync": true, "status": "shipped" },
+    { "key": "searchEngine", "section": "search", "label": "Moteur", "type": "enum:SearchEngine", "default": "google", "iosType": "SearchEngine", "androidType": "SearchEngine", "sync": true, "status": "shipped" },
     { "key": "searchBaseURL", "section": "search", "label": "Instance SearXNG / serveur Qafila", "type": "string", "default": "", "android": "searchBaseUrl", "iosType": "String", "androidType": "String", "sync": true, "status": "shipped" },
     { "key": "customSearchTemplate", "section": "search", "label": "Modèle personnalisé (%s)", "type": "string", "default": "https://duckduckgo.com/?q=%s", "platformDefaults": { "android": "" }, "iosType": "String", "androidType": "String", "sync": true, "status": "shipped",
       "note": "Android traite une chaîne vide ou sans %s comme DuckDuckGo : les deux défauts sont équivalents à l'écran." },

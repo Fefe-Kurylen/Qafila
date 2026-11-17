@@ -109,7 +109,7 @@ P.settings = () => {
       navRow('link', t('page_address'), addressStyleLabel(s.addressStyle), 'address'),
       navRow('squares', t('action_tabs'), t(s.tabsLayout === 'grid' ? 'layout_grid' : 'layout_list'), 'tabsSettings'),
     ]) + group([
-      navRow('search', t('page_search'), t('engine_' + (s.searchEngine || 'duckduckgo')), 'search'),
+      navRow('search', t('page_search'), t('engine_' + (s.searchEngine || 'google')), 'search'),
       navRow('shieldHalf', t('page_privacy'), '', 'privacy'),
       navRow('reader', t('page_reading'), t('percent', s.textZoom || 100), 'reading'),
       navRow('download', t('downloads'), S.state.downloads?.active ? t('percent', Math.round((S.state.downloads.progress || 0) * 100)) : '', 'downloads'),
@@ -137,6 +137,7 @@ P.appearance = () => {
       + group([swatches('barColorLight', bars)], { header: t('bar_color_light'), footer: t('bar_auto_light_desc') })
       + group([swatches('barColorDark', bars)], { header: t('bar_color_dark'), footer: t('bar_auto_dark_desc') })
       + group([`<div class="s-row seg-row"><div class="seg">${[['classic', 'style_classic'], ['glass', 'style_glass'], ['floating', 'style_floating']].map(([v, k]) => `<button class="${v === style ? 'on' : ''}" data-tbset="style" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('bar_style'), footer: t('bar_style_footer') })
+      + group([toggleRow(t('bookmarks_bar'), 'showBookmarksBar', t('bookmarks_bar_sub'))])
       + (style === 'classic' ? '' : group([slider('glassTransparency', 0, 100, 1, tr, (v) => t('percent', v))], { header: t('transparency'), footer: t('transparency_footer') })),
   };
 };

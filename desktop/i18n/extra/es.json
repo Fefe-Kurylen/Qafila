@@ -74,5 +74,8 @@
   "update_download": "Descargar la nueva versión",
   "update_toast_none": "Qafila está actualizada",
   "update_footer": "Para saber si existe una nueva versión, Qafila solo contacta con GitHub, sin enviar ningún dato personal. Una versión descargada también se instala al cerrar Qafila.",
-  "update_state": "Estado"
+  "update_state": "Estado",
+  "bookmarks_bar": "Barra de favoritos",
+  "bookmarks_bar_sub": "Tus favoritos, discretos, bajo la barra de direcciones",
+  "bookmarks_bar_empty": "Añade tus sitios favoritos con ☆ o %1$s"
 }

@@ -22,12 +22,12 @@ function base(s) { return String(s.searchBaseURL || '').replace(/^[\s/]+|[\s/]+$
 function encodeQuery(q) { return encodeURIComponent(q).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase()); }
 
 function searchURL(query, settings) {
-  const e = ENGINES[settings.searchEngine] || ENGINES.duckduckgo;
+  const e = ENGINES[settings.searchEngine] || ENGINES.google;
   return e.url(encodeQuery(query), settings);
 }
 
 function engineHome(settings) {
-  const e = ENGINES[settings.searchEngine] || ENGINES.duckduckgo;
+  const e = ENGINES[settings.searchEngine] || ENGINES.google;
   return typeof e.home === 'function' ? e.home(settings) : e.home;
 }
 

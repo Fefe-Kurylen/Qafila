@@ -6,6 +6,7 @@ const contract = require('./contract');
 // Défauts propres au PC (comme `platformDefaults` du contrat) : barre en haut, sites en version bureau.
 const DESKTOP_DEFAULTS = {
   desktopByDefault: true,
+  searchEngine: 'google',
   scrollBehavior: 'fixed',
 };
 
@@ -16,6 +17,10 @@ const DESKTOP_ONLY = [
   { key: 'downloadFolder', section: 'privacy', type: 'string', default: '', sync: false, platforms: ['desktop'] },
   // Mises à jour : recherche au démarrage puis toutes les 6 heures, téléchargement en arrière-plan (main/updater.js).
   { key: 'autoUpdate', section: 'about', type: 'boolean', default: true, sync: false, platforms: ['desktop'] },
+  // Barre de favoris, discrète, sous la barre d'adresse (Ctrl+Maj+B).
+  { key: 'showBookmarksBar', section: 'appearance', type: 'boolean', default: true, sync: false, platforms: ['desktop'] },
+  // Migration unique : DuckDuckGo (ancien moteur par défaut) remplacé par Google, nouveau défaut.
+  { key: 'searchDefaultGoogle', section: 'search', type: 'boolean', default: false, sync: false, platforms: ['desktop'] },
 ];
 const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] } };
 

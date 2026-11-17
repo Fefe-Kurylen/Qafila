@@ -222,7 +222,7 @@ enum TranslateLanguage: String, Codable, CaseIterable, Identifiable {
 
 struct Settings: Codable, Equatable {
     // Recherche
-    var searchEngine: SearchEngine = .duckduckgo
+    var searchEngine: SearchEngine = .google
     var searchBaseURL: String = ""
     var customSearchTemplate: String = "https://duckduckgo.com/?q=%s"
     var suggestions: SuggestionsMode = .everywhere

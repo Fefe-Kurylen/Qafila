@@ -1,7 +1,7 @@
 // Barre de Qafila : capsule flottante en faux verre (ou barre Classique / Verre pleine largeur), carte d'adresse
 // (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
 import {
-  q, S, $, t, esc, STRIP, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
+  q, S, $, t, esc, STRIP, BAR, bookmarksBarOn, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
   shortURL, setOverlay, renderNow, toast, onRender,
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
@@ -26,6 +26,7 @@ export function applyTheme() {
   root.style.setProperty('--card', p.card);
   root.style.setProperty('--sw', String(WEIGHTS[settings().buttonWeight] || 1.15));
   root.style.setProperty('--strip', STRIP() + 'px');
+  root.style.setProperty('--bm', (bookmarksBarOn() ? BAR.bookmarks : 0) + 'px');
   // La page est toujours posée à côté de la bande : la bande a son propre fond, couleur du thème ou du site (barre « Auto »).
   root.style.setProperty('--strip-color', p.site ? `rgb(${p.site.join(',')})` : (st.dark ? '#000000' : '#ffffff'));
   // Au défilement : barre réduite à la mini-adresse (Réduire) ou masquée (Masquer), décidé par le processus principal.
@@ -174,7 +175,7 @@ function renderSuggestions() {
   if (!box) return;
   const items = suggestionItems();
   if (!items.length) { box.hidden = true; box.innerHTML = ''; return; }
-  const engine = t('engine_' + (settings().searchEngine || 'duckduckgo'));
+  const engine = t('engine_' + (settings().searchEngine || 'google'));
   const looksURL = (s) => /^[a-z]+:\/\//i.test(s) || (/^\S+\.\S+$/.test(s) && !/\s/.test(s));
   let html = '';
   let lastGroup = null;
@@ -213,10 +214,59 @@ function commit(text) {
   setOverlay('none');
 }
 
+/**
+ * Saisie d'adresse : la rangée de boutons reste en place (onglets, +, menu…), seule la carte d'adresse devient le
+ * champ. Échap ou un clic ailleurs annule. Les boutons sont rafraîchis à chaque rendu (nombre d'onglets…) sans
+ * reconstruire le champ, qui garde sa frappe et son focus.
+ */
 function editingHTML() {
-  return `<div class="row inline editing">
-    <label class="address edit-field">${icon('search')}<input id="edit-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('search_or_enter_address'))}" dir="auto"><button class="clear" data-edit-clear title="${esc(t('clear'))}">${icon('xmarkCircle')}</button></label>
-    <button class="text-btn" data-edit-cancel>${esc(t('cancel'))}</button></div>`;
+  const slots = rowSlots(toolbar().bar, 'card');
+  const field = `<label class="address edit-field">${icon('search')}<input id="edit-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('search_or_enter_address'))}" dir="auto"><button class="clear" data-edit-clear title="${esc(t('clear'))}">${icon('xmarkCircle')}</button></label>`;
+  const parts = slots.map((slot, i) => (slot.action === 'address' ? field : slot.action === 'separator' ? '<span class="gap"></span>' : `<span class="slot" data-slot="${i}"></span>`));
+  return `<div class="row inline editing">${parts.join('')}</div>`;
+}
+
+function refreshEditingButtons() {
+  const slots = rowSlots(toolbar().bar, 'card');
+  const st = actionState();
+  const count = S.state?.tabs.filter((x) => !x.isPrivate).length || 0;
+  for (const el of document.querySelectorAll('#bar [data-slot]')) {
+    const slot = slots[Number(el.dataset.slot)];
+    const html = slot ? (slot.action === 'menu' ? updateButton() : '') + button(slot, st, count) : '';
+    if (el.innerHTML !== html) el.innerHTML = html;
+  }
+}
+
+// ----- Barre de favoris -----
+/** Icône d'un favori : celle d'un onglet ouvert sur le même site, sinon l'initiale. */
+function bookmarkIcon(b) {
+  let host = '';
+  try { host = new URL(b.url).hostname.replace(/^www\./, ''); } catch { /* adresse illisible */ }
+  const tab = (S.state?.tabs || []).find((x) => !x.isPrivate && x.host === host && x.faviconData);
+  return favicon(tab || { host }, 14);
+}
+
+function renderBookmarksBar() {
+  const el = $('#bmbar');
+  if (!el) return;
+  const on = bookmarksBarOn() && S.overlay !== 'tabs';
+  el.hidden = !on;
+  if (!on) return;
+  const list = S.state?.bookmarks || [];
+  const mac = S.cfg?.app?.platform === 'darwin';
+  const items = list.length
+    ? list.map((b) => `<button class="bm" data-bm="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span><bdi>${esc(b.title)}</bdi></span></button>`).join('')
+    : `<span class="bm-empty">${esc(t('bookmarks_bar_empty', mac ? '⌘D' : t('kbd_ctrl') + '+D'))}</span>`;
+  const html = `<div class="bm-list">${items}</div><button class="bm-all" data-bm-all title="${esc(t('bookmarks'))}" aria-label="${esc(t('bookmarks'))}">${icon('book', 15)}</button>`;
+  if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
+}
+
+function openBookmark(e, full) {
+  const b = (S.state?.bookmarks || []).find((x) => x.id === full.dataset.bm);
+  if (!b) return;
+  // Clic du milieu ou Ctrl / ⌘ + clic : nouvel onglet en arrière-plan, comme dans les navigateurs de bureau.
+  if (e.button === 1 || e.ctrlKey || e.metaKey) q.tabs.create({ url: b.url, select: false });
+  else { q.tabs.navigate(b.url); if (S.overlay !== 'none') setOverlay('none'); }
 }
 
 // ----- Recherche dans la page -----
@@ -265,6 +315,7 @@ function renderBar() {
   const want = S.overlay === 'editing' ? 'editing' : S.find ? 'find' : 'row';
   if (want === 'editing') {
     if (mode !== 'editing') { host.innerHTML = editingHTML(); mode = 'editing'; }
+    refreshEditingButtons();
   } else if (want === 'find') {
     if (mode !== 'find') { host.innerHTML = findHTML(); mode = 'find'; const i = $('#find-input'); if (i) i.value = S.find.text || ''; }
     updateFindCount();
@@ -272,6 +323,7 @@ function renderBar() {
     host.innerHTML = rowHTML(toolbar().bar);
     mode = 'row';
   }
+  renderBookmarksBar();
   const sg = $('#suggest');
   if (sg && want !== 'editing') sg.hidden = true;
   // Réduire : mini-adresse (domaine seul) ; un clic rouvre la barre.
@@ -339,7 +391,12 @@ export function installBarEvents() {
   bar.addEventListener('click', (e) => {
     if (e.target.closest('[data-update]')) { q.update.install(); return; }
     const b = e.target.closest('[data-action]');
-    if (b) { if (!b.disabled) perform(b.dataset.action); return; }
+    if (b) {
+      if (b.disabled) return;
+      if (S.overlay === 'editing') { setOverlay('none').then(() => perform(b.dataset.action)); return; }
+      perform(b.dataset.action);
+      return;
+    }
     if (e.target.closest('[data-address]')) { if (!longPressed) addressTap(); longPressed = false; return; }
     if (e.target.closest('[data-edit-cancel]')) { cancelEditing(); return; }
     if (e.target.closest('[data-edit-clear]')) { const i = $('#edit-input'); i.value = ''; edit.text = ''; i.focus(); fetchSuggestions(); return; }
@@ -377,6 +434,14 @@ export function installBarEvents() {
       else if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
     }
   });
+  const bm = $('#bmbar');
+  bm.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); }); // pas de défilement automatique
+  bm.addEventListener('click', (e) => {
+    if (e.target.closest('[data-bm-all]')) { import('./sheet.js').then((m) => m.openSheet('bookmarks', true)); return; }
+    const it = e.target.closest('[data-bm]');
+    if (it) openBookmark(e, it);
+  });
+  bm.addEventListener('auxclick', (e) => { const it = e.target.closest('[data-bm]'); if (it && e.button === 1) openBookmark(e, it); });
   const box = $('#suggest');
   box.addEventListener('mousedown', (e) => e.preventDefault()); // garde le focus dans le champ
   box.addEventListener('click', (e) => {

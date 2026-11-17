@@ -238,7 +238,7 @@ enum class SearchEngine(@StringRes override val labelRes: Int, val needsBaseUrl:
 @Serializable
 data class Settings(
     // Recherche
-    val searchEngine: SearchEngine = SearchEngine.DUCKDUCKGO,
+    val searchEngine: SearchEngine = SearchEngine.GOOGLE,
     val searchBaseUrl: String = "",
     val customSearchTemplate: String = "",
     val suggestionsMode: SuggestionsMode = SuggestionsMode.EVERYWHERE,

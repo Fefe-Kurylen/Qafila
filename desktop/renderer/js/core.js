@@ -4,8 +4,8 @@ export const q = window.qafila;
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-/** Hauteurs (px) : capsule flottante 64 (pilule d'adresse 44, rayon 22 concentrique), barre pleine largeur 56. */
-export const BAR = { floating: 64, full: 56, margin: 12 };
+/** Hauteurs (px) : capsule flottante 56 (pilule d'adresse 40, rayon 20 concentrique), barre pleine largeur 52 ; barre de favoris 26. */
+export const BAR = { floating: 56, full: 52, margin: 12, bookmarks: 26 };
 export const STRIP = () => barHeight() + 2 * BAR.margin;
 
 export const S = {
@@ -130,8 +130,11 @@ export function accentRGB() {
 }
 
 // ----- Géométrie de la vue du chrome -----
-/** Hauteur déclarée au processus principal (bande = hauteur + 2 × 12) : capsule 64 → bande 88 ; Classique / Verre → bande 64. */
-export function barHeight() { return toolbar().style === 'floating' ? BAR.floating : BAR.full - 16; }
+/** Barre de favoris (réglage showBookmarksBar) : bande discrète sous la barre, ou au-dessus si la barre est en bas. */
+export function bookmarksBarOn() { return settings().showBookmarksBar !== false; }
+
+/** Hauteur déclarée au processus principal (bande = hauteur + 2 × 12) : capsule 56 → bande 80 ; Classique / Verre → bande 60 ; + 26 avec la barre de favoris. */
+export function barHeight() { return (toolbar().style === 'floating' ? BAR.floating : BAR.full - 16) + (bookmarksBarOn() ? BAR.bookmarks : 0); }
 
 /** Bande (barre seule) ou fenêtre entière (menu, suggestions, écrans) ; le processus principal redimensionne la vue. */
 export async function syncChromeMode() {
