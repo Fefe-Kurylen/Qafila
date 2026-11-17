@@ -140,7 +140,6 @@ P.appearance = () => {
       + group([swatches('barColorLight', bars)], { header: t('bar_color_light'), footer: t('bar_auto_light_desc') })
       + group([swatches('barColorDark', bars)], { header: t('bar_color_dark'), footer: t('bar_auto_dark_desc') })
       + group([`<div class="s-row seg-row"><div class="seg">${[['classic', 'style_classic'], ['glass', 'style_glass'], ['floating', 'style_floating']].map(([v, k]) => `<button class="${v === style ? 'on' : ''}" data-tbset="style" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('bar_style'), footer: t('bar_style_footer') })
-      + group([labelledSegmented(t('bar_layout'), 'barLayout', [['one', t('bar_layout_one')], ['split', t('bar_layout_split')]])], { footer: t('bar_layout_footer') })
       + group([toggleRow(t('bookmarks_bar'), 'showBookmarksBar', t('bookmarks_bar_sub'))])
       + group([
         labelledSegmented(t('size_address_bar'), 'barSize', sizeOptions()),
@@ -159,6 +158,7 @@ P.toolbar = () => {
     body: preview()
       + group([navRow('sliders', t('customize_bar_menu'), '', 'editor'), navRow('grid', t('page_gallery'), '', 'gallery')])
       + group([`<div class="s-row seg-row"><div class="seg">${[['top', 'position_top'], ['bottom', 'position_bottom']].map(([v, k]) => `<button class="${v === pos ? 'on' : ''}" data-tbset="position" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('position') })
+      + group([labelledSegmented(t('bar_layout'), 'barLayout', [['one', t('bar_layout_one')], ['split', t('bar_layout_split')]])], { footer: t('bar_layout_footer') })
       // Au défilement (comme sur mobile) : Fixe garde la barre entière ; Réduire ne laisse que le domaine ; Masquer la retire.
       + group([segmented('scrollBehavior', [['fixed', t('scroll_fixed')], ['shrink', t('scroll_shrink')], ['hide', t('scroll_hide')]], s.scrollBehavior || 'fixed')], { header: t('on_scroll'), footer: t('scroll_desktop_footer') })
       + group([segmented('buttonWeight', [['thin', t('weight_thin')], ['regular', t('weight_regular')], ['bold', t('weight_bold')]])], { header: t('icon_weight') })
@@ -335,7 +335,7 @@ P.gallery = () => {
     return `<div class="preset${on ? ' on' : ''}" role="button" tabindex="0" data-preset="${p.id}">
       <div class="preset-head"><span class="preset-t">${esc(t('preset_' + p.id))}</span>${on ? `<span class="preset-check">${icon('checkCircle', 24)}</span>` : ''}</div>
       <div class="preset-d">${esc(t('preset_' + p.id + '_desc'))}</div>
-      <div class="preset-bar pv-${tb.style || 'floating'}"><div class="pv-tint"></div>${rowHTML(bar, { preview: true, tab: demoTab(), oneRow: true })}</div>
+      <div class="preset-bar pv-${tb.style || 'floating'}${splitBar() ? ' split' : ''}"><div class="pv-tint"></div>${rowHTML(bar, { preview: true, tab: demoTab() })}</div>
     </div>`;
   }).join('');
   return { title: t('page_gallery'), body: `<div class="g-footer top">${esc(t('gallery_footer'))}</div>${body}<div class="g-footer">${esc(t('gallery_kept'))}</div>` };

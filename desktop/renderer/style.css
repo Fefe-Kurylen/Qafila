@@ -379,9 +379,9 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .preview.top .pv-bar { bottom: auto; top: 14px; }
 .pv-tint { position: absolute; inset: 0; background: rgba(var(--bar-rgb), var(--alpha-solid)); }
 .pv-bar .row, .preset-bar .row { position: relative; }
-.pv-bar.split { overflow: visible; box-shadow: none; background: none; }
-.pv-bar.split .pv-tint { display: none; }
-.pv-bar.split .bseg { background: rgba(var(--bar-rgb), var(--alpha-solid)); }
+.pv-bar.split, .preset-bar.split { overflow: visible; box-shadow: none; background: none; }
+.pv-bar.split .pv-tint, .preset-bar.split .pv-tint { display: none; }
+.pv-bar.split .bseg, .preset-bar.split .bseg { background: rgba(var(--bar-rgb), var(--alpha-solid)); }
 .pv-classic .pv-bar, .pv-glass .pv-bar { left: 0; right: 0; bottom: 0; border-radius: 0; box-shadow: 0 -.5px 0 var(--bsep); }
 .preview.top.pv-classic .pv-bar, .preview.top.pv-glass .pv-bar { top: 0; box-shadow: 0 .5px 0 var(--bsep); }
 .pv-classic .pv-tint { background: rgb(var(--bar-rgb)); }
