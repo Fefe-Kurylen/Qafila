@@ -112,11 +112,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set +o pipefail
           v=$(node -p "require('./package.json').version")
           gh release view test --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' 2>/dev/null \
             | grep -E '^Qafila-[0-9]+\.[0-9]+\.[0-9]+-(win\.exe|linux\.AppImage|mac-[a-z0-9]+\.dmg)$' \
             | grep -v "^Qafila-$v-" \
-            | while read -r n; do gh release delete-asset test "$n" --repo "$GITHUB_REPOSITORY" -y || true; done
+            | while read -r n; do gh release delete-asset test "$n" --repo "$GITHUB_REPOSITORY" -y || true; done || true
       - name: Publier dans la release de test
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('desktop/package-lock.json') != '' }}
         uses: softprops/action-gh-release@v2
