@@ -98,12 +98,17 @@ function titleH() {
 }
 function isTop() { return (Q.store.settings.toolbar?.position || 'top') === 'top'; }
 
+/** Taille de l'interface (barre, menus, réglages) : facteur de zoom du chrome, 0,8 à 1,5. */
+function uiScale() { const v = Number(Q.store?.settings.uiScale); return Number.isFinite(v) && v >= 0.8 && v <= 1.5 ? v : 1; }
+function applyUiScale() { const wc = Q.chrome?.webContents; if (wc && !wc.isDestroyed()) wc.setZoomFactor(uiScale()); }
+
 function stripRect() {
   if (!Q.win || Q.win.isDestroyed()) return null;
   const [w, h] = Q.win.getContentSize();
   const t = titleH();
-  let strip = Q.barHeight + 2 * BAR_MARGIN;
-  if (Q.chromeMode === 'strip' && Q.collapse === 'mini') strip = MINI_STRIP;
+  // La bande est mesurée en pixels CSS du chrome : multipliée par la taille de l'interface.
+  let strip = Math.round((Q.barHeight + 2 * BAR_MARGIN) * uiScale());
+  if (Q.chromeMode === 'strip' && Q.collapse === 'mini') strip = Math.round(MINI_STRIP * uiScale());
   else if (Q.chromeMode === 'strip' && Q.collapse === 'hidden') strip = 0;
   const height = Math.min(Math.max(0, h - t), strip);
   return { x: 0, y: isTop() ? t : Math.max(t, h - height), width: w, height };
@@ -461,6 +466,7 @@ function onSettingChanged(key) {
   // Mises à jour automatiques réactivées : recherche tout de suite (sinon au prochain passage, toutes les 6 heures).
   if (key === 'autoUpdate' && s.autoUpdate && Q.updater) Q.updater.check();
   if (key === 'titleBarSize') { updateTitlebar(); layout(); }
+  if (key === 'uiScale') { applyUiScale(); layout(); }
   if (['darkenSites', 'darkenOnlyInDarkMode', 'darkenHosts'].includes(key)) Q.tabs.refreshDarken();
   if (['desktopByDefault', 'desktopHosts', 'customUserAgent'].includes(key)) Q.tabs.applyUserAgentToOpenTabs();
   if (['blockAds', 'blockTrackers', 'blockCookieBanners', 'blockerDisabledHosts'].includes(key)) { /* pris en compte à la prochaine requête */ }
@@ -960,6 +966,7 @@ function createWindow() {
   });
   Q.chrome.setBackgroundColor('#00000000');
   Q.win.contentView.addChildView(Q.chrome);
+  Q.chrome.webContents.on('did-finish-load', applyUiScale);
   Q.chrome.webContents.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   Q.chrome.webContents.on('before-input-event', (e, input) => shortcut(e, input));
   Q.chrome.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) newTab({ url }); return { action: 'deny' }; });
@@ -1598,6 +1605,10 @@ async function runSmoke() {
   // Mots de passe : coffre à créer, puis coffre ouvert avec deux identifiants ; Importer et exporter.
   demoScreen('passwords'); await wait(1200); await shot('43-passwords-new');
   demoScreen('none'); await wait(300);
+  // Taille de l'interface à 125 %.
+  Q.store.setSetting('uiScale', 1.25); onSettingChanged('uiScale'); await wait(900); await shot('46-ui-125');
+  if (Math.abs(Q.chrome.webContents.getZoomFactor() - 1.25) > 0.01) fail(`taille de l'interface : zoom ${Q.chrome.webContents.getZoomFactor()}`);
+  Q.store.setSetting('uiScale', 1); onSettingChanged('uiScale'); await wait(600);
   await Q.vault.create('phrase de démonstration', false);
   Q.vault.add({ url: 'https://fr.wikipedia.org/w/index.php?title=Connexion', username: 'lina@example.org', password: 'Zéphyr-2026!' });
   Q.vault.add({ url: 'https://github.com/login', username: 'lina-dev', password: 'caravane-du-désert' });

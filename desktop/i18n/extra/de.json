@@ -253,5 +253,7 @@
   "transfer_no_passwords": "The vault contains no passwords.",
   "transfer_pw_export_warn": "This file will not be encrypted",
   "transfer_pw_export_warn_sub": "Anyone who opens it will see your passwords. Keep it safe and delete it after use.",
-  "transfer_exported_passwords": "✅ Passwords exported"
+  "transfer_exported_passwords": "✅ Passwords exported",
+  "size_interface": "Oberfläche",
+  "sizes_footer": "Oberfläche: vergrößert oder verkleinert die ganze Oberfläche von Qafila (Leiste, Menüs, Einstellungen). Die Textgröße der Seiten stellen Sie unter Lesen ein."
 }

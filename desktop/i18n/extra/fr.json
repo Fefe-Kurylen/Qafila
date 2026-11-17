@@ -254,5 +254,7 @@
   "transfer_no_passwords": "Le coffre ne contient aucun mot de passe.",
   "transfer_pw_export_warn": "Ce fichier ne sera pas chiffré",
   "transfer_pw_export_warn_sub": "Toute personne qui l'ouvre verra vos mots de passe. Gardez-le en lieu sûr et supprimez-le après usage.",
-  "transfer_exported_passwords": "✅ Mots de passe exportés"
+  "transfer_exported_passwords": "✅ Mots de passe exportés",
+  "size_interface": "Interface",
+  "sizes_footer": "Interface : agrandit ou réduit toute l'interface de Qafila (barre, menus, réglages). La taille du texte des pages se règle dans Lecture."
 }

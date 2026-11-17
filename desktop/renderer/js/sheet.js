@@ -240,10 +240,11 @@ P.appearance = () => {
       + group([`<div class="s-row seg-row"><div class="seg">${[['classic', 'style_classic'], ['glass', 'style_glass'], ['floating', 'style_floating']].map(([v, k]) => `<button class="${v === style ? 'on' : ''}" data-tbset="style" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('bar_style'), footer: t('bar_style_footer') })
       + group([toggleRow(t('bookmarks_bar'), 'showBookmarksBar', t('bookmarks_bar_sub'))])
       + group([
+        labelledSegmented(t('size_interface'), 'uiScale', [[0.9, '90 %'], [1, '100 %'], [1.1, '110 %'], [1.25, '125 %'], [1.5, '150 %']]),
         labelledSegmented(t('size_address_bar'), 'barSize', sizeOptions()),
         S.cfg.app.platform === 'win32' ? labelledSegmented(t('size_title_bar'), 'titleBarSize', sizeOptions()) : '',
         s.showBookmarksBar !== false ? labelledSegmented(t('bookmarks_bar'), 'bookmarksBarSize', sizeOptions()) : '',
-      ], { header: t('sizes') })
+      ], { header: t('sizes'), footer: t('sizes_footer') })
       + (style === 'classic' ? '' : group([slider('glassTransparency', 0, 100, 1, tr, (v) => t('percent', v))], { header: t('transparency'), footer: t('transparency_footer') })),
   };
 };

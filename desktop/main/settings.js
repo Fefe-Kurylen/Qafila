@@ -22,6 +22,7 @@ const DESKTOP_ONLY = [
   // Migration unique : DuckDuckGo (ancien moteur par défaut) remplacé par Google, nouveau défaut.
   { key: 'searchDefaultGoogle', section: 'search', type: 'boolean', default: false, sync: false, platforms: ['desktop'] },
   // Tailles (Apparence › Tailles) : barre d'adresse, barre de titre Windows, barre de favoris.
+  { key: 'uiScale', section: 'appearance', type: 'number', default: 1, range: [0.8, 1.5], sync: false, platforms: ['desktop'] },
   { key: 'barSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
   { key: 'barLayout', section: 'appearance', type: 'enum:BarLayout', default: 'split', sync: false, platforms: ['desktop'] },
   { key: 'titleBarSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
