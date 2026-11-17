@@ -268,7 +268,7 @@
     <string name="suggestions_footer">Las sugerencias se piden al motor elegido (Kagi, Startpage y Personalizado: solo historial y marcadores).</string>
     <string name="results">Resultados</string>
     <string name="hide_ai">Ocultar respuestas de IA</string>
-    <string name="hide_ai_footer">Google: solo resultados web. DuckDuckGo: versión sin IA (noai.duckduckgo.com). Brave: sin resumen de IA.</string>
+    <string name="hide_ai_footer">Google: solo resultados web. Brave: sin resumen de IA.</string>
     <string name="block_ads">Bloquear anuncios</string>
     <string name="block_trackers">Bloquear rastreadores</string>
     <string name="hide_cookie_banners">Ocultar avisos de cookies</string>

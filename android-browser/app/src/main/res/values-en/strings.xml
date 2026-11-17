@@ -268,7 +268,7 @@
     <string name="suggestions_footer">Suggestions come from the chosen engine (Kagi, Startpage and Custom: history and bookmarks only).</string>
     <string name="results">Results</string>
     <string name="hide_ai">Hide AI answers</string>
-    <string name="hide_ai_footer">Google: Web results only. DuckDuckGo: no-AI version (noai.duckduckgo.com). Brave: no AI summary.</string>
+    <string name="hide_ai_footer">Google: Web results only. Brave: no AI summary.</string>
     <string name="block_ads">Block ads</string>
     <string name="block_trackers">Block trackers</string>
     <string name="hide_cookie_banners">Hide cookie banners</string>

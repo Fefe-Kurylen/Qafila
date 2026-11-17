@@ -1033,12 +1033,9 @@ if (GOT_LOCK) app.whenReady().then(async () => {
   Q.store = new Store(app.getPath('userData'), { ephemeral: DEMO });
   Q.store.load();
   clearPendingDirs(); // téléchargements jamais confirmés lors d'une session précédente
-  // Google devient le moteur par défaut : l'ancien défaut (DuckDuckGo) est remplacé une seule fois ; un moteur choisi
-  // ensuite, DuckDuckGo compris, n'est plus jamais modifié.
-  if (!Q.store.settings.searchDefaultGoogle) {
-    if (Q.store.settings.searchEngine === 'duckduckgo') Q.store.setSetting('searchEngine', 'google');
-    Q.store.setSetting('searchDefaultGoogle', true);
-  }
+  // DuckDuckGo n'est plus proposé : un ancien choix « duckduckgo » devient Google.
+  if (Q.store.settings.searchEngine === 'duckduckgo') Q.store.setSetting('searchEngine', 'google');
+  if (!Q.store.settings.searchDefaultGoogle) Q.store.setSetting('searchDefaultGoogle', true);
   if (DEMO) demo.applyDemo(Q.store, { dark: DEMO_DARK, language: typeof arg('lang') === 'string' ? arg('lang') : 'fr' });
   nativeTheme.themeSource = Q.store.settings.appearance || 'system';
   if (!Q.store.tabs.length) Q.store.addTab({ url: search.newTabURL(Q.store.settings) });

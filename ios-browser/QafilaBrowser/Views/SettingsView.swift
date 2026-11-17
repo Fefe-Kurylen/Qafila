@@ -513,7 +513,7 @@ struct SearchSettings: View {
     var body: some View {
         List {
             Section("Moteur") {
-                CheckList(items: SearchEngine.allCases, selection: $store.settings.searchEngine, label: { $0.label })
+                CheckList(items: SearchEngine.selectable, selection: $store.settings.searchEngine, label: { $0.label })
             }
             if store.settings.searchEngine.needsBaseURL {
                 Section {

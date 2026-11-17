@@ -5,6 +5,8 @@ import SwiftUI
 enum SearchEngine: String, Codable, CaseIterable, Identifiable {
     case duckduckgo, kagi, qwant, brave, startpage, ecosia, google, bing, searxng, qafila, custom
     var id: String { rawValue }
+    /// Moteurs proposés dans les réglages (DuckDuckGo n'est plus proposé).
+    static var selectable: [SearchEngine] { allCases.filter { $0 != .duckduckgo } }
     var label: String {
         switch self {
         case .duckduckgo: return L("DuckDuckGo")
@@ -29,7 +31,8 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
         let q = query.addingPercentEncoding(withAllowedCharacters: Self.queryAllowed) ?? query
         let b = s.searchBaseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
         switch self {
-        case .duckduckgo: return URL(string: "https://duckduckgo.com/?q=\(q)")
+        // DuckDuckGo n'est plus proposé : un ancien choix est traité comme Google.
+        case .duckduckgo: return SearchEngine.google.url(for: query, settings: s)
         case .kagi: return URL(string: "https://kagi.com/search?q=\(q)")
         case .qwant: return URL(string: "https://www.qwant.com/?q=\(q)")
         case .brave: return URL(string: "https://search.brave.com/search?q=\(q)\(s.hideAIAnswers ? "&summary=0" : "")")
@@ -40,7 +43,7 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
         case .searxng: return URL(string: "\(b.isEmpty ? "https://searx.be" : b)/search?q=\(q)")
         case .qafila: return URL(string: "\(b.isEmpty ? "https://qafila.example.com" : b)/?q=\(q)")
         case .custom:
-            let t = s.customSearchTemplate.contains("%s") ? s.customSearchTemplate : "https://duckduckgo.com/?q=%s"
+            let t = s.customSearchTemplate.contains("%s") ? s.customSearchTemplate : "https://www.google.com/search?q=%s"
             return URL(string: t.replacingOccurrences(of: "%s", with: q))
         }
     }
@@ -48,9 +51,8 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
     func suggestURL(settings s: Settings) -> String? {
         switch self {
         case .qafila: return s.searchBaseURL.isEmpty ? nil : s.searchBaseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ ")) + "/api/suggest?q="
-        case .google: return "https://suggestqueries.google.com/complete/search?client=firefox&q="
         case .bing: return "https://api.bing.com/osjson.aspx?query="
-        default: return "https://duckduckgo.com/ac/?type=list&q="
+        default: return "https://suggestqueries.google.com/complete/search?client=firefox&q="
         }
     }
 }
@@ -224,7 +226,7 @@ struct Settings: Codable, Equatable {
     // Recherche
     var searchEngine: SearchEngine = .google
     var searchBaseURL: String = ""
-    var customSearchTemplate: String = "https://duckduckgo.com/?q=%s"
+    var customSearchTemplate: String = "https://www.google.com/search?q=%s"
     var suggestions: SuggestionsMode = .everywhere
     var hideAIAnswers: Bool = true
     var newTabPage: NewTabPage = .start

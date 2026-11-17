@@ -146,7 +146,7 @@ final class BrowserStore: ObservableObject {
         if let u = URL(string: t), let scheme = u.scheme, ["http", "https", "about", "file"].contains(scheme) { return u }
         let looksLikeHost = !t.contains(" ") && t.contains(".") && !t.hasSuffix(".")
         if looksLikeHost, let u = URL(string: (settings.upgradeToHTTPS ? "https://" : "http://") + t) { return u }
-        return settings.searchEngine.url(for: t, settings: settings) ?? URL(string: "https://duckduckgo.com")!
+        return settings.searchEngine.url(for: t, settings: settings) ?? URL(string: "https://www.google.com")!
     }
 
     func perform(_ action: ToolbarAction) {

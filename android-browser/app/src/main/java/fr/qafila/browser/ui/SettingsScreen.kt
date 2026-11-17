@@ -588,11 +588,12 @@ private fun SearchPage(store: BrowserStore) {
     Column {
         SectionHeader(stringResource(R.string.search_engine))
         GroupCard {
-            SearchEngine.entries.forEachIndexed { i, e ->
-                CheckRow(e.label, s.searchEngine == e) { up { it.copy(searchEngine = e) } }
+            val current = s.searchEngine.effective
+            SearchEngine.selectable.forEachIndexed { i, e ->
+                CheckRow(e.label, current == e) { up { it.copy(searchEngine = e) } }
                 if (s.searchEngine == e && e.needsBaseUrl) { RowDivider(); TextFieldRow(if (e == SearchEngine.QAFILA) "https://qafila.example.org" else "https://searxng.example.org", s.searchBaseUrl) { v -> up { it.copy(searchBaseUrl = v) } } }
                 if (s.searchEngine == e && e == SearchEngine.CUSTOM) { RowDivider(); TextFieldRow("https://example.org/search?q=%s", s.customSearchTemplate) { v -> up { it.copy(customSearchTemplate = v) } } }
-                if (i < SearchEngine.entries.lastIndex) RowDivider()
+                if (i < SearchEngine.selectable.lastIndex) RowDivider()
             }
         }
         if (s.searchEngine == SearchEngine.CUSTOM) SectionFooter(stringResource(R.string.custom_search_footer))

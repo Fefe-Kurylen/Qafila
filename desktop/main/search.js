@@ -1,9 +1,9 @@
 'use strict';
-// Moteurs de recherche et suggestions : mêmes gabarits d'URL que Settings.swift. Les noms affichés viennent de
+// Moteurs de recherche et suggestions : mêmes gabarits d'URL que Settings.swift. DuckDuckGo n'est plus proposé :
+// un ancien choix « duckduckgo » est remplacé par Google au démarrage (et traité comme Google d'ici là). Les noms affichés viennent de
 // l'i18n (clés engine_<id>), jamais de `label` (simple nom de marque, absent pour « custom »).
 
 const ENGINES = {
-  duckduckgo: { label: 'DuckDuckGo', url: (q) => `https://duckduckgo.com/?q=${q}`, home: 'https://duckduckgo.com' },
   kagi: { label: 'Kagi', url: (q) => `https://kagi.com/search?q=${q}`, home: 'https://kagi.com' },
   qwant: { label: 'Qwant', url: (q) => `https://www.qwant.com/?q=${q}`, home: 'https://www.qwant.com' },
   brave: { label: 'Brave Search', url: (q, s) => `https://search.brave.com/search?q=${q}${s.hideAIAnswers ? '&summary=0' : ''}`, home: 'https://search.brave.com' },
@@ -13,7 +13,7 @@ const ENGINES = {
   bing: { label: 'Bing', url: (q) => `https://www.bing.com/search?q=${q}`, home: 'https://www.bing.com' },
   searxng: { label: 'SearXNG', url: (q, s) => `${base(s) || 'https://searx.be'}/search?q=${q}`, home: (s) => base(s) || 'https://searx.be' },
   qafila: { label: 'Qafila', url: (q, s) => `${base(s) || 'https://qafila.example.com'}/?q=${q}`, home: (s) => base(s) || 'https://qafila.example.com' },
-  custom: { url: (q, s) => (s.customSearchTemplate.includes('%s') ? s.customSearchTemplate : 'https://duckduckgo.com/?q=%s').replace('%s', q), home: 'https://duckduckgo.com' },
+  custom: { url: (q, s) => (s.customSearchTemplate.includes('%s') ? s.customSearchTemplate : 'https://www.google.com/search?q=%s').replace('%s', q), home: 'https://www.google.com' },
 };
 
 function base(s) { return String(s.searchBaseURL || '').replace(/^[\s/]+|[\s/]+$/g, ''); }
@@ -37,7 +37,12 @@ function suggestURL(settings) {
     case 'qafila': return base(settings) ? base(settings) + '/api/suggest?q=' : null;
     case 'google': return 'https://suggestqueries.google.com/complete/search?client=firefox&q=';
     case 'bing': return 'https://api.bing.com/osjson.aspx?query=';
-    default: return 'https://duckduckgo.com/ac/?type=list&q=';
+    case 'brave': return 'https://search.brave.com/api/suggest?q=';
+    case 'ecosia': return 'https://ac.ecosia.org/autocomplete?type=list&q=';
+    case 'qwant': return 'https://api.qwant.com/v3/suggest?q=';
+    case 'searxng': return base(settings) ? base(settings) + '/autocompleter?q=' : null;
+    case 'kagi': case 'startpage': return null;
+    default: return 'https://suggestqueries.google.com/complete/search?client=firefox&q=';
   }
 }
 

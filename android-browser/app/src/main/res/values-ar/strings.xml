@@ -268,7 +268,7 @@
     <string name="suggestions_footer">تُطلب الاقتراحات من المحرك المختار (Kagi وStartpage والمخصص: السجل والإشارات المرجعية فقط).</string>
     <string name="results">النتائج</string>
     <string name="hide_ai">إخفاء إجابات الذكاء الاصطناعي</string>
-    <string name="hide_ai_footer">Google: نتائج الويب فقط. DuckDuckGo: الإصدار الخالي من الذكاء الاصطناعي (noai.duckduckgo.com). Brave: بلا ملخص بالذكاء الاصطناعي.</string>
+    <string name="hide_ai_footer">Google: نتائج الويب فقط. Brave: بلا ملخص بالذكاء الاصطناعي.</string>
     <string name="block_ads">حظر الإعلانات</string>
     <string name="block_trackers">حظر أدوات التتبّع</string>
     <string name="hide_cookie_banners">إخفاء لافتات ملفات تعريف الارتباط</string>

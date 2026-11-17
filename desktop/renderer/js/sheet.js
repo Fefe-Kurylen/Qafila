@@ -200,7 +200,7 @@ P.tabsSettings = () => {
 
 P.search = () => {
   const s = settings();
-  const engines = (S.cfg.settingsKeys?.enums?.SearchEngine?.values || Object.keys(S.cfg.engines || {}));
+  const engines = (S.cfg.settingsKeys?.enums?.SearchEngine?.values || Object.keys(S.cfg.engines || {})).filter((e) => e !== 'duckduckgo');
   const extra = [];
   if (s.searchEngine === 'searxng' || s.searchEngine === 'qafila') extra.push(textRow('searchBaseURL', 'https://'));
   if (s.searchEngine === 'custom') extra.push(textRow('customSearchTemplate', 'https://example.com/?q=%s'));

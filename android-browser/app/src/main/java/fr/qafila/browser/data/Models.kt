@@ -137,13 +137,21 @@ enum class SearchEngine(@StringRes override val labelRes: Int, val needsBaseUrl:
     DUCKDUCKGO(R.string.engine_duckduckgo), KAGI(R.string.engine_kagi), QWANT(R.string.engine_qwant), BRAVE(R.string.engine_brave), STARTPAGE(R.string.engine_startpage), ECOSIA(R.string.engine_ecosia),
     GOOGLE(R.string.engine_google), BING(R.string.engine_bing), SEARXNG(R.string.engine_searxng, true), QAFILA(R.string.engine_qafila, true), CUSTOM(R.string.engine_custom);
 
+    companion object {
+        /** Moteurs proposés dans les réglages (DuckDuckGo n'est plus proposé). */
+        val selectable: List<SearchEngine> get() = entries.filter { it != DUCKDUCKGO }
+    }
+    /** Moteur réellement utilisé : un ancien choix DuckDuckGo devient Google. */
+    val effective: SearchEngine get() = if (this == DUCKDUCKGO) GOOGLE else this
+
     /** URL de recherche. [base] : instance SearXNG / serveur Qafila ; [template] : modèle personnalisé avec %s. */
     fun url(query: String, base: String, template: String = "", hideAi: Boolean = false): String {
         val q = java.net.URLEncoder.encode(query, "UTF-8")
         val b = base.trim().trimEnd('/')
         return when (this) {
             QAFILA -> "${b.ifEmpty { "https://qafila.example.com" }}/?q=$q"
-            DUCKDUCKGO -> if (hideAi) "https://noai.duckduckgo.com/?q=$q" else "https://duckduckgo.com/?q=$q"
+            // DuckDuckGo n'est plus proposé : un ancien choix est traité comme Google.
+            DUCKDUCKGO -> GOOGLE.url(query, base, template, hideAi)
             QWANT -> "https://www.qwant.com/?q=$q"
             KAGI -> "https://kagi.com/search?q=$q"
             SEARXNG -> "${b.ifEmpty { "https://searx.be" }}/search?q=$q"
@@ -152,13 +160,13 @@ enum class SearchEngine(@StringRes override val labelRes: Int, val needsBaseUrl:
             ECOSIA -> "https://www.ecosia.org/search?q=$q"
             GOOGLE -> "https://www.google.com/search?q=$q" + if (hideAi) "&udm=14" else ""
             BING -> "https://www.bing.com/search?q=$q"
-            CUSTOM -> template.trim().takeIf { it.contains("%s") }?.replace("%s", q) ?: "https://duckduckgo.com/?q=$q"
+            CUSTOM -> template.trim().takeIf { it.contains("%s") }?.replace("%s", q) ?: "https://www.google.com/search?q=$q"
         }
     }
 
     /** Page d'accueil du moteur (nouvel onglet « Moteur de recherche »). */
     fun home(base: String, template: String, hideAi: Boolean): String = when (this) {
-        DUCKDUCKGO -> if (hideAi) "https://noai.duckduckgo.com/" else "https://duckduckgo.com/"
+        DUCKDUCKGO -> GOOGLE.home(base, template, hideAi)
         KAGI -> "https://kagi.com/"
         QWANT -> "https://www.qwant.com/"
         BRAVE -> "https://search.brave.com/"
@@ -180,7 +188,7 @@ enum class SearchEngine(@StringRes override val labelRes: Int, val needsBaseUrl:
         BRAVE -> "https://search.brave.com/api/suggest?q="
         ECOSIA -> "https://ac.ecosia.org/autocomplete?type=list&q="
         QWANT -> "https://api.qwant.com/v3/suggest?q="
-        DUCKDUCKGO -> "https://duckduckgo.com/ac/?type=list&q="
+        DUCKDUCKGO -> GOOGLE.suggestUrl(base)
         KAGI, STARTPAGE, CUSTOM -> null
     }
 }
