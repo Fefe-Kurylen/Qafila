@@ -90,7 +90,7 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
   background: rgba(28, 28, 30, .92); color: #fff; font: 500 14px/1.3 -apple-system, "Segoe UI", system-ui, sans-serif; text-align: center; }
 .fsn[hidden] { display: none; }
 /* Ombre contenue dans la marge de 12 px (décalage 3 + flou 8 < 12) : jamais coupée net par le bord de la bande. */
-.bar { position: fixed; left: 12px; right: 12px; top: 12px; height: 56px; border-radius: 28px; overflow: hidden; z-index: 3; isolation: isolate;
+.bar { position: fixed; left: 12px; right: 12px; top: 12px; height: var(--bar-h, 56px); border-radius: calc(var(--bar-h, 56px) / 2); overflow: hidden; z-index: 3; isolation: isolate;
   box-shadow: 0 3px 8px rgba(0, 0, 0, calc(.05 + .05 * var(--alpha))), 0 1px 2px rgba(0, 0, 0, .06); }
 :root.bar-dark .bar { box-shadow: 0 3px 8px rgba(0, 0, 0, .3), 0 1px 2px rgba(0, 0, 0, .2); }
 /* macOS : la barre et la bande déplacent la fenêtre (comme la barre d'outils de Safari) ; jamais les commandes. */
@@ -120,7 +120,7 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .row.spread { justify-content: space-evenly; max-width: 820px; margin: 0 auto; }
 .row .gap { width: 10px; flex: none; }
 :root.style-classic .row, :root.style-glass .row { padding: 0 14px; }
-.btn { width: 44px; height: 40px; display: grid; place-items: center; border-radius: 20px; color: var(--bfg); position: relative; flex: none;
+.btn { width: var(--btn-w, 44px); height: var(--pill-h, 40px); display: grid; place-items: center; border-radius: calc(var(--pill-h, 40px) / 2); color: var(--bfg); position: relative; flex: none;
   transition: transform .18s cubic-bezier(.3, 1.4, .5, 1), opacity .18s, background-color .15s; }
 .btn:hover:not(.off) { background: var(--bfill); }
 .btn:active:not(.off) { transform: scale(.86); opacity: .55; }
@@ -129,9 +129,9 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .row.spread .btn { width: 56px; }
 
 /* Carte d'adresse */
-.address { flex: 1; min-width: 0; height: 40px; margin: 0 6px; border-radius: 12px; background: var(--card); display: flex; align-items: center; gap: 10px;
+.address { flex: 1; min-width: 0; height: var(--pill-h, 40px); margin: 0 6px; border-radius: 12px; background: var(--card); display: flex; align-items: center; gap: 10px;
   padding: 0 14px 0 12px; position: relative; color: var(--bfg); overflow: hidden; }
-:root.style-floating .address, .pv-floating .address { border-radius: 20px; padding: 0 16px 0 14px; }
+:root.style-floating .address, .pv-floating .address { border-radius: calc(var(--pill-h, 40px) / 2); padding: 0 16px 0 14px; }
 .address.live { cursor: pointer; transition: background-color .15s; }
 .fav { flex: none; display: grid; place-items: center; background: var(--bfill); color: var(--bfg2); font-family: "New York", "Iowan Old Style", Georgia, "Times New Roman", serif; font-weight: 600; line-height: 1; overflow: hidden; }
 .fav.img { background: transparent; }
@@ -163,13 +163,13 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 /* Saisie / recherche dans la page */
 .edit-field { cursor: text; gap: 8px; }
 .edit-field svg { color: var(--bfg2); width: 16px; height: 16px; stroke-width: 1.7; }
-.edit-field input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 15px; color: var(--bfg); height: 36px; }
+.edit-field input { flex: 1; min-width: 0; border: 0; background: transparent; font-size: 15px; color: var(--bfg); height: calc(var(--pill-h, 40px) - 4px); }
 .edit-field input::placeholder { color: var(--bfg2); }
 .edit-field input:focus-visible { outline: none; } /* le champ d'adresse ou de recherche est déjà la pastille active */
 .edit-field .clear { color: var(--bfg2); display: grid; }
 .edit-field .clear svg { width: 17px; height: 17px; }
 .edit-field .count { font-size: 12px; color: var(--bfg2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.text-btn { height: 40px; padding: 0 14px; font-size: 15px; font-weight: 500; color: var(--accent-bar); border-radius: 20px; white-space: nowrap; flex: none; }
+.text-btn { height: var(--pill-h, 40px); padding: 0 14px; font-size: 15px; font-weight: 500; color: var(--accent-bar); border-radius: calc(var(--pill-h, 40px) / 2); white-space: nowrap; flex: none; }
 .text-btn:hover { background: var(--bfill); }
 .text-btn.strong { font-weight: 600; font-size: 17px; color: var(--text); }
 
@@ -200,9 +200,9 @@ svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-wid
 .ic-sp { width: 16px; flex: none; }
 
 /* Suggestions */
-.suggest { position: fixed; left: 12px; right: 12px; top: calc(12px + 56px + 8px); max-height: calc(100vh - 120px); overflow: auto; border-radius: 18px; z-index: 4; padding: 6px 0; animation: drop .2s ease-out; }
+.suggest { position: fixed; left: 12px; right: 12px; top: calc(12px + var(--bar-h, 56px) + 8px); max-height: calc(100vh - 120px); overflow: auto; border-radius: 18px; z-index: 4; padding: 6px 0; animation: drop .2s ease-out; }
 @keyframes drop { from { transform: translateY(-6px); opacity: 0; } }
-:root.bottom .suggest { top: auto; bottom: calc(12px + 56px + 8px); }
+:root.bottom .suggest { top: auto; bottom: calc(12px + var(--bar-h, 56px) + 8px); }
 :root.style-classic .suggest, :root.style-glass .suggest { top: calc(var(--strip) - var(--bm, 0px) + 8px); }
 :root.style-classic.bottom .suggest, :root.style-glass.bottom .suggest { top: auto; bottom: calc(var(--strip) + 8px); }
 .sg { display: flex; align-items: center; gap: 14px; padding: 0 18px; min-height: 48px; color: var(--bfg); }
@@ -398,7 +398,7 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .s-l.path { font-size: 13px; word-break: break-all; color: var(--secondary); }
 
 /* Bouton « Mettre à jour » : pilule discrète, couleur d'accent (sinon contraste de la barre), juste avant le menu. */
-.upd { flex: none; height: 32px; margin: 0 4px; padding: 0 13px 0 10px; display: flex; align-items: center; gap: 6px;
+.upd { flex: none; height: calc(var(--pill-h, 40px) - 8px); margin: 0 4px; padding: 0 13px 0 10px; display: flex; align-items: center; gap: 6px;
   border-radius: 16px; background: var(--accent-bar); color: #fff; font-size: 12.5px; font-weight: 600; letter-spacing: .01em;
   white-space: nowrap; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); animation: upd-in .35s ease-out both; transition: transform .12s, filter .12s; }
 .upd svg { stroke-width: 1.8; }
@@ -409,23 +409,23 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 @media (max-width: 720px) { .upd { width: 32px; padding: 0; justify-content: center; } .upd span { display: none; } }
 
 /* Barre de favoris : discrète, posée sur le fond de la bande (pas dans le verre), petits libellés atténués. */
-.bmbar { position: fixed; left: 22px; right: 22px; top: calc(var(--strip) - var(--bm) - 8px); height: 24px; z-index: 0;
-  display: flex; align-items: center; gap: 4px; color: var(--mini-fg); font-size: 12px; }
+.bmbar { position: fixed; left: 22px; right: 22px; top: calc(var(--strip) - var(--bm) - 8px); height: var(--bm-row, 24px); z-index: 0;
+  display: flex; align-items: center; gap: 4px; color: var(--mini-fg); font-size: var(--bm-font, 12px); }
 .bmbar[hidden] { display: none; }
 :root.bottom .bmbar { top: auto; bottom: calc(var(--strip) - var(--bm) - 8px); }
 :root.style-classic .bmbar, :root.style-glass .bmbar { left: 14px; right: 14px; top: calc(var(--strip) - var(--bm) + 1px); }
 :root.style-classic.bottom .bmbar, :root.style-glass.bottom .bmbar { top: auto; bottom: calc(var(--strip) - var(--bm) + 1px); }
 :root.collapse-mini .bmbar, :root.collapse-hidden .bmbar, :root.overlay-tabs .bmbar { visibility: hidden; }
-.bm-list { flex: 1; min-width: 0; height: 24px; display: flex; flex-wrap: wrap; gap: 2px; overflow: hidden; }
-.bm { flex: none; max-width: 170px; height: 24px; display: flex; align-items: center; gap: 6px; padding: 0 9px 0 6px; border-radius: 12px;
+.bm-list { flex: 1; min-width: 0; height: var(--bm-row, 24px); display: flex; flex-wrap: wrap; gap: 2px; overflow: hidden; }
+.bm { flex: none; max-width: 170px; height: var(--bm-row, 24px); display: flex; align-items: center; gap: 6px; padding: 0 9px 0 6px; border-radius: 12px;
   opacity: .72; transition: background-color .12s, opacity .12s; }
 .bm:hover { opacity: 1; background: color-mix(in srgb, var(--mini-fg) 8%, transparent); }
 .bm:active { opacity: .55; }
 .bm span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bm .fav { font-size: 8.5px !important; background: color-mix(in srgb, var(--mini-fg) 9%, transparent); color: inherit; }
 .bm .fav.img { background: transparent; }
-.bm-empty { line-height: 24px; padding: 0 6px; opacity: .45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bm-all { flex: none; width: 26px; height: 24px; border-radius: 12px; display: grid; place-items: center; opacity: .55; }
+.bm-empty { line-height: var(--bm-row, 24px); padding: 0 6px; opacity: .45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bm-all { flex: none; width: 26px; height: var(--bm-row, 24px); border-radius: 12px; display: grid; place-items: center; opacity: .55; }
 .bm-all:hover { opacity: 1; background: color-mix(in srgb, var(--mini-fg) 8%, transparent); }
 .bm-all svg { width: 15px; height: 15px; }
 :root.mac .bmbar button { -webkit-app-region: no-drag; }

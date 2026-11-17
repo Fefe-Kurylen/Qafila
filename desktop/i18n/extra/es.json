@@ -77,5 +77,11 @@
   "update_state": "Estado",
   "bookmarks_bar": "Barra de favoritos",
   "bookmarks_bar_sub": "Tus favoritos, discretos, bajo la barra de direcciones",
-  "bookmarks_bar_empty": "Añade tus sitios favoritos con ☆ o %1$s"
+  "bookmarks_bar_empty": "Añade tus sitios favoritos con ☆ o %1$s",
+  "sizes": "Tamaños",
+  "size_address_bar": "Barra de direcciones",
+  "size_title_bar": "Barra de título",
+  "ui_size_small": "Pequeña",
+  "ui_size_medium": "Normal",
+  "ui_size_large": "Grande"
 }

@@ -4,8 +4,14 @@ export const q = window.qafila;
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-/** Hauteurs (px) : capsule flottante 56 (pilule d'adresse 40, rayon 20 concentrique), barre pleine largeur 52 ; barre de favoris 26. */
-export const BAR = { floating: 56, full: 52, margin: 12, bookmarks: 26 };
+/** Hauteurs (px), selon les réglages de taille : capsule flottante (pilule d'adresse, rayon concentrique), barre pleine largeur, barre de favoris. */
+export const SIZES = {
+  bar: { small: { bar: 48, pill: 34, btn: 40, full: 46 }, medium: { bar: 56, pill: 40, btn: 44, full: 52 }, large: { bar: 64, pill: 44, btn: 46, full: 56 } },
+  bookmarks: { small: { h: 22, font: 11, ic: 12 }, medium: { h: 26, font: 12, ic: 14 }, large: { h: 30, font: 13, ic: 16 } },
+};
+export const barSizes = () => SIZES.bar[settings().barSize] || SIZES.bar.medium;
+export const bookmarkSizes = () => SIZES.bookmarks[settings().bookmarksBarSize] || SIZES.bookmarks.medium;
+export const BAR = { margin: 12 };
 export const STRIP = () => barHeight() + 2 * BAR.margin;
 
 export const S = {
@@ -133,8 +139,8 @@ export function accentRGB() {
 /** Barre de favoris (réglage showBookmarksBar) : bande discrète sous la barre, ou au-dessus si la barre est en bas. */
 export function bookmarksBarOn() { return settings().showBookmarksBar !== false; }
 
-/** Hauteur déclarée au processus principal (bande = hauteur + 2 × 12) : capsule 56 → bande 80 ; Classique / Verre → bande 60 ; + 26 avec la barre de favoris. */
-export function barHeight() { return (toolbar().style === 'floating' ? BAR.floating : BAR.full - 16) + (bookmarksBarOn() ? BAR.bookmarks : 0); }
+/** Hauteur déclarée au processus principal (bande = hauteur + 2 × 12) : capsule 56 → bande 80 ; Classique / Verre → bande 60 ; + barre de favoris (taille normale). */
+export function barHeight() { const b = barSizes(); return (toolbar().style === 'floating' ? b.bar : b.full - 16) + (bookmarksBarOn() ? bookmarkSizes().h : 0); }
 
 /** Bande (barre seule) ou fenêtre entière (menu, suggestions, écrans) ; le processus principal redimensionne la vue. */
 export async function syncChromeMode() {

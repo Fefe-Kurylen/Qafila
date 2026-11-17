@@ -77,5 +77,11 @@
   "update_state": "Status",
   "bookmarks_bar": "Bookmarks bar",
   "bookmarks_bar_sub": "Your bookmarks, discreetly under the address bar",
-  "bookmarks_bar_empty": "Add your favourite sites with ☆ or %1$s"
+  "bookmarks_bar_empty": "Add your favourite sites with ☆ or %1$s",
+  "sizes": "Sizes",
+  "size_address_bar": "Address bar",
+  "size_title_bar": "Title bar",
+  "ui_size_small": "Small",
+  "ui_size_medium": "Normal",
+  "ui_size_large": "Large"
 }

@@ -121,6 +121,8 @@ P.settings = () => {
 const ADDRESS_STYLES = [['card', 'address_card'], ['fullURL', 'address_full'], ['domainPill', 'address_centered'], ['titleReading', 'address_title_read'], ['centered', 'address_plain'], ['hidden', 'address_hidden']];
 function addressStyleLabel(v) { const e = ADDRESS_STYLES.find((x) => x[0] === v); return e ? t(e[1]) : ''; }
 
+const sizeOptions = () => [['small', t('ui_size_small')], ['medium', t('ui_size_medium')], ['large', t('ui_size_large')]];
+
 P.appearance = () => {
   const s = settings();
   const style = s.toolbar?.style || 'floating';
@@ -138,6 +140,11 @@ P.appearance = () => {
       + group([swatches('barColorDark', bars)], { header: t('bar_color_dark'), footer: t('bar_auto_dark_desc') })
       + group([`<div class="s-row seg-row"><div class="seg">${[['classic', 'style_classic'], ['glass', 'style_glass'], ['floating', 'style_floating']].map(([v, k]) => `<button class="${v === style ? 'on' : ''}" data-tbset="style" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('bar_style'), footer: t('bar_style_footer') })
       + group([toggleRow(t('bookmarks_bar'), 'showBookmarksBar', t('bookmarks_bar_sub'))])
+      + group([
+        labelledSegmented(t('size_address_bar'), 'barSize', sizeOptions()),
+        S.cfg.app.platform === 'win32' ? labelledSegmented(t('size_title_bar'), 'titleBarSize', sizeOptions()) : '',
+        s.showBookmarksBar !== false ? labelledSegmented(t('bookmarks_bar'), 'bookmarksBarSize', sizeOptions()) : '',
+      ], { header: t('sizes') })
       + (style === 'classic' ? '' : group([slider('glassTransparency', 0, 100, 1, tr, (v) => t('percent', v))], { header: t('transparency'), footer: t('transparency_footer') })),
   };
 };

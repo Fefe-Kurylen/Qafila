@@ -1,7 +1,7 @@
 // Barre de Qafila : capsule flottante en faux verre (ou barre Classique / Verre pleine largeur), carte d'adresse
 // (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
 import {
-  q, S, $, t, esc, STRIP, BAR, bookmarksBarOn, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
+  q, S, $, t, esc, STRIP, barSizes, bookmarkSizes, bookmarksBarOn, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
   shortURL, setOverlay, renderNow, toast, onRender,
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
@@ -27,7 +27,14 @@ export function applyTheme() {
   root.style.setProperty('--card', p.card);
   root.style.setProperty('--sw', String(WEIGHTS[settings().buttonWeight] || 1.15));
   root.style.setProperty('--strip', STRIP() + 'px');
-  root.style.setProperty('--bm', (bookmarksBarOn() ? BAR.bookmarks : 0) + 'px');
+  const bs = barSizes();
+  const bk = bookmarkSizes();
+  root.style.setProperty('--bar-h', bs.bar + 'px');
+  root.style.setProperty('--pill-h', bs.pill + 'px');
+  root.style.setProperty('--btn-w', bs.btn + 'px');
+  root.style.setProperty('--bm', (bookmarksBarOn() ? bk.h : 0) + 'px');
+  root.style.setProperty('--bm-row', (bk.h - 2) + 'px');
+  root.style.setProperty('--bm-font', bk.font + 'px');
   // La page est toujours posée à côté de la bande : la bande a son propre fond, couleur du thème ou du site (barre « Auto »).
   root.style.setProperty('--strip-color', p.site ? `rgb(${p.site.join(',')})` : (st.dark ? '#000000' : '#ffffff'));
   // Au défilement : barre réduite à la mini-adresse (Réduire) ou masquée (Masquer), décidé par le processus principal.
@@ -249,7 +256,7 @@ function bookmarkIcon(b) {
   let host = '';
   try { host = new URL(b.url).hostname.replace(/^www\./, ''); } catch { /* adresse illisible */ }
   const tab = (S.state?.tabs || []).find((x) => !x.isPrivate && x.host === host && x.faviconData);
-  return favicon(tab || { host }, 14);
+  return favicon(tab || { host }, bookmarkSizes().ic);
 }
 
 function renderBookmarksBar() {

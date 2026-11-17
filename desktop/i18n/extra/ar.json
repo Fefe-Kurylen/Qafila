@@ -77,5 +77,11 @@
   "update_state": "الحالة",
   "bookmarks_bar": "شريط المفضلة",
   "bookmarks_bar_sub": "مفضلتك بشكل خفيف تحت شريط العنوان",
-  "bookmarks_bar_empty": "أضف مواقعك المفضلة بـ ☆ أو %1$s"
+  "bookmarks_bar_empty": "أضف مواقعك المفضلة بـ ☆ أو %1$s",
+  "sizes": "الأحجام",
+  "size_address_bar": "شريط العنوان",
+  "size_title_bar": "شريط عنوان النافذة",
+  "ui_size_small": "صغير",
+  "ui_size_medium": "عادي",
+  "ui_size_large": "كبير"
 }

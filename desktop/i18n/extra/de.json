@@ -77,5 +77,11 @@
   "update_state": "Status",
   "bookmarks_bar": "Lesezeichenleiste",
   "bookmarks_bar_sub": "Ihre Lesezeichen, dezent unter der Adressleiste",
-  "bookmarks_bar_empty": "Fügen Sie Ihre Lieblingsseiten mit ☆ oder %1$s hinzu"
+  "bookmarks_bar_empty": "Fügen Sie Ihre Lieblingsseiten mit ☆ oder %1$s hinzu",
+  "sizes": "Größen",
+  "size_address_bar": "Adressleiste",
+  "size_title_bar": "Titelleiste",
+  "ui_size_small": "Klein",
+  "ui_size_medium": "Normal",
+  "ui_size_large": "Groß"
 }

@@ -32,7 +32,8 @@ const OFFLINE = DEMO && arg('online') === null;
 const BAR_MARGIN = 12;          // marge de la capsule flottante (DESIGN.md §8)
 // Windows : barre de titre Qafila de 40 px (plus haute que celle du système), boutons réduire / agrandir / fermer de
 // Windows dessinés par-dessus (titleBarOverlay) aux couleurs de la bande. QAFILA_TITLEBAR=1 la force ailleurs (tests).
-const TITLE_H = 40;
+const TITLE_SIZES = { small: 32, medium: 40, large: 48 };
+const titleBarHeight = () => TITLE_SIZES[Q.store?.settings.titleBarSize] || TITLE_SIZES.medium;
 const CUSTOM_TITLEBAR = process.platform === 'win32' || process.env.QAFILA_TITLEBAR === '1';
 // Taille minimale modeste : la moitié d'un écran 1920 × 1080 à 100 % (960 px, Ancrage de Windows) ou d'un portable
 // 1366 × 768 à 125 % doit tenir, sans que la fenêtre déborde sur sa voisine ni sous la barre des tâches.
@@ -81,7 +82,7 @@ const COLLAPSE_QUIET_MS = 300;  // après un changement, la page se redimensionn
 
 /** Hauteur de la barre de titre Qafila (0 hors Windows, en plein écran de la fenêtre ou d'une page). */
 function titleH() {
-  return CUSTOM_TITLEBAR && Q.win && !Q.win.isDestroyed() && !Q.win.isFullScreen() && !Q.isFullscreenPage ? TITLE_H : 0;
+  return CUSTOM_TITLEBAR && Q.win && !Q.win.isDestroyed() && !Q.win.isFullScreen() && !Q.isFullscreenPage ? titleBarHeight() : 0;
 }
 function isTop() { return (Q.store.settings.toolbar?.position || 'top') === 'top'; }
 
@@ -259,13 +260,15 @@ function updateTitlebar(colors) {
   const c = Q.titlebarColors || (isDark() ? { bg: '#000000', fg: '#f2f2f7' } : { bg: '#ffffff', fg: '#1c1c1e' });
   const tab = Q.store?.selectedTab;
   const title = tab && !tab.isPrivate && tab.title && tab.url ? `${tab.title} — Qafila` : 'Qafila';
-  const s = { bg: c.bg, fg: c.fg, title, focused: Q.win.isFocused() };
+  const s = { bg: c.bg, fg: c.fg, title, focused: Q.win.isFocused(), height: titleBarHeight() };
   const sig = JSON.stringify(s);
   if (sig === Q.titlebarSig) return;
-  Q.titlebarSig = sig;
-  try { Q.win.setTitleBarOverlay({ color: c.bg, symbolColor: c.fg, height: TITLE_H }); } catch { /* plate-forme sans overlay */ }
+  try { Q.win.setTitleBarOverlay({ color: c.bg, symbolColor: c.fg, height: s.height }); } catch { /* plate-forme sans overlay */ }
   const wc = Q.win.webContents;
-  if (!wc.isDestroyed() && !wc.isLoading()) wc.executeJavaScript(`window.__qafilaTitlebar && window.__qafilaTitlebar(${sig})`, false).catch(() => {});
+  // Document pas encore chargé : did-finish-load relancera la mise à jour (la signature n'est retenue qu'une fois envoyée).
+  if (wc.isDestroyed() || wc.isLoading()) return;
+  Q.titlebarSig = sig;
+  wc.executeJavaScript(`window.__qafilaTitlebar && window.__qafilaTitlebar(${sig})`, false).catch(() => { Q.titlebarSig = ''; });
 }
 
 function command(name, data) {
@@ -445,6 +448,7 @@ function onSettingChanged(key) {
   if (key === 'language') { Q.t = null; translator(); Q.tabs.refreshStartPages(); }
   // Mises à jour automatiques réactivées : recherche tout de suite (sinon au prochain passage, toutes les 6 heures).
   if (key === 'autoUpdate' && s.autoUpdate && Q.updater) Q.updater.check();
+  if (key === 'titleBarSize') { updateTitlebar(); layout(); }
   if (['darkenSites', 'darkenOnlyInDarkMode', 'darkenHosts'].includes(key)) Q.tabs.refreshDarken();
   if (['desktopByDefault', 'desktopHosts', 'customUserAgent'].includes(key)) Q.tabs.applyUserAgentToOpenTabs();
   if (['blockAds', 'blockTrackers', 'blockCookieBanners', 'blockerDisabledHosts'].includes(key)) { /* pris en compte à la prochaine requête */ }
@@ -912,7 +916,7 @@ function createWindow() {
     // capsule) et la fenêtre se déplace par elle, quelle que soit la position de la barre (haut ou bas).
     // Windows : barre de titre Qafila de 40 px, boutons de Windows par-dessus (titleBarOverlay).
     ...(CUSTOM_TITLEBAR
-      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: dark ? '#000000' : '#ffffff', symbolColor: dark ? '#f2f2f7' : '#1c1c1e', height: TITLE_H } }
+      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: dark ? '#000000' : '#ffffff', symbolColor: dark ? '#f2f2f7' : '#1c1c1e', height: titleBarHeight() } }
       : { titleBarStyle: 'default' }),
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
@@ -1539,6 +1543,12 @@ async function runSmoke() {
   set('appearance', 'dark'); await wait(1500); Q.glass.refresh(0); await wait(400); await shot('36-update-dark');
   set('appearance', 'light');
   Q.updater.state = { status: 'disabled', version: null, percent: null, manual: false };
+  // Tailles : tout en Grande, puis tout en Petite, puis retour à Normale.
+  for (const [size, name] of [['large', '37-sizes-large'], ['small', '38-sizes-small']]) {
+    set('barSize', size); set('titleBarSize', size); set('bookmarksBarSize', size);
+    await wait(1200); Q.glass.refresh(0); await wait(400); await shot(name);
+  }
+  set('barSize', 'medium'); set('titleBarSize', 'medium'); set('bookmarksBarSize', 'medium'); await wait(800);
   broadcast(); await wait(600);
   // Interface en arabe : mise en page de droite à gauche (dir="rtl").
   set('language', 'ar'); await wait(1500);
