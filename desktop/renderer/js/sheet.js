@@ -1,6 +1,6 @@
 // Feuille plein cadre (style réglages iOS) : Réglages et leurs sous-pages, Galerie de barres, éditeur de la barre
 // et du menu, Favoris, Historique. Chaque contrôle écrit un réglage par q.settings.set (validé côté principal).
-import { q, S, $, $$, t, esc, actionLabel, action, settings, toolbar, selectedTab, BAR_COLORS, ACCENTS, setOverlay, onRender, render, toast, twoRows } from './core.js';
+import { q, S, $, $$, t, esc, actionLabel, action, settings, toolbar, selectedTab, BAR_COLORS, ACCENTS, setOverlay, onRender, render, toast, splitBar } from './core.js';
 import { icon, actionIcon } from './icons.js';
 import { rowHTML, addressCard } from './bar.js';
 import { menuHTML } from './menu.js';
@@ -84,7 +84,7 @@ function preview(bar = toolbar().bar, { menu = false, sticky = false } = {}) {
   const count = S.state.tabs.filter((x) => !x.isPrivate).length;
   return `<div class="preview ${top ? 'top' : 'bottom'} pv-${tb.style || 'floating'}${menu ? ' with-menu' : ''}${sticky ? ' sticky' : ''}">
     <div class="pv-page"><i class="h"></i><i></i><i></i><i class="s"></i><i></i><i></i><i class="s"></i></div>
-    <div class="pv-bar${twoRows() ? ' two' : ''}"><div class="pv-tint"></div>${rowHTML(bar, { preview: true, tab: demoTab(), count })}</div>
+    <div class="pv-bar${splitBar() ? ' split' : ''}"><div class="pv-tint"></div>${rowHTML(bar, { preview: true, tab: demoTab(), count })}</div>
     ${menu ? `<div class="pv-menu card-glass">${menuHTML(tb.menu)}</div>` : ''}
   </div>`;
 }
@@ -140,7 +140,7 @@ P.appearance = () => {
       + group([swatches('barColorLight', bars)], { header: t('bar_color_light'), footer: t('bar_auto_light_desc') })
       + group([swatches('barColorDark', bars)], { header: t('bar_color_dark'), footer: t('bar_auto_dark_desc') })
       + group([`<div class="s-row seg-row"><div class="seg">${[['classic', 'style_classic'], ['glass', 'style_glass'], ['floating', 'style_floating']].map(([v, k]) => `<button class="${v === style ? 'on' : ''}" data-tbset="style" data-v="${enc(v)}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('bar_style'), footer: t('bar_style_footer') })
-      + group([labelledSegmented(t('bar_layout'), 'barLayout', [['one', t('bar_layout_one')], ['two', t('bar_layout_two')]])], { footer: t('bar_layout_footer') })
+      + group([labelledSegmented(t('bar_layout'), 'barLayout', [['one', t('bar_layout_one')], ['split', t('bar_layout_split')]])], { footer: t('bar_layout_footer') })
       + group([toggleRow(t('bookmarks_bar'), 'showBookmarksBar', t('bookmarks_bar_sub'))])
       + group([
         labelledSegmented(t('size_address_bar'), 'barSize', sizeOptions()),

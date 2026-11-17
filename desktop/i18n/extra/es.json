@@ -142,7 +142,7 @@
   "ext_perm_management": "Gestionar otras extensiones",
   "bar_layout": "Disposición de la barra",
   "bar_layout_one": "Una línea",
-  "bar_layout_two": "Dos líneas",
-  "bar_layout_footer": "Dos líneas: la dirección arriba, los botones (pestañas, +, menú…) debajo.",
-  "bookmarks_bar_add": "Añadir esta página"
+  "bar_layout_footer": "Dos partes: la dirección en una cápsula y los botones (pestañas, +, menú…) en otra, una al lado de la otra (barra flotante). Debajo: favoritos y accesos rápidos.",
+  "bookmarks_bar_add": "Añadir esta página",
+  "bar_layout_split": "Dos partes"
 }

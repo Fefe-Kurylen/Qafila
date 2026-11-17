@@ -142,7 +142,7 @@
   "ext_perm_management": "Andere Erweiterungen verwalten",
   "bar_layout": "Leistenanordnung",
   "bar_layout_one": "Eine Zeile",
-  "bar_layout_two": "Zwei Zeilen",
-  "bar_layout_footer": "Zwei Zeilen: oben die Adresse, darunter die Schaltflächen (Tabs, +, Menü …).",
-  "bookmarks_bar_add": "Diese Seite hinzufügen"
+  "bar_layout_footer": "Zwei Teile: die Adresse in einer Kapsel, die Schaltflächen (Tabs, +, Menü …) in einer zweiten daneben (schwebende Leiste). Darunter: Lesezeichen und Verknüpfungen.",
+  "bookmarks_bar_add": "Diese Seite hinzufügen",
+  "bar_layout_split": "Zwei Teile"
 }

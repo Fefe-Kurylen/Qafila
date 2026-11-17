@@ -1,7 +1,7 @@
 // Barre de Qafila : capsule flottante en faux verre (ou barre Classique / Verre pleine largeur), carte d'adresse
 // (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
 import {
-  q, S, $, t, esc, STRIP, barSizes, bookmarkSizes, bookmarksBarOn, twoRows, row2H, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
+  q, S, $, t, esc, STRIP, barSizes, bookmarkSizes, bookmarksBarOn, splitBar, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
   shortURL, setOverlay, renderNow, toast, onRender,
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
@@ -29,11 +29,8 @@ export function applyTheme() {
   root.style.setProperty('--strip', STRIP() + 'px');
   const bs = barSizes();
   const bk = bookmarkSizes();
-  const two = twoRows();
-  root.classList.toggle('two-rows', two);
-  root.style.setProperty('--bar-h', (bs.bar + row2H()) + 'px');
-  root.style.setProperty('--row1-h', ((tb.style || 'floating') === 'floating' ? bs.bar : bs.full + 8) + 'px');
-  root.style.setProperty('--row2-h', row2H() + 'px');
+  root.classList.toggle('split', splitBar());
+  root.style.setProperty('--bar-h', bs.bar + 'px');
   root.style.setProperty('--pill-h', bs.pill + 'px');
   root.style.setProperty('--btn-w', bs.btn + 'px');
   root.style.setProperty('--bm', (bookmarksBarOn() ? bk.h : 0) + 'px');
@@ -106,12 +103,13 @@ export function rowSlots(bar, addressStyle) {
 }
 
 /**
- * Disposition de la barre. Deux lignes (PC, par défaut) : l'adresse seule sur la première, tous les boutons
- * (précédent, onglets, +, menu…) sur la deuxième. Une ligne : l'adresse au milieu des boutons.
+ * Disposition de la barre. En deux parties (PC, par défaut) : la capsule d'adresse à gauche, tous les boutons
+ * (précédent, onglets, +, menu…) dans une seconde capsule à droite, sur la même ligne. Une ligne : l'adresse au
+ * milieu des boutons, dans une seule capsule.
  */
-function layout(bar, s) {
-  const two = twoRows(s);
-  return { two, slots: two ? (bar || []).filter((x) => x.action !== 'address') : rowSlots(bar, s.addressStyle) };
+function layout(bar, s, tb) {
+  const split = splitBar(s, tb);
+  return { split, slots: split ? (bar || []).filter((x) => x.action !== 'address') : rowSlots(bar, s.addressStyle) };
 }
 
 function button(slot, st, count) {
@@ -137,8 +135,8 @@ export function rowHTML(cfgBar, opts = {}) {
   const st = opts.state || (opts.preview ? { ...actionState(), isWeb: true } : actionState());
   const tab = opts.tab !== undefined ? opts.tab : selectedTab();
   const count = opts.count ?? (S.state?.tabs.filter((x) => !x.isPrivate).length || 0);
-  const { two, slots } = layout(cfgBar, opts.oneRow ? { ...s, barLayout: 'one' } : s);
-  const inline = !two && slots.some((x) => x.action === 'address');
+  const { split, slots } = layout(cfgBar, opts.oneRow ? { ...s, barLayout: 'one' } : s, opts.toolbar);
+  const inline = split || slots.some((x) => x.action === 'address');
   const parts = slots.map((slot) => {
     if (slot.action === 'separator') return '<span class="gap"></span>';
     if (slot.action === 'address') return addressCard(tab, { preview: opts.preview, settings: opts.settings });
@@ -150,8 +148,8 @@ export function rowHTML(cfgBar, opts = {}) {
     const m = slots.findIndex((x) => x.action === 'menu');
     parts.splice(m >= 0 ? m : parts.length, 0, upd);
   }
-  const row = `<div class="row${inline ? ' inline' : ' spread'}${two ? ' row2' : ''}">${parts.join('')}</div>`;
-  return two ? `<div class="row inline row1">${addressCard(tab, { preview: opts.preview, settings: opts.settings })}</div>${row}` : row;
+  if (split) return `<div class="row split"><div class="bseg bseg-addr">${addressCard(tab, { preview: opts.preview, settings: opts.settings })}</div><div class="bseg bseg-btns">${parts.join('')}</div></div>`;
+  return `<div class="row${inline ? ' inline' : ' spread'}">${parts.join('')}</div>`;
 }
 
 // ----- Saisie d'adresse -----
@@ -247,10 +245,10 @@ function commit(text) {
  * reconstruire le champ, qui garde sa frappe et son focus.
  */
 function editingHTML() {
-  const { two, slots } = layout(toolbar().bar, { ...settings(), addressStyle: 'card' });
+  const { split, slots } = layout(toolbar().bar, { ...settings(), addressStyle: 'card' });
   const field = `<label class="address edit-field">${icon('search')}<input id="edit-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('search_or_enter_address'))}" dir="auto"><button class="clear" data-edit-clear title="${esc(t('clear'))}">${icon('xmarkCircle')}</button></label>`;
   const parts = slots.map((slot, i) => (slot.action === 'address' ? field : slot.action === 'separator' ? '<span class="gap"></span>' : `<span class="slot" data-slot="${i}"></span>`));
-  if (two) return `<div class="row inline editing row1">${field}</div><div class="row spread row2">${parts.join('')}</div>`;
+  if (split) return `<div class="row split editing"><div class="bseg bseg-addr">${field}</div><div class="bseg bseg-btns">${parts.join('')}</div></div>`;
   return `<div class="row inline editing">${parts.join('')}</div>`;
 }
 
@@ -285,7 +283,10 @@ function renderBookmarksBar() {
   const items = list.length
     ? list.map((b) => `<button class="bm" data-bm="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span><bdi>${esc(b.title)}</bdi></span></button>`).join('')
     : `<button class="bm bm-add" data-action="addBookmark">${icon(actionIcon('addBookmark', {}), 14)}<span>${esc(t('bookmarks_bar_add'))}</span></button><span class="bm-empty">${esc(t('bookmarks_bar_empty', mac ? '⌘D' : t('kbd_ctrl') + '+D'))}</span>`;
-  const html = `<div class="bm-list">${items}</div><button class="bm-all" data-bm-all title="${esc(t('bookmarks'))}" aria-label="${esc(t('bookmarks'))}">${icon('book', 15)}</button>`;
+  // À droite : options rapides (page en favori, tous les favoris, historique, réglages).
+  const st = actionState();
+  const opts = ['addBookmark', 'bookmarks', 'history', 'settings'].map((id) => `<button class="bm-all${id === 'addBookmark' && st.bookmarked ? ' on' : ''}" data-bmact="${id}" title="${esc(actionLabel(id))}" aria-label="${esc(actionLabel(id))}">${icon(actionIcon(id, st), 15)}</button>`).join('');
+  const html = `<div class="bm-list">${items}</div><div class="bm-opts">${opts}</div>`;
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
 }
 
@@ -320,11 +321,11 @@ export function closeFind() {
 function findHTML() {
   const f = S.find;
   const count = f.text ? (f.matches ? t('find_count', f.active, f.matches) : t('find_none')) : '';
-  return `<div class="row inline finding${twoRows() ? ' row1' : ''}">
+  return `<div class="row inline finding">
     <label class="address edit-field">${icon('textSearch')}<input id="find-input" type="text" spellcheck="false" autocomplete="off" placeholder="${esc(t('find_placeholder'))}" dir="auto"><span class="count" id="find-count">${esc(count)}</span></label>
     <button class="btn" data-find="prev" title="${esc(t('find_previous'))}">${icon('chevronDown', 20).replace('<svg', '<svg style="transform:rotate(180deg)"')}</button>
     <button class="btn" data-find="next" title="${esc(t('find_next'))}">${icon('chevronDown', 20)}</button>
-    <button class="text-btn" data-find="done">${esc(t('done'))}</button></div>${twoRows() ? '<div class="row spread row2"></div>' : ''}`;
+    <button class="text-btn" data-find="done">${esc(t('done'))}</button></div>`;
 }
 
 function updateFindCount() {
@@ -357,6 +358,29 @@ function placeExtensionActions(host) {
   slot.replaceWith(extEl);
 }
 
+// ----- Barre en deux parties : le verre (capture floutée + teinte) découpé en deux capsules -----
+let segSig = '';
+function updateSegMask() {
+  const bar = $('#bar');
+  if (!bar) return;
+  const segs = [...bar.querySelectorAll('.bseg')];
+  const root = document.documentElement;
+  if (!segs.length || !root.classList.contains('split')) {
+    if (segSig) { root.classList.remove('has-segs'); root.style.removeProperty('--seg-mask'); segSig = ''; }
+    return;
+  }
+  const b = bar.getBoundingClientRect();
+  const rects = segs.map((el) => { const r = el.getBoundingClientRect(); return [r.left - b.left, r.top - b.top, r.width, r.height].map((v) => Math.round(v * 10) / 10); });
+  const sig = `${b.width}x${b.height}:${JSON.stringify(rects)}`;
+  if (sig === segSig) return;
+  segSig = sig;
+  const body = rects.map(([x, y, w, h]) => `<rect x='${x}' y='${y}' width='${w}' height='${h}' rx='${h / 2}'/>`).join('');
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${b.width}' height='${b.height}' viewBox='0 0 ${b.width} ${b.height}'>${body}</svg>`;
+  root.style.setProperty('--seg-mask', `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`);
+  root.classList.add('has-segs');
+}
+window.addEventListener('resize', () => requestAnimationFrame(updateSegMask));
+
 // ----- Rendu de la barre -----
 let mode = null; // 'row' | 'editing' | 'find' : la saisie n'est pas reconstruite à chaque mise à jour
 let lastRowHTML = '';
@@ -382,6 +406,7 @@ function renderBar() {
     }
   }
   renderBookmarksBar();
+  updateSegMask();
   const sg = $('#suggest');
   if (sg && want !== 'editing') sg.hidden = true;
   // Réduire : mini-adresse (domaine seul) ; un clic rouvre la barre.
@@ -495,7 +520,8 @@ export function installBarEvents() {
   const bm = $('#bmbar');
   bm.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); }); // pas de défilement automatique
   bm.addEventListener('click', (e) => {
-    if (e.target.closest('[data-bm-all]')) { import('./sheet.js').then((m) => m.openSheet('bookmarks', true)); return; }
+    const o = e.target.closest('[data-bmact]');
+    if (o) { perform(o.dataset.bmact); return; }
     if (e.target.closest('.bm-add')) { perform('addBookmark'); return; }
     const it = e.target.closest('[data-bm]');
     if (it) openBookmark(e, it);

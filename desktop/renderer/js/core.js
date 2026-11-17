@@ -11,10 +11,11 @@ export const SIZES = {
 };
 export const barSizes = () => SIZES.bar[settings().barSize] || SIZES.bar.medium;
 export const bookmarkSizes = () => SIZES.bookmarks[settings().bookmarksBarSize] || SIZES.bookmarks.medium;
-/** Barre sur deux lignes (PC, par défaut) : l'adresse en haut, la rangée de boutons (onglets, +, menu…) dessous. */
-export const twoRows = (s = settings()) => s.barLayout !== 'one' && s.addressStyle !== 'hidden';
-/** Hauteur de la deuxième ligne (boutons). */
-export const row2H = () => (twoRows() ? barSizes().btn - 4 : 0);
+/**
+ * Barre en deux parties (PC, par défaut, barre flottante) : sur la même ligne, une capsule pour l'adresse et une
+ * capsule pour les boutons (précédent, onglets, +, menu…).
+ */
+export const splitBar = (s = settings(), tb = toolbar()) => s.barLayout !== 'one' && s.addressStyle !== 'hidden' && (tb?.style || 'floating') === 'floating';
 export const BAR = { margin: 12 };
 export const STRIP = () => barHeight() + 2 * BAR.margin;
 
@@ -144,7 +145,7 @@ export function accentRGB() {
 export function bookmarksBarOn() { return settings().showBookmarksBar !== false; }
 
 /** Hauteur déclarée au processus principal (bande = hauteur + 2 × 12) : capsule 56 → bande 80 ; Classique / Verre → bande 60 ; + barre de favoris (taille normale). */
-export function barHeight() { const b = barSizes(); return (toolbar().style === 'floating' ? b.bar : b.full - 16) + row2H() + (bookmarksBarOn() ? bookmarkSizes().h : 0); }
+export function barHeight() { const b = barSizes(); return (toolbar().style === 'floating' ? b.bar : b.full - 16) + (bookmarksBarOn() ? bookmarkSizes().h : 0); }
 
 /** Bande (barre seule) ou fenêtre entière (menu, suggestions, écrans) ; le processus principal redimensionne la vue. */
 export async function syncChromeMode() {
