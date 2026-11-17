@@ -257,6 +257,25 @@ function shortcutList(mac) {
   const fmt = (k) => (mac ? k.replace(/M\+Shift\+/g, '⇧⌘').replace(/M\+/g, '⌘') : k.replace(/M\+/g, t('kbd_ctrl') + '+'));
   return list.map(([k, id]) => [fmt(k), id]);
 }
+/** Mises à jour (page À propos) : état, réglage automatique, bouton d'action. */
+function updatesGroup() {
+  const u = S.state?.update || { status: 'disabled' };
+  const v = u.version || '';
+  const status = {
+    disabled: t('update_status_disabled'), idle: t('update_status_idle'), checking: t('update_status_checking'),
+    none: t('update_status_none'), available: t('update_status_available', v), ready: t('update_status_ready', v),
+    downloading: t('update_status_downloading', u.percent ?? 0), error: t('update_status_error'),
+  }[u.status] || '';
+  const rows = [`<div class="s-row"><span class="s-ic">${icon('update', 20)}</span><span class="s-l">${esc(t('update_state'))}</span><span class="s-v">${esc(status)}</span></div>`];
+  if (u.status !== 'disabled') {
+    rows.push(toggleRow(t('update_auto'), 'autoUpdate', t('update_auto_sub')));
+    if (u.status === 'ready') rows.push(buttonRow(t('update_install'), 'installUpdate', { center: true }));
+    else if (u.manual && u.status === 'available') rows.push(buttonRow(t('update_download'), 'installUpdate', { center: true }));
+    else if (!['checking', 'downloading'].includes(u.status)) rows.push(buttonRow(t('update_check'), 'checkUpdate', { center: true }));
+  }
+  return group(rows, { header: t('updates'), footer: u.status === 'disabled' ? '' : t('update_footer') });
+}
+
 P.about = () => {
   const a = S.cfg.app;
   return {
@@ -264,6 +283,7 @@ P.about = () => {
     body: `<div class="about-head"><div class="serif">Qafila</div><div class="ar" lang="ar" dir="rtl">${esc(t('app_name_arabic'))}</div></div>`
       + group([`<div class="s-row"><span class="s-l">${esc(t('version'))}</span><span class="s-v">${esc(a.version)}</span></div>`,
         `<div class="s-row"><span class="s-l">${esc(t('engine_label'))}</span><span class="s-v">${esc(t('about_engine_desktop', a.electron, a.chrome))}</span></div>`], { footer: t('about_privacy') })
+      + updatesGroup()
       + group([`<button class="s-row" data-do="source"><span class="s-l">${esc(t('source_code'))}</span><span class="s-chev">${icon('external', 16)}</span></button>`])
       + group(shortcutList(a.platform === 'darwin').map(([k, id]) => `<div class="s-row"><span class="s-ic">${icon(actionIcon(id, {}), 18)}</span><span class="s-l">${esc(actionLabel(id))}</span><span class="kbd" dir="ltr">${esc(k)}</span></div>`), { header: t('shortcuts') }),
   };
@@ -426,6 +446,13 @@ export function installSheetEvents() {
       if (d === 'chooseDownloads') { await q.downloads.chooseFolder(); return; }
       if (d === 'resetDownloads') { await q.downloads.resetFolder(); return; }
       if (d === 'openDownloads') { await q.downloads.openFolder(); return; }
+      if (d === 'installUpdate') { await q.update.install(); return; }
+      if (d === 'checkUpdate') {
+        const r = await q.update.check().catch(() => null);
+        if (r?.status === 'none') toast(t('update_toast_none'));
+        else if (r?.status === 'error') toast(t('update_status_error'));
+        return;
+      }
       if (d === 'source') { q.openExternal('https://github.com/Fefe-Kurylen/qafila'); return; }
       if (d === 'resetToolbar') { await q.settings.applyPreset('complete'); toast(t('reset_bar_menu')); return; }
       if (d === 'clearHistory') { await q.history.clear(); await loadHistory(); render(); return; }

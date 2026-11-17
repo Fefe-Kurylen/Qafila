@@ -95,6 +95,14 @@ function button(slot, st, count) {
   return `<button class="btn${enabled ? '' : ' off'}${isActive(id, st) ? ' on' : ''}" data-action="${id}" ${enabled ? '' : 'disabled'} title="${esc(actionLabel(id))}" aria-label="${esc(actionLabel(id))}">${glyph}</button>`;
 }
 
+/** Bouton « Mettre à jour » : visible seulement quand une nouvelle version est prête (macOS : disponible). */
+export function updateButton() {
+  const u = S.state?.update;
+  if (!u || !(u.status === 'ready' || (u.manual && u.status === 'available'))) return '';
+  const title = t(u.manual ? 'update_button_title_manual' : 'update_button_title', u.version || '');
+  return `<button class="upd" data-update title="${esc(title)}" aria-label="${esc(title)}">${icon('update', 17)}<span>${esc(t('update_button'))}</span></button>`;
+}
+
 /** HTML de la rangée (barre réelle ou aperçu de la galerie / des réglages). */
 export function rowHTML(cfgBar, opts = {}) {
   const s = { ...settings(), ...(opts.settings || {}) };
@@ -109,6 +117,12 @@ export function rowHTML(cfgBar, opts = {}) {
     if (slot.action === 'address') return addressCard(tab, { preview: opts.preview, settings: opts.settings });
     return button(slot, st, count);
   });
+  // Barre réelle : le bouton « Mettre à jour » se glisse juste avant le bouton du menu (sinon en fin de rangée).
+  const upd = opts.preview ? '' : updateButton();
+  if (upd) {
+    const m = slots.findIndex((x) => x.action === 'menu');
+    parts.splice(m >= 0 ? m : parts.length, 0, upd);
+  }
   return `<div class="row${inline ? ' inline' : ' spread'}">${parts.join('')}</div>`;
 }
 
@@ -323,6 +337,7 @@ export function installBarEvents() {
   bar.addEventListener('pointerleave', cancelPress);
   bar.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-address]')) { e.preventDefault(); addressLongPress(); } });
   bar.addEventListener('click', (e) => {
+    if (e.target.closest('[data-update]')) { q.update.install(); return; }
     const b = e.target.closest('[data-action]');
     if (b) { if (!b.disabled) perform(b.dataset.action); return; }
     if (e.target.closest('[data-address]')) { if (!longPressed) addressTap(); longPressed = false; return; }

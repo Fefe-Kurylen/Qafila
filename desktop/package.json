@@ -1,7 +1,7 @@
 {
   "name": "qafila-desktop",
   "productName": "Qafila",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Qafila pour PC : navigateur minimaliste et respectueux de la vie privée (Electron).",
   "license": "MIT",
   "private": true,
@@ -106,11 +106,28 @@
             "arm64",
             "x64"
           ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         }
       ],
       "identity": "-",
       "hardenedRuntime": false
     },
-    "publish": null
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Fefe-Kurylen",
+        "repo": "Qafila",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }

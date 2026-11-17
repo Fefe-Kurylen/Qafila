@@ -20,6 +20,7 @@ const { FaviconCache } = require('./favicon');
 const shortcuts = require('./shortcuts');
 const { APP_ID } = require('./app-id');
 const { safeFilename, extensionOf, zoneIdentifier } = require('./filename');
+const { Updater } = require('./updater');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -58,7 +59,7 @@ const Q = {
   win: null, chrome: null, store: null, tabs: null, blocker: null, glass: null,
   chromeMode: 'strip', barHeight: 92, t: null, demo: DEMO, isFullscreenPage: false, fullscreenNotice: null,
   collapse: 'none', scrollAcc: 0, collapseQuiet: 0, // Au défilement : 'none' | 'mini' (Réduire) | 'hidden' (Masquer)
-  pending: new Map(), broadcastTimer: null, favicons: null,
+  pending: new Map(), broadcastTimer: null, favicons: null, updater: null,
 };
 
 function isDark() { return nativeTheme.shouldUseDarkColors; }
@@ -221,7 +222,7 @@ function describeState() {
   return {
     tabs: describeTabs(), selected: Q.store.selected, bookmarks: Q.store.bookmarks, historyCount: Q.store.history.length,
     settings: Q.store.settings, dark: isDark(), lang: t.lang, rtl: t.rtl, closedTabs: Q.store.closedTabs.length,
-    downloads: describeDownloads(), collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
+    downloads: describeDownloads(), update: Q.updater ? Q.updater.state : { status: 'disabled' }, collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
     fullscreenNotice: Q.isFullscreenPage && Q.fullscreenNotice !== null ? { host: Q.fullscreenNotice } : null,
     window: { fullscreen: Q.win?.isFullScreen() || false, maximized: Q.win?.isMaximized() || false, focused: Q.win?.isFocused() || false },
   };
@@ -409,6 +410,8 @@ function onSettingChanged(key) {
   if (key === 'javascriptDisabledHosts') Q.tabs.reloadForJavaScript(s.javascriptDisabledHosts || []);
   if (key === 'textZoom') Q.tabs.applyZoom();
   if (key === 'language') { Q.t = null; translator(); Q.tabs.refreshStartPages(); }
+  // Mises à jour automatiques réactivées : recherche tout de suite (sinon au prochain passage, toutes les 6 heures).
+  if (key === 'autoUpdate' && s.autoUpdate && Q.updater) Q.updater.check();
   if (['darkenSites', 'darkenOnlyInDarkMode', 'darkenHosts'].includes(key)) Q.tabs.refreshDarken();
   if (['desktopByDefault', 'desktopHosts', 'customUserAgent'].includes(key)) Q.tabs.applyUserAgentToOpenTabs();
   if (['blockAds', 'blockTrackers', 'blockCookieBanners', 'blockerDisabledHosts'].includes(key)) { /* pris en compte à la prochaine requête */ }
@@ -977,9 +980,12 @@ if (GOT_LOCK) app.whenReady().then(async () => {
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
     toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, focusUI, screenshot,
     downloadFolder, expandBar: () => setCollapse('none'),
+    get updater() { return Q.updater; },
   });
 
   createWindow();
+  Q.updater = new Updater({ onChange: broadcast, isAutomatic: () => Q.store.settings.autoUpdate !== false, demo: DEMO });
+  Q.updater.start();
   if (!SMOKE_DIR) for (const url of urlsFromArgv(argv)) newTab({ url });
   if (SMOKE_DIR) runSmoke().catch((e) => { console.error('Smoke :', e); app.exit(1); });
 });
@@ -1473,6 +1479,15 @@ async function runSmoke() {
   demoScreen('appearance'); await wait(900); demoScreen('scroll', { top: 'end' }); await wait(500); await shot('24-appearance-style');
   demoScreen('about'); await wait(900); await shot('25-about');
   demoScreen('none'); await wait(500);
+  // Mise à jour prête (état simulé, rien n'est téléchargé) : bouton « Mettre à jour » dans la barre et page À propos.
+  Q.updater.state = { status: 'ready', version: '0.9.2', percent: 100, manual: false };
+  broadcast(); await wait(900); Q.glass.refresh(0); await wait(400); await shot('34-update-button');
+  demoScreen('about'); await wait(900); await shot('35-update-about');
+  demoScreen('none'); await wait(400);
+  set('appearance', 'dark'); await wait(1500); Q.glass.refresh(0); await wait(400); await shot('36-update-dark');
+  set('appearance', 'light');
+  Q.updater.state = { status: 'disabled', version: null, percent: null, manual: false };
+  broadcast(); await wait(600);
   // Interface en arabe : mise en page de droite à gauche (dir="rtl").
   set('language', 'ar'); await wait(1500);
   await shot('21-ar-page');

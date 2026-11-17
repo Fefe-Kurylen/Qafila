@@ -396,3 +396,14 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .add-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .add-item:hover { background: var(--fill); }
 .s-l.path { font-size: 13px; word-break: break-all; color: var(--secondary); }
+
+/* Bouton « Mettre à jour » : pilule discrète, couleur d'accent (sinon contraste de la barre), juste avant le menu. */
+.upd { flex: none; height: 32px; margin: 0 4px; padding: 0 13px 0 10px; display: flex; align-items: center; gap: 6px;
+  border-radius: 16px; background: var(--accent-bar); color: #fff; font-size: 12.5px; font-weight: 600; letter-spacing: .01em;
+  white-space: nowrap; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); animation: upd-in .35s ease-out both; transition: transform .12s, filter .12s; }
+.upd svg { stroke-width: 1.8; }
+.upd:hover { filter: brightness(1.07); }
+.upd:active { transform: scale(.94); }
+:root.accent-mono .upd { color: rgb(var(--bar-rgb)); }
+@keyframes upd-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+@media (max-width: 720px) { .upd { width: 32px; padding: 0; justify-content: center; } .upd span { display: none; } }

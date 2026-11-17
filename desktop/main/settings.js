@@ -14,6 +14,8 @@ const DESKTOP_ONLY = [
   { key: 'language', section: 'about', type: 'enum:Language', default: '', sync: false, platforms: ['desktop'] },
   // Dossier de téléchargement : '' = dossier « Téléchargements » du système.
   { key: 'downloadFolder', section: 'privacy', type: 'string', default: '', sync: false, platforms: ['desktop'] },
+  // Mises à jour : recherche au démarrage puis toutes les 6 heures, téléchargement en arrière-plan (main/updater.js).
+  { key: 'autoUpdate', section: 'about', type: 'boolean', default: true, sync: false, platforms: ['desktop'] },
 ];
 const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] } };
 

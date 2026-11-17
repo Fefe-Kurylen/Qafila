@@ -142,6 +142,10 @@ function register(a) {
   handle('support:info', () => support.info());
   handle('support:open', () => support.open());
 
+  // ----- Mises à jour de l'application (main/updater.js) -----
+  handle('update:check', () => (a.updater ? a.updater.check() : { status: 'disabled' }));
+  handle('update:install', () => (a.updater ? a.updater.install() : false));
+
   // ----- Interface -----
   handle('ui:setChrome', (p) => a.setChrome(p.mode === 'full' ? 'full' : 'strip', Math.min(400, Math.max(40, Number(p.height) || 0)), { find: p.find === true }));
   // Réduire : un clic sur la mini-adresse rouvre la barre.

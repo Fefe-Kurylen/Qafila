@@ -88,6 +88,11 @@ contextBridge.exposeInMainWorld('qafila', {
     info: () => invoke('support:info'),
     open: () => invoke('support:open'),
   },
+  /** Mises à jour : recherche manuelle (renvoie l'état) et installation de la version téléchargée (redémarrage). */
+  update: {
+    check: () => invoke('update:check'),
+    install: () => invoke('update:install'),
+  },
   /** Le chrome déclare sa géométrie : bande ('strip', hauteur de barre) ou plein écran ('full'). */
   ui: {
     setChrome: (mode, height, find = false) => invoke('ui:setChrome', { mode, height, find: !!find }),
