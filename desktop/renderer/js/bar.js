@@ -11,6 +11,7 @@ const SIZES = { small: 17, medium: 20, large: 23 };
 const WEIGHTS = { thin: 1.15, regular: 1.5, bold: 2 };
 
 // ----- Thème : variables CSS de la barre et de l'interface -----
+let titlebarSig = '';
 export function applyTheme() {
   const root = document.documentElement;
   const st = S.state;
@@ -33,7 +34,12 @@ export function applyTheme() {
   const c = st.collapse || 'none';
   root.classList.toggle('collapse-mini', c === 'mini');
   root.classList.toggle('collapse-hidden', c === 'hidden');
-  root.style.setProperty('--mini-fg', p.site ? (p.contentDark ? '#ffffff' : '#000000') : (st.dark ? '#f2f2f7' : '#1c1c1e'));
+  const miniFg = p.site ? (p.contentDark ? '#ffffff' : '#000000') : (st.dark ? '#f2f2f7' : '#1c1c1e');
+  root.style.setProperty('--mini-fg', miniFg);
+  // Barre de titre Windows : même couleur que la bande.
+  const hex = (rgb) => '#' + rgb.map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
+  const tbg = p.site ? hex(p.site) : (st.dark ? '#000000' : '#ffffff');
+  if (titlebarSig !== tbg + miniFg) { titlebarSig = tbg + miniFg; q.ui.titlebar(tbg, miniFg).catch(() => {}); }
   root.classList.toggle('mac', S.cfg?.app?.platform === 'darwin');
   const acc = accentRGB();
   if (acc) root.style.setProperty('--accent', `rgb(${acc.join(',')})`); else root.style.removeProperty('--accent');

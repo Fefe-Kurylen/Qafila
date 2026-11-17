@@ -30,6 +30,10 @@ const DEMO_DARK = String(arg('demo')).endsWith('-dark');
 const OFFLINE = DEMO && arg('online') === null;
 
 const BAR_MARGIN = 12;          // marge de la capsule flottante (DESIGN.md §8)
+// Windows : barre de titre Qafila de 40 px (plus haute que celle du système), boutons réduire / agrandir / fermer de
+// Windows dessinés par-dessus (titleBarOverlay) aux couleurs de la bande. QAFILA_TITLEBAR=1 la force ailleurs (tests).
+const TITLE_H = 40;
+const CUSTOM_TITLEBAR = process.platform === 'win32' || process.env.QAFILA_TITLEBAR === '1';
 // Taille minimale modeste : la moitié d'un écran 1920 × 1080 à 100 % (960 px, Ancrage de Windows) ou d'un portable
 // 1366 × 768 à 125 % doit tenir, sans que la fenêtre déborde sur sa voisine ni sous la barre des tâches.
 const MIN_SIZE = { width: 560, height: 480 };
@@ -75,23 +79,31 @@ const MINI_STRIP = 28;          // Réduire : mini-adresse (domaine seul, 11 px)
 const COLLAPSE_AFTER = 48;      // défilement cumulé (px) qui réduit / masque la barre, ou la rouvre en remontant
 const COLLAPSE_QUIET_MS = 300;  // après un changement, la page se redimensionne : défilements ignorés (pas d'oscillation)
 
+/** Hauteur de la barre de titre Qafila (0 hors Windows, en plein écran de la fenêtre ou d'une page). */
+function titleH() {
+  return CUSTOM_TITLEBAR && Q.win && !Q.win.isDestroyed() && !Q.win.isFullScreen() && !Q.isFullscreenPage ? TITLE_H : 0;
+}
+function isTop() { return (Q.store.settings.toolbar?.position || 'top') === 'top'; }
+
 function stripRect() {
   if (!Q.win || Q.win.isDestroyed()) return null;
   const [w, h] = Q.win.getContentSize();
+  const t = titleH();
   let strip = Q.barHeight + 2 * BAR_MARGIN;
   if (Q.chromeMode === 'strip' && Q.collapse === 'mini') strip = MINI_STRIP;
   else if (Q.chromeMode === 'strip' && Q.collapse === 'hidden') strip = 0;
-  const top = (Q.store.settings.toolbar?.position || 'top') === 'top';
-  return { x: 0, y: top ? 0 : Math.max(0, h - strip), width: w, height: Math.min(h, strip) };
+  const height = Math.min(Math.max(0, h - t), strip);
+  return { x: 0, y: isTop() ? t : Math.max(t, h - height), width: w, height };
 }
 
 /** Rectangle de la page dans la fenêtre : à côté de la bande (sous elle si la barre est en haut, au-dessus sinon). */
 function pageRect() {
   const [w, h] = Q.win.getContentSize();
   if (Q.isFullscreenPage) return { x: 0, y: 0, width: w, height: h };
+  const t = titleH();
   const strip = stripRect();
-  const height = Math.max(0, h - strip.height);
-  return strip.y === 0 ? { x: 0, y: strip.height, width: w, height } : { x: 0, y: 0, width: w, height };
+  const height = Math.max(0, h - t - strip.height);
+  return isTop() ? { x: 0, y: t + strip.height, width: w, height } : { x: 0, y: t, width: w, height };
 }
 
 /** Zone de la page capturée pour le faux verre, en coordonnées de la page : ses premières lignes (dernières si la barre est en bas). */
@@ -100,7 +112,7 @@ function glassRect() {
   const p = Q.tabs?.pageBounds;
   if (!s || !p || p.width < 2 || p.height < 2 || s.height < 2) return null;
   const h = Math.min(s.height, p.height);
-  return { x: 0, y: s.y === 0 ? 0 : p.height - h, width: p.width, height: h };
+  return { x: 0, y: isTop() ? 0 : p.height - h, width: p.width, height: h };
 }
 
 /**
@@ -163,7 +175,8 @@ function exitPageFullscreen() {
 function layout() {
   if (!Q.win || Q.win.isDestroyed()) return;
   const [w, h] = Q.win.getContentSize();
-  const full = { x: 0, y: 0, width: w, height: h };
+  const t = titleH();
+  const full = { x: 0, y: t, width: w, height: Math.max(0, h - t) };
   const strip = stripRect();
   const style = Q.store.settings.toolbar?.style || 'floating';
   Q.tabs.setPageBounds(pageRect());
@@ -232,7 +245,27 @@ function broadcast() {
   clearTimeout(Q.broadcastTimer);
   Q.broadcastTimer = setTimeout(() => {
     if (Q.chrome && !Q.chrome.webContents.isDestroyed()) Q.chrome.webContents.send('qafila:state', describeState());
+    updateTitlebar();
   }, 16);
+}
+
+/**
+ * Barre de titre Windows : couleur de la bande (thème, ou couleur du site en barre « Auto »), envoyée par le chrome
+ * (ui:titlebar), titre de l'onglet courant (jamais celui d'un onglet privé) et état actif / inactif de la fenêtre.
+ */
+function updateTitlebar(colors) {
+  if (colors) Q.titlebarColors = colors;
+  if (!CUSTOM_TITLEBAR || !Q.win || Q.win.isDestroyed()) return;
+  const c = Q.titlebarColors || (isDark() ? { bg: '#000000', fg: '#f2f2f7' } : { bg: '#ffffff', fg: '#1c1c1e' });
+  const tab = Q.store?.selectedTab;
+  const title = tab && !tab.isPrivate && tab.title && tab.url ? `${tab.title} — Qafila` : 'Qafila';
+  const s = { bg: c.bg, fg: c.fg, title, focused: Q.win.isFocused() };
+  const sig = JSON.stringify(s);
+  if (sig === Q.titlebarSig) return;
+  Q.titlebarSig = sig;
+  try { Q.win.setTitleBarOverlay({ color: c.bg, symbolColor: c.fg, height: TITLE_H }); } catch { /* plate-forme sans overlay */ }
+  const wc = Q.win.webContents;
+  if (!wc.isDestroyed() && !wc.isLoading()) wc.executeJavaScript(`window.__qafilaTitlebar && window.__qafilaTitlebar(${sig})`, false).catch(() => {});
 }
 
 function command(name, data) {
@@ -802,6 +835,8 @@ async function screenshot(name) {
   try { page = pageWC && !pageWC.isDestroyed() ? await pageWC.capturePage() : null; } catch { page = null; }
   let chrome = null;
   try { chrome = await Q.chrome.webContents.capturePage(); } catch { chrome = null; }
+  let title = null;
+  try { title = titleH() ? await Q.win.webContents.capturePage({ x: 0, y: 0, width: w, height: titleH() }) : null; } catch { title = null; }
   const id = `${Date.now()}-${Math.random()}`;
   const chromeBounds = Q.chrome.getBounds();
   const result = await new Promise((resolve) => {
@@ -811,6 +846,7 @@ async function screenshot(name) {
       id, width: w, height: h,
       page: page && !page.isEmpty() ? { dataURL: page.toDataURL(), bounds: pageBounds } : null,
       chrome: chrome && !chrome.isEmpty() ? { dataURL: chrome.toDataURL(), bounds: chromeBounds } : null,
+      title: title && !title.isEmpty() ? { dataURL: title.toDataURL(), bounds: { x: 0, y: 0, width: w, height: titleH() } } : null,
     });
   });
   if (result) fs.writeFileSync(file, Buffer.from(result.split(',')[1], 'base64'));
@@ -874,9 +910,19 @@ function createWindow() {
     backgroundColor: dark ? '#000000' : '#ffffff', autoHideMenuBar: true, icon: path.join(__dirname, '..', 'build', 'icon.png'),
     // Barre de titre native partout : sous macOS, les feux tricolores restent dans la barre de titre (jamais sur la
     // capsule) et la fenêtre se déplace par elle, quelle que soit la position de la barre (haut ou bas).
-    titleBarStyle: 'default',
+    // Windows : barre de titre Qafila de 40 px, boutons de Windows par-dessus (titleBarOverlay).
+    ...(CUSTOM_TITLEBAR
+      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: dark ? '#000000' : '#ffffff', symbolColor: dark ? '#f2f2f7' : '#1c1c1e', height: TITLE_H } }
+      : { titleBarStyle: 'default' }),
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
+  if (CUSTOM_TITLEBAR) {
+    // Le document de la fenêtre elle-même sert de barre de titre (zone de déplacement), sous les vues de la page et du chrome.
+    Q.win.webContents.on('will-navigate', (e) => e.preventDefault());
+    Q.win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    Q.win.webContents.on('did-finish-load', () => { Q.titlebarSig = ''; updateTitlebar(); });
+    Q.win.loadFile(path.join(__dirname, '..', 'renderer', 'titlebar.html'));
+  }
   // Première apparition : agrandie si elle l'était à la fermeture.
   const reveal = () => { if (Q.win.isVisible()) return; if (saved?.maximized) Q.win.maximize(); Q.win.show(); };
   Menu.setApplicationMenu(applicationMenu());
@@ -985,7 +1031,7 @@ if (GOT_LOCK) app.whenReady().then(async () => {
     get win() { return Q.win; }, get chrome() { return Q.chrome; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,
     t: translator, describeTabs, describeState, newTab, closeTab, closeAllTabs, reopenTab, selectTab, navigate, goHome, moveTab,
     toggleBookmark, toggleDarken, toggleDesktop, toggleBlocker, toggleJavascript, zoom, clearData, onSettingChanged, suggest, setChrome, focusUI, screenshot,
-    downloadFolder, expandBar: () => setCollapse('none'),
+    downloadFolder, expandBar: () => setCollapse('none'), updateTitlebar,
     get updater() { return Q.updater; },
   });
 
@@ -1146,7 +1192,7 @@ async function layoutChecks(report, wait, set, shot) {
     if (Q.chromeMode !== 'strip') fail(`${label} : chrome en mode ${Q.chromeMode}`);
     if (strip.height && meets(view, strip)) fail(`${label} : la page (${fmt(view)}) croise la bande (${fmt(strip)})`);
     if (chrome.height && meets(view, chrome)) fail(`${label} : la page (${fmt(view)}) croise la vue du chrome (${fmt(chrome)})`);
-    if (view.height + strip.height !== h) fail(`${label} : page ${view.height} + bande ${strip.height} ≠ fenêtre ${h}`);
+    if (view.height + strip.height + titleH() !== h) fail(`${label} : page ${view.height} + bande ${strip.height} + titre ${titleH()} ≠ fenêtre ${h}`);
     return strip;
   };
   for (const behavior of ['fixed', 'shrink']) {

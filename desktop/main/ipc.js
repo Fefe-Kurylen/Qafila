@@ -150,6 +150,8 @@ function register(a) {
   handle('ui:setChrome', (p) => a.setChrome(p.mode === 'full' ? 'full' : 'strip', Math.min(400, Math.max(40, Number(p.height) || 0)), { find: p.find === true }));
   // Réduire : un clic sur la mini-adresse rouvre la barre.
   handle('ui:expand', () => a.expandBar());
+  // Barre de titre Windows : couleurs de la bande (#rrggbb seulement).
+  handle('ui:titlebar', (p) => { const hex = (v) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : null); const bg = hex(p.bg); const fg = hex(p.fg); if (bg && fg) a.updateTitlebar({ bg, fg }); });
   handle('ui:focus', (p) => a.focusUI(p.target === 'chrome' ? 'chrome' : 'page'));
   handle('ui:window', (p) => {
     const w = a.win;

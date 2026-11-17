@@ -80,7 +80,7 @@ async function demo(c) {
 }
 
 // ----- Faux verre au repos : rien à faire ici (bar.js), captures de test ci-dessous -----
-q.test.onComposite(async ({ id, width, height, page, chrome }) => {
+q.test.onComposite(async ({ id, width, height, page, chrome, title }) => {
   const canvas = $('#composite');
   canvas.width = width; canvas.height = height;
   const ctx = canvas.getContext('2d');
@@ -93,7 +93,7 @@ q.test.onComposite(async ({ id, width, height, page, chrome }) => {
     await img.decode();
     ctx.drawImage(img, part.bounds.x, part.bounds.y, part.bounds.width, part.bounds.height);
   };
-  try { await draw(page); await draw(chrome); q.test.composited(id, canvas.toDataURL('image/png')); } catch { q.test.composited(id, null); }
+  try { await draw(title); await draw(page); await draw(chrome); q.test.composited(id, canvas.toDataURL('image/png')); } catch { q.test.composited(id, null); }
 });
 
 // ----- Démarrage -----

@@ -100,6 +100,8 @@ contextBridge.exposeInMainWorld('qafila', {
     focus: (target) => invoke('ui:focus', { target }),
     /** Réduire : rouvre la barre depuis la mini-adresse. */
     expand: () => invoke('ui:expand'),
+    /** Barre de titre Windows aux couleurs de la bande. */
+    titlebar: (bg, fg) => invoke('ui:titlebar', { bg, fg }),
     onCommand: (cb) => on('command', cb),
     onTheme: (cb) => on('theme', cb),
     close: () => invoke('ui:window', { action: 'close' }),

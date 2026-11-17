@@ -1,0 +1,8 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg, #ffffff); color: var(--fg, #1c1c1e); }
+body { -webkit-app-region: drag; user-select: none; cursor: default;
+  font: 12px/1 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif; }
+.t { position: fixed; top: 0; height: 40px; left: env(titlebar-area-x, 0); width: env(titlebar-area-width, calc(100% - 140px));
+  display: flex; align-items: center; gap: 9px; padding: 0 14px; box-sizing: border-box; opacity: .78; transition: opacity .15s; }
+html.blur .t { opacity: .45; }
+img { width: 16px; height: 16px; flex: none; }
+#title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
