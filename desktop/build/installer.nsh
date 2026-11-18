@@ -7,3 +7,16 @@
   Pop $0
   Sleep 1000
 !macroend
+
+; L'ancien désinstalleur (version déjà installée) peut s'arrêter avec le code 2 alors que plus rien de Qafila ne tourne :
+; au lieu de bloquer la mise à jour (« Échec de désinstallation des anciens fichiers d'application »), l'installation
+; continue et réécrit les fichiers par-dessus l'ancienne version (les données de l'utilisateur ne sont jamais touchées).
+!macro customUnInstallCheck
+  ${if} $R0 != 0
+    DetailPrint "Ancienne version : désinstalleur arrêté (code $R0), fichiers remplacés par-dessus."
+  ${endif}
+  ClearErrors
+!macroend
+!macro customUnInstallCheckCurrentUser
+  !insertmacro customUnInstallCheck
+!macroend
