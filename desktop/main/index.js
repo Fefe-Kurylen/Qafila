@@ -929,7 +929,7 @@ function createWindow() {
   const saved = loadWindowState();
   Q.win = new BrowserWindow({
     ...DEFAULT_SIZE, ...(saved?.bounds || {}), minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height, title: 'Qafila', show: false,
-    backgroundColor: dark ? '#000000' : '#ffffff', autoHideMenuBar: true, icon: path.join(__dirname, '..', 'build', 'icon.png'),
+    backgroundColor: dark ? '#000000' : '#ffffff', autoHideMenuBar: true, icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     // Barre de titre native partout : sous macOS, les feux tricolores restent dans la barre de titre (jamais sur la
     // capsule) et la fenêtre se déplace par elle, quelle que soit la position de la barre (haut ou bas).
     // Windows : barre de titre Qafila de 40 px, boutons de Windows par-dessus (titleBarOverlay).

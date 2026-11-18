@@ -266,6 +266,14 @@ def pngs():
     # PC : Windows / Linux (tuile ~91 %, comme Pyramid PDF et Merifa) et macOS (tuile ~80 %, centrée)
     out = os.path.join(REPO, 'desktop/build/icon.png')
     render(svg(classic), out, 1024); _mode(out, 'RGBA')
+    # Windows : tuile presque bord à bord (comme les icônes de Claude, Chrome…) pour ne pas paraître plus petite
+    # dans la barre des tâches, et un .ico multi-tailles (16 à 256 px) rendu depuis la grande image.
+    out = os.path.join(REPO, 'desktop/build/icon-win.png')
+    render(svg(classic, inset=6, radius=104), out, 1024); _mode(out, 'RGBA')
+    from PIL import Image
+    big = Image.open(out).convert('RGBA')
+    sizes = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256]
+    big.resize((256, 256), Image.LANCZOS).save(os.path.join(REPO, 'desktop/build/icon.ico'), sizes=[(n, n) for n in sizes])
     out = os.path.join(REPO, 'desktop/build/icon-mac.png')
     render(svg(classic, inset=50, radius=92), out, 1024); _mode(out, 'RGBA')
 
