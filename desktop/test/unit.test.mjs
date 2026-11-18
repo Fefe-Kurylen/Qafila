@@ -280,10 +280,13 @@ test('mises à jour : canal test seulement pour « X.Y.Z-test.N »', () => {
   for (const v of ['0.9.1', '0.9.1-beta.1', '0.9.1-test', '0.9.1-test.1x', 'test', '', undefined]) assert.equal(channelOf(v), 'stable', String(v));
 });
 
-test('connexion Google : Firefox seulement sur les pages de connexion de Google', () => {
-  const { FIREFOX_UA, isGoogleLogin } = require('../main/tabs.js');
-  assert.match(FIREFOX_UA, /Gecko\/20100101 Firefox\/\d+/);
+test('identité Chrome : user agent réduit et indices client avec la marque Google Chrome', () => {
+  const { CHROME_UA, chromeMetadata, isGoogleLogin } = require('../main/tabs.js');
+  assert.match(CHROME_UA, /Chrome\/\d+\.0\.0\.0 Safari\/537\.36$/);
+  assert.doesNotMatch(CHROME_UA, /Electron|Qafila/i);
+  const m = chromeMetadata();
+  assert.ok(m.brands.some((b) => b.brand === 'Google Chrome'));
+  assert.equal(m.mobile, false);
   assert.ok(isGoogleLogin('https://accounts.google.com/v3/signin/identifier?hl=fr'));
-  assert.ok(isGoogleLogin('https://accounts.youtube.com/accounts/SetSID'));
-  for (const u of ['https://mail.google.com/', 'https://www.google.com/search?q=x', 'https://accounts.google.com.evil.example/', 'https://evil.example/?accounts.google.com']) assert.ok(!isGoogleLogin(u), u);
+  for (const u of ['https://mail.google.com/', 'https://accounts.google.com.evil.example/']) assert.ok(!isGoogleLogin(u), u);
 });

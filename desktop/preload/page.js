@@ -2,7 +2,29 @@
 // Préchargement de chaque page web (monde isolé, bac à sable) : informations de page portées de Scripts.swift
 // (temps de lecture à 200 mots/min, couleur du site, icône) et signal de défilement pour le faux verre.
 // Aucune API n'est exposée aux pages : seul ipcRenderer.send vers le processus principal est utilisé.
-const { ipcRenderer } = require('electron');
+const { ipcRenderer, contextBridge } = require('electron');
+
+// Pages de Google : objet window.chrome présent comme dans Google Chrome (sans lui, la connexion Google prend Qafila
+// pour une application intégrée non sécurisée). Objet inerte : aucune fonction ne donne accès à quoi que ce soit.
+if (/(^|\.)(google\.com|youtube\.com)$/.test(location.hostname)) {
+  const t0 = Date.now() / 1000;
+  try {
+    contextBridge.exposeInMainWorld('chrome', {
+      app: {
+        isInstalled: false,
+        InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' },
+        RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' },
+        getDetails: () => null, getIsInstalled: () => false, runningState: () => 'cannot_run',
+      },
+      runtime: {
+        OnInstalledReason: { CHROME_UPDATE: 'chrome_update', INSTALL: 'install', SHARED_MODULE_UPDATE: 'shared_module_update', UPDATE: 'update' },
+        PlatformOs: { ANDROID: 'android', CROS: 'cros', LINUX: 'linux', MAC: 'mac', OPENBSD: 'openbsd', WIN: 'win' },
+      },
+      loadTimes: () => ({ requestTime: t0, startLoadTime: t0, commitLoadTime: t0, finishDocumentLoadTime: 0, finishLoadTime: 0, firstPaintTime: 0, firstPaintAfterLoadTime: 0, navigationType: 'Other', wasFetchedViaSpdy: true, wasNpnNegotiated: true, npnNegotiatedProtocol: 'h2', wasAlternateProtocolAvailable: false, connectionInfo: 'h2' }),
+      csi: () => ({ startE: Math.round(t0 * 1000), onloadT: Date.now(), pageT: Date.now() - t0 * 1000, tran: 15 }),
+    });
+  } catch { /* window.chrome déjà présent */ }
+}
 
 function count(t) { return (t || '').split(/\s+/).filter(Boolean).length; }
 

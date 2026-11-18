@@ -43,16 +43,24 @@ function desktopUserAgent(fallback) {
   return String(fallback || '').replace(/\sElectron\/\S+/g, '').replace(/\sQafila\/\S+/gi, '').replace(/\squafila-desktop\/\S+/gi, '');
 }
 
-// Connexion Google : Google refuse les navigateurs bâtis sur Electron (« Ce navigateur ou cette application n'est
-// peut-être pas sécurisé »), même avec un user agent Chrome ordinaire, car leurs indices client (Sec-CH-UA) ne
-// ressemblent pas à Chrome. Sur les seules pages de connexion de Google, Qafila se présente donc comme Firefox (sans
-// indices client, comme le vrai Firefox), la solution utilisée par les autres navigateurs Electron. Partout ailleurs,
-// user agent Chrome ordinaire.
+// Identité « Google Chrome » complète. Google refuse la connexion aux navigateurs qu'il reconnaît comme intégrés
+// (« Ce navigateur ou cette application ne sont peut-être pas sécurisés ») quand leur identité n'est pas cohérente :
+// user agent complet d'Electron, indices client (Sec-CH-UA, navigator.userAgentData) sans la marque « Google Chrome »,
+// objet window.chrome absent (preload/page.js). Chaque onglet reçoit donc, par le protocole des outils de
+// développement, la même identité qu'un Chrome de la même version : user agent réduit et indices client complets.
+const CHROME_FULL = String(process.versions.chrome || `${CHROME_MAJOR}.0.0.0`);
+const CHROME_PLATFORM = { win32: 'Windows NT 10.0; Win64; x64', darwin: 'Macintosh; Intel Mac OS X 10_15_7' }[process.platform] || 'X11; Linux x86_64';
+const CHROME_UA = `Mozilla/5.0 (${CHROME_PLATFORM}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_MAJOR}.0.0.0 Safari/537.36`;
+function chromeMetadata() {
+  const brands = (v) => [{ brand: 'Google Chrome', version: v }, { brand: 'Chromium', version: v }, { brand: 'Not/A)Brand', version: v === CHROME_MAJOR ? '24' : '24.0.0.0' }];
+  return {
+    brands: brands(CHROME_MAJOR), fullVersionList: brands(CHROME_FULL), fullVersion: CHROME_FULL,
+    platform: { win32: 'Windows', darwin: 'macOS' }[process.platform] || 'Linux',
+    platformVersion: process.platform === 'win32' ? '19.0.0' : process.platform === 'darwin' ? '15.0.0' : '6.0.0',
+    architecture: process.arch === 'arm64' ? 'arm' : 'x86', model: '', mobile: false, bitness: '64', wow64: false,
+  };
+}
 const GOOGLE_LOGIN_HOSTS = new Set(['accounts.google.com', 'accounts.youtube.com']);
-const FIREFOX_UA = {
-  win32: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0',
-  darwin: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:145.0) Gecko/20100101 Firefox/145.0',
-}[process.platform] || 'Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0';
 const isGoogleLogin = (url) => GOOGLE_LOGIN_HOSTS.has(hostOf(url));
 
 function hostOf(url) { try { return new URL(url).hostname.toLowerCase(); } catch { return ''; } }
@@ -92,8 +100,8 @@ class TabManager extends EventEmitter {
     this.attached = null;        // onglet dont la vue est affichée
     this.pageBounds = { x: 0, y: 0, width: 0, height: 0 };
     this.userAgent = desktopUserAgent(userAgent);
-    /** webContents actuellement sur une page de connexion Google (user agent Firefox). */
-    this.googleUA = new Set();
+    /** Identité appliquée à chaque page (setIdentity) : évite de la renvoyer à chaque navigation. */
+    this.identity = new Map();
     this.permissions = new SitePermissions({ store, win: () => this.win, t });
     this.popups = new Set();       // fenêtres de connexion ouvertes par les sites (window.open avec dimensions)
     this.persistent = session.fromPartition('persist:qafila');
@@ -104,7 +112,7 @@ class TabManager extends EventEmitter {
 
   // ----- Sessions -----
   prepare(ses) {
-    ses.setUserAgent(this.userAgent);
+    ses.setUserAgent(CHROME_UA, 'fr-FR,fr;q=0.9,en;q=0.8'); // requêtes hors page (service workers…) : même identité
     ses.setSpellCheckerEnabled(false);
     // Téléchargements : traités par le processus principal (dossier par défaut, notification dans la barre).
     ses.on('will-download', (_e, item, wc) => this.emit('download', item, wc, ses === this.private));
@@ -129,13 +137,6 @@ class TabManager extends EventEmitter {
         return cb(upgraded ? { redirectURL: upgraded } : {});
       }
       cb(this.blocker.shouldBlock(details) ? { cancel: true } : {});
-    });
-    // Un seul gestionnaire onBeforeSendHeaders par session : pages de connexion Google présentées comme Firefox.
-    ses.webRequest.onBeforeSendHeaders({ urls: ['https://accounts.google.com/*', 'https://accounts.youtube.com/*'] }, (details, cb) => {
-      const h = { ...details.requestHeaders };
-      for (const k of Object.keys(h)) if (/^sec-ch-ua/i.test(k)) delete h[k];
-      h['User-Agent'] = FIREFOX_UA;
-      cb({ requestHeaders: h });
     });
     // Un seul gestionnaire onHeadersReceived par session : JavaScript désactivé = « script-src 'none' » ajouté au
     // document (les politiques s'additionnent : le site ne peut pas l'assouplir). Cadre principal : réglage de son
@@ -228,6 +229,7 @@ class TabManager extends EventEmitter {
     view.webContents.setWebRTCIPHandlingPolicy(tab.isPrivate ? 'disable_non_proxied_udp' : 'default_public_interface_only');
     this.views.set(tabId, view);
     this.live.set(tabId, { loading: false, progress: 0, canGoBack: false, canGoForward: false, blocked: 0 });
+    { const wcId = view.webContents.id; view.webContents.once('destroyed', () => this.identity.delete(wcId)); }
     this.wire(view.webContents, tabId);
     this.emit('view', tabId, view.webContents); // extensions : nouvel onglet à suivre
     this.applyUserAgent(tabId);
@@ -335,7 +337,6 @@ class TabManager extends EventEmitter {
       const { isMainFrame, isSameDocument, initiator, url } = e;
       if (!isMainFrame || isSameDocument) return;
       this.navSeq.set(wc.id, (this.navSeq.get(wc.id) || 0) + 1);
-      this.googleLoginUA(wc, url, () => this.applyUserAgent(tabId));
       // Fichier déposé sur la page ou toute autre navigation vers file: : arrêtée, page d'erreur à la place.
       if (isFileURL(url)) {
         setImmediate(() => { if (!wc.isDestroyed()) { wc.stop(); this.showError(wc, this.t()('file_blocked'), url); } });
@@ -484,9 +485,8 @@ class TabManager extends EventEmitter {
     const wc = win.webContents;
     const tab = this.store.tabs.find((x) => x.id === tabId);
     wc.on('input-event', (_e, ev) => { if (GESTURE_EVENTS.has(ev?.type)) this.lastGesture.set(wc.id, Date.now()); });
-    // Fenêtre de connexion (« Se connecter avec Google ») : même présentation que les onglets.
-    this.googleLoginUA(wc, wc.getURL(), () => wc.setUserAgent(this.userAgent));
-    wc.on('did-start-navigation', (e) => { if (e.isMainFrame && !e.isSameDocument) this.googleLoginUA(wc, e.url, () => wc.setUserAgent(this.userAgent)); });
+    // Fenêtre de connexion (« Se connecter avec Google ») : même identité Chrome que les onglets.
+    this.setIdentity(wc, this.userAgent);
     wc.on('will-navigate', (e) => {
       let scheme = '';
       try { scheme = new URL(e.url).protocol; } catch { return; }
@@ -735,18 +735,34 @@ class TabManager extends EventEmitter {
     const wc = this.contents(tabId);
     const tab = this.store.tabs.find((x) => x.id === tabId);
     if (!wc || !tab) return;
-    if (this.googleUA.has(wc.id)) return; // page de connexion Google : user agent Firefox (googleLoginUA)
     const s = this.store.settings;
     const ua = s.customUserAgent ? s.customUserAgent : (this.isDesktop(tab) ? this.userAgent : MOBILE_UA);
-    if (wc.getUserAgent() !== ua) wc.setUserAgent(ua);
+    this.setIdentity(wc, ua);
   }
   applyUserAgentToOpenTabs() { for (const id of this.views.keys()) this.applyUserAgent(id); }
 
-  /** User agent Firefox sur les pages de connexion Google (voir FIREFOX_UA), retour au normal en les quittant. */
-  googleLoginUA(wc, url, restore) {
+  /**
+   * Identité d'une page : user agent Chrome ordinaire → identité Google Chrome complète (user agent réduit + indices
+   * client) par le protocole des outils de développement ; autre user agent (mobile, personnalisé) → tel quel.
+   */
+  setIdentity(wc, ua) {
     if (!wc || wc.isDestroyed()) return;
-    if (isGoogleLogin(url)) { this.googleUA.add(wc.id); if (wc.getUserAgent() !== FIREFOX_UA) wc.setUserAgent(FIREFOX_UA); }
-    else if (this.googleUA.delete(wc.id)) restore();
+    const chrome = ua === this.userAgent;
+    const key = chrome ? 'chrome' : ua;
+    if (this.identity.get(wc.id) === key) return;
+    this.identity.set(wc.id, key);
+    if (chrome) {
+      try {
+        if (!wc.debugger.isAttached()) wc.debugger.attach('1.3');
+        wc.debugger.sendCommand('Emulation.setUserAgentOverride', { userAgent: CHROME_UA, userAgentMetadata: chromeMetadata() })
+          .catch(() => { if (!wc.isDestroyed()) wc.setUserAgent(CHROME_UA); });
+        return;
+      } catch { /* débogueur indisponible : user agent seul */ }
+      wc.setUserAgent(CHROME_UA);
+      return;
+    }
+    if (wc.debugger.isAttached()) wc.debugger.sendCommand('Emulation.setUserAgentOverride', { userAgent: ua }).catch(() => {});
+    wc.setUserAgent(ua);
   }
 
   /**
@@ -833,4 +849,4 @@ class TabManager extends EventEmitter {
   }
 }
 
-module.exports = { copyText, TabManager, desktopUserAgent, MOBILE_UA, FIREFOX_UA, isGoogleLogin, hostOf, stripWWW };
+module.exports = { copyText, TabManager, desktopUserAgent, MOBILE_UA, CHROME_UA, chromeMetadata, isGoogleLogin, hostOf, stripWWW };
