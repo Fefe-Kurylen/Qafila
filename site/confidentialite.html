@@ -15,7 +15,7 @@ p,li{color:var(--muted)}strong{color:var(--fg)}a{color:var(--accent)}
 </style></head><body><main>
 <a class="brand" href="./"><img src="icon.png" alt=""><b>Qafila</b></a>
 <h1>Politique de confidentialité</h1>
-    <p class="date">Dernière mise à jour : 25 octobre 2026 · S'applique au moteur de recherche Qafila et aux applications Qafila Browser (iOS et Android).</p>
+    <p class="date">Dernière mise à jour : 18 novembre 2026 · S'applique au moteur de recherche Qafila, aux applications Qafila Browser (iOS et Android) et à l'application Qafila pour ordinateur (Windows, Mac, Linux).</p>
 
     <h2>En une phrase</h2>
     <p>Qafila ne collecte, ne conserve et ne partage <strong>aucune donnée personnelle</strong>. Il n'y a ni compte, ni identifiant publicitaire, ni outil d'analyse d'audience.</p>
@@ -29,6 +29,24 @@ p,li{color:var(--muted)}strong{color:var(--fg)}a{color:var(--accent)}
       <li>Le bloqueur de publicités et de traqueurs fonctionne localement, à partir d'une liste de domaines embarquée dans l'application.</li>
       <li>L'application ne demande aucune autorisation sensible (pas de localisation, de contacts, de micro ni d'appareil photo).</li>
       <li>Aucun service tiers (analyse, publicité, rapport de plantage) n'est intégré.</li>
+    </ul>
+
+    <h2>Application Qafila pour ordinateur (Windows, Mac, Linux)</h2>
+    <ul>
+      <li>Onglets, favoris, historique, réglages et mots de passe sont stockés <strong>uniquement sur votre ordinateur</strong>. Ils ne sont transmis à aucun serveur.</li>
+      <li>Les onglets privés ne sont jamais enregistrés et sont effacés à leur fermeture.</li>
+      <li>Pour les mises à jour automatiques, l'application consulte la page des versions de Qafila sur GitHub ; aucune donnée personnelle n'est envoyée. Ce réglage peut être désactivé (Réglages › À propos › Mises à jour).</li>
+      <li>Les importations (favoris, mots de passe) lisent les fichiers directement sur votre ordinateur ; les exportations sont enregistrées dans votre dossier Téléchargements.</li>
+      <li>Aucun service tiers (analyse, publicité, rapport de plantage) n'est intégré.</li>
+    </ul>
+
+    <h2>Mots de passe</h2>
+    <ul>
+      <li>Les mots de passe sont rangés dans un <strong>coffre chiffré</strong> (AES-256-GCM). La clé est dérivée de votre <strong>mot de passe principal</strong> avec Argon2id, une méthode conçue pour résister aux attaques par force brute.</li>
+      <li>Le mot de passe principal n'est <strong>jamais enregistré</strong> ni envoyé : ni Qafila ni personne d'autre ne peut ouvrir votre coffre. En contrepartie, s'il est oublié, il ne peut pas être récupéré.</li>
+      <li>L'option « Se souvenir sur cet ordinateur » confie la clé à la protection du système (Windows, macOS ou Linux), liée à votre session.</li>
+      <li>Le coffre se verrouille automatiquement après 5 minutes d'inactivité, et un mot de passe copié est effacé du presse-papiers au bout de 60 secondes.</li>
+      <li>L'exportation des mots de passe exige le mot de passe principal.</li>
     </ul>
 
     <h2>Moteur de recherche Qafila (site web)</h2>

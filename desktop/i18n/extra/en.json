@@ -256,7 +256,7 @@
   "transfer_exported_passwords": "✅ Passwords exported",
   "size_interface": "Interface",
   "sizes_footer": "Interface: makes all of Qafila's interface bigger or smaller (bar, menus, settings). Page text size is set in Reading.",
-  "start_privacy": "No data collected · Everything stays on this device",
+  "start_privacy": "No data collected · Encrypted passwords · Everything stays on this device",
   "privacy_card_title": "Qafila collects nothing",
-  "privacy_card_sub": "No account, no ads, no telemetry. History, bookmarks and passwords stay on this device; private tabs leave no trace."
+  "privacy_card_sub": "No account, no ads, no telemetry. Your passwords are encrypted (AES-256) in a vault only you can open with your master password; neither Qafila nor anyone else can read them. History, bookmarks and passwords stay on this computer; private tabs leave no trace."
 }

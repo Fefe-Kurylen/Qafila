@@ -256,7 +256,7 @@
   "transfer_exported_passwords": "✅ Passwords exported",
   "size_interface": "Interfaz",
   "sizes_footer": "Interfaz: agranda o reduce toda la interfaz de Qafila (barra, menús, ajustes). El tamaño del texto de las páginas se ajusta en Lectura.",
-  "start_privacy": "Sin recopilación de datos · Todo se queda en este dispositivo",
+  "start_privacy": "Sin recopilación · Contraseñas cifradas · Todo se queda en este dispositivo",
   "privacy_card_title": "Qafila no recopila nada",
-  "privacy_card_sub": "Sin cuenta, sin publicidad, sin telemetría. El historial, los favoritos y las contraseñas se quedan en este dispositivo; las pestañas privadas no dejan rastro."
+  "privacy_card_sub": "Sin cuenta, sin publicidad, sin telemetría. Tus contraseñas están cifradas (AES-256) en una bóveda que solo tú puedes abrir con tu contraseña maestra; ni Qafila ni nadie más puede leerlas. Historial, favoritos y contraseñas se quedan en este ordenador; las pestañas privadas no dejan rastro."
 }

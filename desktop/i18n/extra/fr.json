@@ -257,7 +257,7 @@
   "transfer_exported_passwords": "✅ Mots de passe exportés",
   "size_interface": "Interface",
   "sizes_footer": "Interface : agrandit ou réduit toute l'interface de Qafila (barre, menus, réglages). La taille du texte des pages se règle dans Lecture.",
-  "start_privacy": "Aucune collecte · Tout reste sur cet appareil",
+  "start_privacy": "Aucune collecte · Mots de passe chiffrés · Tout reste sur cet appareil",
   "privacy_card_title": "Qafila ne collecte rien",
-  "privacy_card_sub": "Pas de compte, pas de publicité, pas de télémétrie. Historique, favoris et mots de passe restent sur cet appareil ; les onglets privés ne laissent aucune trace."
+  "privacy_card_sub": "Pas de compte, pas de publicité, pas de télémétrie. Vos mots de passe sont chiffrés (AES-256) dans un coffre que vous seul pouvez ouvrir avec votre mot de passe principal ; ni Qafila ni personne d'autre ne peut les lire. Historique, favoris et mots de passe restent sur cet ordinateur ; les onglets privés ne laissent aucune trace."
 }

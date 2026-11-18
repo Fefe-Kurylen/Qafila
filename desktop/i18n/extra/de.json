@@ -256,7 +256,7 @@
   "transfer_exported_passwords": "✅ Passwords exported",
   "size_interface": "Oberfläche",
   "sizes_footer": "Oberfläche: vergrößert oder verkleinert die ganze Oberfläche von Qafila (Leiste, Menüs, Einstellungen). Die Textgröße der Seiten stellen Sie unter Lesen ein.",
-  "start_privacy": "Keine Datenerfassung · Alles bleibt auf diesem Gerät",
+  "start_privacy": "Keine Datenerfassung · Verschlüsselte Passwörter · Alles bleibt auf diesem Gerät",
   "privacy_card_title": "Qafila sammelt nichts",
-  "privacy_card_sub": "Kein Konto, keine Werbung, keine Telemetrie. Verlauf, Lesezeichen und Passwörter bleiben auf diesem Gerät; private Tabs hinterlassen keine Spuren."
+  "privacy_card_sub": "Kein Konto, keine Werbung, keine Telemetrie. Deine Passwörter sind in einem Tresor verschlüsselt (AES-256), den nur du mit deinem Master-Passwort öffnen kannst; weder Qafila noch sonst jemand kann sie lesen. Verlauf, Lesezeichen und Passwörter bleiben auf diesem Computer; private Tabs hinterlassen keine Spuren."
 }
