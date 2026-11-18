@@ -17,7 +17,8 @@
     "dist:win": "electron-builder --win nsis --x64",
     "dist:linux": "electron-builder --linux AppImage",
     "dist:mac": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg",
-    "build:preload": "esbuild preload/src/browser-action-entry.js --bundle --platform=node --format=cjs --external:electron --target=node20 --legal-comments=none --outfile=preload/browser-action.js --log-level=warning"
+    "build:preload": "esbuild preload/src/browser-action-entry.js --bundle --platform=node --format=cjs --external:electron --target=node20 --legal-comments=none --outfile=preload/browser-action.js --log-level=warning",
+    "dist:store": "electron-builder --win appx --x64"
   },
   "devDependencies": {
     "electron": "^45.3.3",
@@ -136,7 +137,25 @@
         "releaseType": "release"
       }
     ],
-    "detectUpdateChannel": false
+    "detectUpdateChannel": false,
+    "appx": {
+      "identityName": "Kurylen.Qafila",
+      "publisher": "CN=B85CD3FF-A422-425E-9A54-A6E74180E94E",
+      "publisherDisplayName": "Kurylen",
+      "applicationId": "Qafila",
+      "displayName": "Qafila",
+      "backgroundColor": "transparent",
+      "languages": [
+        "fr-FR",
+        "en-US",
+        "es-ES",
+        "de-DE",
+        "ar-SA"
+      ],
+      "minVersion": "10.0.19041.0",
+      "maxVersionTested": "10.0.26100.0",
+      "artifactName": "Qafila-Store-${version}.${ext}"
+    }
   },
   "dependencies": {
     "electron-chrome-extensions": "^4.10.0",

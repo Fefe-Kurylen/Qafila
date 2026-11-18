@@ -1,1 +1,1 @@
-Neues Pyramiden-Symbol, schwebende Leiste, neue Sprachen (Englisch, Arabisch, Spanisch, Deutsch) und optionales Abo „Qafila unterstützen“.
+Erste Version von Qafila: schneller, privater Browser mit frei anpassbarer schwebender Glasleiste, aufgeräumten Tabs, integriertem Blocker und ohne Datenerfassung.

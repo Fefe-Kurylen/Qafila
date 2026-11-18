@@ -37,7 +37,7 @@ ENTSPANNT LESEN
 
 GANZ NACH IHREM GESCHMACK
 • Oberflächenfarbe passend zur besuchten Website, 8 Akzentfarben
-• Suchmaschine nach Wahl: DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing oder Ihre eigene Qafila-Instanz
+• Suchmaschine nach Wahl: Google, Qwant, Kagi, Brave, SearXNG, Bing oder Ihre eigene Qafila-Instanz
 • Als Standardbrowser unter Android nutzbar
 • Verfügbar auf Deutsch, Französisch, Englisch, Arabisch und Spanisch
 

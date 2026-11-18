@@ -43,7 +43,7 @@ LISEZ CONFORTABLEMENT
 
 FAITES-LE VÔTRE
 • Couleur de l'interface adaptée au site visité, 8 couleurs d'accent
-• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing ou votre propre instance Qafila
+• Moteur de recherche au choix : Google, Qwant, Kagi, Brave, SearXNG, Bing ou votre propre instance Qafila
 • Navigateur par défaut Android pris en charge
 
 Toutes les fonctions sont gratuites, sans publicité. Un abonnement facultatif « Soutenir Qafila » (0,99 €/mois) aide le projet et débloque l'icône exclusive « Or ».

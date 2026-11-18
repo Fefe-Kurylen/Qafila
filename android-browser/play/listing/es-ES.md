@@ -37,7 +37,7 @@ LEE CÓMODAMENTE
 
 HAZLO TUYO
 • Color de la interfaz adaptado al sitio visitado, 8 colores de acento
-• Motor de búsqueda a elegir: DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing o tu propia instancia de Qafila
+• Motor de búsqueda a elegir: Google, Qwant, Kagi, Brave, SearXNG, Bing o tu propia instancia de Qafila
 • Compatible como navegador predeterminado de Android
 • Disponible en español, francés, inglés, árabe y alemán
 

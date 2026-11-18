@@ -44,7 +44,11 @@ const CUSTOM_TITLEBAR = process.platform === 'win32' || process.env.QAFILA_TITLE
 // Taille minimale modeste : la moitié d'un écran 1920 × 1080 à 100 % (960 px, Ancrage de Windows) ou d'un portable
 // 1366 × 768 à 125 % doit tenir, sans que la fenêtre déborde sur sa voisine ni sous la barre des tâches.
 const MIN_SIZE = { width: 560, height: 480 };
-const DEFAULT_SIZE = { width: 1280, height: 820 };
+// Taille de fenêtre : QAFILA_WINDOW_SIZE=1920x1080 pour les captures de la fiche Microsoft Store (test complet seulement).
+const DEFAULT_SIZE = (() => {
+  const m = /^(\d{3,4})x(\d{3,4})$/.exec(process.env.QAFILA_WINDOW_SIZE || '');
+  return m && SMOKE_DIR ? { width: Number(m[1]), height: Number(m[2]) } : { width: 1280, height: 820 };
+})();
 
 // Fenêtre unique, nom d'application, pas de clés Google ni de rapporteur de plantage.
 app.setName('Qafila');

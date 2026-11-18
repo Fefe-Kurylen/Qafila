@@ -28,8 +28,8 @@ LEE CÓMODAMENTE
 
 HAZLO TUYO
 • Colores de barra para el modo claro y el oscuro, 8 colores de acento
-• 5 iconos de app en forma de pirámide
-• Buscador a elegir: DuckDuckGo, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Google, Bing o el tuyo
+• 5 iconos de app: la brújula dorada y sus variantes
+• Buscador a elegir: Google, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Bing o el tuyo
 • Disponible en español, inglés, francés, árabe y alemán
 
 Qafila usa WebKit, el motor de Safari: las webs se ven exactamente como esperas.

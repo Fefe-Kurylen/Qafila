@@ -142,3 +142,64 @@ jobs:
           tag_name: ${{ github.ref_name }}
           prerelease: false
           files: ${{ matrix.update }}
+
+  # Paquet Microsoft Store (MSIX/.appx), numéro de version propre (X.Y.Z → X.Y.Z.0, exigé par le Store) :
+  # le Store le signe lui-même. Déposé dans la release de test (poussée sur main) ou dans la release « vX.Y.Z ».
+  store:
+    name: Microsoft Store
+    needs: [release]
+    if: ${{ !failure() && !cancelled() && github.event_name != 'pull_request' }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Dépendances
+        run: npm ci
+      - name: Paquet Microsoft Store
+        shell: pwsh
+        run: |
+          $kit = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\10.*\x64\makeappx.exe' | Sort-Object FullName -Descending | Select-Object -First 1
+          Write-Host "Kit Windows : $($kit.DirectoryName)"
+          $env:ELECTRON_BUILDER_WINDOWS_KITS_PATH = $kit.DirectoryName
+          npm run dist:store -- --publish never
+          Get-ChildItem dist/*.appx | Format-Table Name, Length
+      - name: Vérifier le manifeste du paquet
+        shell: pwsh
+        run: |
+          $appx = Get-ChildItem dist/*.appx | Select-Object -First 1
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($appx.FullName)
+          $entry = $zip.Entries | Where-Object { $_.FullName -eq 'AppxManifest.xml' }
+          $xml = [xml](New-Object System.IO.StreamReader($entry.Open())).ReadToEnd()
+          $zip.Dispose()
+          $id = $xml.Package.Identity
+          Write-Host "Identité : $($id.Name) · $($id.Publisher) · $($id.Version)"
+          if ($id.Version -notmatch '^\d+\.\d+\.\d+\.0$') { throw "Version Store invalide : $($id.Version)" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qafila-microsoft-store
+          path: desktop/dist/*.appx
+      - name: Publier dans la release de test
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test
+          name: Version de test
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: desktop/dist/*.appx
+      - name: Publier avec la version
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          prerelease: false
+          files: desktop/dist/*.appx

@@ -1,1 +1,1 @@
-Nuevo icono de pirámide, barra flotante, nuevos idiomas (inglés, árabe, español, alemán) y suscripción opcional «Apoyar Qafila».
+Primera versión de Qafila: navegador rápido y privado con barra flotante de cristal totalmente personalizable, pestañas ordenadas, bloqueador integrado y ninguna recopilación de datos.

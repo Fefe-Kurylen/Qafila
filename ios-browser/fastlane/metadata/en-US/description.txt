@@ -34,8 +34,8 @@ READ COMFORTABLY
 
 MAKE IT YOURS
 • Toolbar colors for light and dark mode, 8 accent colors
-• 5 pyramid app icons
-• Search engine of your choice: DuckDuckGo, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Google, Bing or your own
+• 5 app icons: the golden compass and its variants
+• Search engine of your choice: Google, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Bing or your own
 • Available in English, French, Arabic, Spanish and German
 
 Qafila uses WebKit, the engine behind Safari: websites render exactly as you expect.

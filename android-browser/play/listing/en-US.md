@@ -43,7 +43,7 @@ READ IN COMFORT
 
 MAKE IT YOURS
 • Interface color that matches the site you visit, 8 accent colors
-• Your choice of search engine: DuckDuckGo, Qwant, Kagi, Brave, SearXNG, Google, Bing or your own Qafila instance
+• Your choice of search engine: Google, Qwant, Kagi, Brave, SearXNG, Bing or your own Qafila instance
 • Works as Android's default browser
 • Available in English, French, Arabic, Spanish and German
 

@@ -1,1 +1,1 @@
-New pyramid icon, floating toolbar, new languages (English, Arabic, Spanish, German) and an optional “Support Qafila” subscription.
+First release of Qafila: a fast, private browser with a fully customizable floating glass toolbar, tidy tabs, a built-in blocker and zero data collection.

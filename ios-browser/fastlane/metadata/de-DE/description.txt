@@ -28,8 +28,8 @@ ENTSPANNT LESEN
 
 MACH IHN ZU DEINEM
 • Leistenfarben für hellen und dunklen Modus, 8 Akzentfarben
-• 5 App-Symbole in Pyramidenform
-• Suchmaschine nach Wahl: DuckDuckGo, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Google, Bing oder deine eigene
+• 5 App-Symbole: der goldene Kompass und seine Varianten
+• Suchmaschine nach Wahl: Google, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Bing oder deine eigene
 • Verfügbar auf Deutsch, Englisch, Französisch, Arabisch und Spanisch
 
 Qafila nutzt WebKit, die Engine von Safari: Websites sehen genau so aus, wie du es erwartest.

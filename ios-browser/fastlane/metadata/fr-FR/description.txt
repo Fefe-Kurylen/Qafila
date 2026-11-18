@@ -34,8 +34,8 @@ LISEZ CONFORTABLEMENT
 
 FAITES-LE VÔTRE
 • Couleurs de barre pour le mode clair et le mode sombre, 8 couleurs d'accent
-• 5 icônes d'application en forme de pyramide
-• Moteur de recherche au choix : DuckDuckGo, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Google, Bing ou le vôtre
+• 5 icônes d'application : la boussole dorée et ses variantes
+• Moteur de recherche au choix : Google, Qwant, Kagi, Brave, Startpage, Ecosia, SearXNG, Bing ou le vôtre
 • Disponible en français, anglais, arabe, espagnol et allemand
 
 Qafila utilise WebKit, le moteur de Safari : les sites s'affichent exactement comme vous en avez l'habitude.
