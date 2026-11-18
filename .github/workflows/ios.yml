@@ -29,7 +29,7 @@ jobs:
     name: Compiler (${{ github.event.inputs.lane || 'build' }})
     runs-on: macos-15
     env:
-      HAS_ASC: ${{ secrets.APP_STORE_CONNECT_KEY_ID != '' && secrets.APP_STORE_CONNECT_KEY_CONTENT != '' && secrets.APPLE_TEAM_ID != '' }}
+      HAS_ASC: ${{ secrets.APP_STORE_CONNECT_KEY_ID != '' && secrets.APP_STORE_CONNECT_KEY_CONTENT != '' && secrets.APP_STORE_CONNECT_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
     defaults:
       run:
         working-directory: ios-browser
@@ -101,6 +101,18 @@ jobs:
             **iPhone** : installer Qafila-iPhone-test.ipa avec Sideloadly (identifiant Apple gratuit). Voir TESTER.md.
           files: ios-browser/Qafila-iPhone-test.ipa
 
+      - name: Secrets App Store Connect présents ? (oui / non, jamais les valeurs)
+        if: ${{ github.event_name == 'push' || github.event.inputs.lane != 'build' }}
+        env:
+          A: ${{ secrets.APPLE_TEAM_ID != '' }}
+          B: ${{ secrets.APP_STORE_CONNECT_KEY_ID != '' }}
+          C: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID != '' }}
+          D: ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT != '' }}
+        run: |
+          echo "APPLE_TEAM_ID : $A"
+          echo "APP_STORE_CONNECT_KEY_ID : $B"
+          echo "APP_STORE_CONNECT_ISSUER_ID : $C"
+          echo "APP_STORE_CONNECT_KEY_CONTENT : $D"
       - name: TestFlight / App Store
         if: ${{ github.event.inputs.lane == 'beta' || github.event.inputs.lane == 'release' || (github.event_name == 'push' && env.HAS_ASC == 'true') }}
         run: bundle exec fastlane ios ${{ github.event.inputs.lane || 'beta' }}
