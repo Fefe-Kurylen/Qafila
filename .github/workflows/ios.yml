@@ -1,4 +1,5 @@
-# Qafila Browser iOS : compilation de vérification à chaque push, TestFlight / App Store à la demande.
+# Qafila Browser iOS : compilation de vérification à chaque push ; dès que les secrets App Store Connect sont là,
+# chaque push sur main envoie aussi une version sur TestFlight (l'iPhone se met à jour tout seul) ; App Store à la demande.
 name: Qafila iOS
 
 on:
@@ -26,6 +27,8 @@ jobs:
   build:
     name: Compiler (${{ github.event.inputs.lane || 'build' }})
     runs-on: macos-15
+    env:
+      HAS_ASC: ${{ secrets.APP_STORE_CONNECT_KEY_ID != '' && secrets.APP_STORE_CONNECT_KEY_CONTENT != '' && secrets.APPLE_TEAM_ID != '' }}
     defaults:
       run:
         working-directory: ios-browser
@@ -98,8 +101,8 @@ jobs:
           files: ios-browser/Qafila-iPhone-test.ipa
 
       - name: TestFlight / App Store
-        if: ${{ github.event.inputs.lane == 'beta' || github.event.inputs.lane == 'release' }}
-        run: bundle exec fastlane ios ${{ github.event.inputs.lane }}
+        if: ${{ github.event.inputs.lane == 'beta' || github.event.inputs.lane == 'release' || (github.event_name == 'push' && env.HAS_ASC == 'true') }}
+        run: bundle exec fastlane ios ${{ github.event.inputs.lane || 'beta' }}
         env:
           CI: true
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
