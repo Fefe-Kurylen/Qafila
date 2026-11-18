@@ -122,3 +122,150 @@ Available in English, French, Spanish, German and Arabic. Made by an independent
 ## 🖼️ Images (ce dossier)
 - Captures 1920 × 1080 : `1-page.png` … `8-sombre.png`
 - Logo 300 × 300 : `logo-300.png`
+
+## 🇪🇸 Español
+
+**Descripción breve**: Navegador rápido y privado: barra flotante de cristal, pestañas ordenadas, bloqueador integrado, ninguna recopilación de datos.
+
+**Descripción**
+
+Qafila es un navegador rápido, privado y totalmente personalizable para Windows. Limpio, elegante, sin publicidad ni rastreo.
+
+TUS DATOS SE QUEDAN CONTIGO
+• Ninguna recopilación de datos, sin cuenta, sin publicidad, sin telemetría
+• Historial, marcadores y contraseñas se quedan en tu ordenador, nunca se envían a Qafila
+• Contraseñas cifradas (AES-256) en una bóveda que solo tú puedes abrir
+• Pestañas privadas: ningún rastro al cerrarlas
+
+UNA BARRA A TU MEDIDA
+• Barra flotante de cristal, en una o dos partes, transparencia ajustable
+• Galería de barras listas para usar y editor de botones y menú
+• Tamaños ajustables: interfaz, barra de direcciones, marcadores
+• Tema claro, oscuro o automático, colores de barra y de acento
+
+PESTAÑAS Y MARCADORES ORDENADOS
+• Pestañas agrupadas por sitio, en lista o en cuadrícula de miniaturas
+• Marcadores en carpetas, arrastrar y soltar, barra de marcadores discreta
+• Importación directa desde Chrome, Edge, Brave, Vivaldi, Opera y Firefox (marcadores y contraseñas)
+
+NAVEGA SIN QUE TE SIGAN
+• Bloqueador integrado de anuncios, rastreadores y avisos de cookies
+• HTTPS automático, JavaScript configurable por sitio
+• Extensiones de Chrome Web Store
+
+LEE CÓMODAMENTE
+• Lector que extrae el artículo, modo oscuro para todos los sitios
+• Tiempo de lectura estimado, búsqueda en la página, traducción
+
+Disponible en español, francés, inglés, alemán y árabe. Creado por un desarrollador independiente.
+
+**Características**
+- Ninguna recopilación de datos, sin cuenta, sin publicidad
+- Contraseñas cifradas, guardadas solo en el ordenador
+- Barra flotante de cristal totalmente personalizable
+- Carpetas de marcadores e importación desde Chrome, Edge y Firefox
+- Bloqueador de anuncios, rastreadores y avisos de cookies
+- Pestañas privadas sin ningún rastro
+- Lector, modo oscuro y extensiones de Chrome
+
+**Palabras clave**: navegador, privado, bloqueador de anuncios, pestañas, marcadores, contraseñas, privacidad
+
+**Novedades**: Primera versión de Qafila en Microsoft Store.
+
+## 🇩🇪 Deutsch
+
+**Kurzbeschreibung**: Schneller, privater Browser: schwebende Glasleiste, aufgeräumte Tabs, integrierter Blocker, keine Datenerfassung.
+
+**Beschreibung**
+
+Qafila ist ein schneller, privater und frei anpassbarer Browser für Windows. Schlicht, elegant, ohne Werbung und ohne Tracking.
+
+DEINE DATEN BLEIBEN BEI DIR
+• Keine Datenerfassung, kein Konto, keine Werbung, keine Telemetrie
+• Verlauf, Lesezeichen und Passwörter bleiben auf deinem Computer und werden nie an Qafila gesendet
+• Passwörter verschlüsselt (AES-256) in einem Tresor, den nur du öffnen kannst
+• Private Tabs: keine Spuren nach dem Schließen
+
+EINE LEISTE, DIE ZU DIR PASST
+• Schwebende Glasleiste, ein- oder zweiteilig, einstellbare Transparenz
+• Galerie fertiger Leisten und Editor für Schaltflächen und Menü
+• Einstellbare Größen: Oberfläche, Adressleiste, Lesezeichen
+• Helles, dunkles oder automatisches Design, Leisten- und Akzentfarben
+
+AUFGERÄUMTE TABS UND LESEZEICHEN
+• Tabs nach Website gruppiert, als Liste oder Miniaturraster
+• Lesezeichenordner, Drag & Drop, dezente Lesezeichenleiste
+• Direkter Import aus Chrome, Edge, Brave, Vivaldi, Opera und Firefox (Lesezeichen und Passwörter)
+
+SURFEN OHNE VERFOLGUNG
+• Integrierter Blocker für Werbung, Tracker und Cookie-Banner
+• Automatisches HTTPS, JavaScript pro Website einstellbar
+• Erweiterungen aus dem Chrome Web Store
+
+ANGENEHM LESEN
+• Leseansicht, die den Artikel extrahiert, Dunkelmodus für alle Websites
+• Geschätzte Lesezeit, Suche auf der Seite, Übersetzung
+
+Verfügbar auf Deutsch, Französisch, Englisch, Spanisch und Arabisch. Entwickelt von einem unabhängigen Entwickler.
+
+**Funktionen**
+- Keine Datenerfassung, kein Konto, keine Werbung
+- Verschlüsselte Passwörter, nur auf dem Computer gespeichert
+- Frei anpassbare schwebende Glasleiste
+- Lesezeichenordner und Import aus Chrome, Edge und Firefox
+- Blocker für Werbung, Tracker und Cookie-Banner
+- Private Tabs ohne Spuren
+- Leseansicht, Dunkelmodus und Chrome-Erweiterungen
+
+**Suchbegriffe**: Browser, privat, Werbeblocker, Tabs, Lesezeichen, Passwörter, Datenschutz
+
+**Neuigkeiten**: Erste Version von Qafila im Microsoft Store.
+
+## 🇸🇦 العربية
+
+**وصف قصير**: متصفح سريع وخاص: شريط زجاجي عائم، علامات تبويب مرتبة، مانع مدمج، دون أي جمع للبيانات.
+
+**الوصف**
+
+Qafila متصفح سريع وخاص وقابل للتخصيص بالكامل لنظام Windows. بسيط وأنيق، بلا إعلانات ولا تتبع.
+
+بياناتك تبقى عندك
+• لا جمع للبيانات، لا حساب، لا إعلانات، لا قياس عن بُعد
+• يبقى السجل والمفضلة وكلمات المرور على حاسوبك، ولا تُرسل أبدًا إلى Qafila
+• كلمات مرور مشفّرة (AES-256) في خزنة لا يفتحها سواك
+• علامات التبويب الخاصة لا تترك أي أثر بعد إغلاقها
+
+شريط على مقاسك
+• شريط زجاجي عائم، من جزء أو جزأين، بشفافية قابلة للضبط
+• معرض أشرطة جاهزة ومحرر للأزرار والقائمة
+• أحجام قابلة للضبط: الواجهة وشريط العنوان والمفضلة
+• مظهر فاتح أو داكن أو تلقائي، وألوان للشريط والتمييز
+
+علامات تبويب ومفضلة مرتبة
+• علامات تبويب مجمّعة حسب الموقع، في قائمة أو شبكة مصغّرات
+• مجلدات للمفضلة، سحب وإفلات، شريط مفضلة هادئ
+• استيراد مباشر من Chrome وEdge وBrave وVivaldi وOpera وFirefox (المفضلة وكلمات المرور)
+
+تصفّح دون تتبع
+• مانع مدمج للإعلانات والمتتبعات ونوافذ ملفات تعريف الارتباط
+• HTTPS تلقائي، وJavaScript قابل للضبط لكل موقع
+• إضافات من Chrome Web Store
+
+قراءة مريحة
+• قارئ يستخرج المقال، ووضع داكن لكل المواقع
+• مدة القراءة المقدّرة، والبحث في الصفحة، والترجمة
+
+متوفر بالعربية والفرنسية والإنجليزية والإسبانية والألمانية. من تطوير مطوّر مستقل.
+
+**الميزات**
+- لا جمع للبيانات، لا حساب، لا إعلانات
+- كلمات مرور مشفّرة محفوظة على الحاسوب فقط
+- شريط زجاجي عائم قابل للتخصيص بالكامل
+- مجلدات المفضلة والاستيراد من Chrome وEdge وFirefox
+- مانع للإعلانات والمتتبعات ونوافذ ملفات تعريف الارتباط
+- علامات تبويب خاصة بلا أي أثر
+- قارئ ووضع داكن وإضافات Chrome
+
+**الكلمات المفتاحية**: متصفح، خاص، مانع الإعلانات، علامات التبويب، المفضلة، كلمات المرور، الخصوصية
+
+**الجديد**: الإصدار الأول من Qafila على Microsoft Store.
