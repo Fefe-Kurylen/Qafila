@@ -142,7 +142,7 @@ pre { white-space: pre-wrap; font-size: 15px; }
 }
 
 /** Page de démarrage locale : logo de Qafila, tuiles de favoris (aucune requête réseau). */
-function startPage({ dark, bookmarks = [], title = 'Qafila', rtl = false, lang = 'fr' }) {
+function startPage({ dark, bookmarks = [], title = 'Qafila', rtl = false, lang = 'fr', privacy = '' }) {
   const tiles = bookmarks.slice(0, 12).map((b) => {
     const letter = String(b.title || '').trim().slice(0, 1).toUpperCase();
     return `<a class="tile" href="${escape(b.url)}"><span class="ic">${escape(letter)}</span><span class="t">${escape(b.title)}</span></a>`;
@@ -152,14 +152,15 @@ ${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <style>
 :root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${dark ? '#000000' : '#ffffff'}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? '#1c1c1e' : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; }
 body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
-.head { margin-top: 26vh; text-align: center; }
+.head { margin-top: 26vh; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.priv { margin-top: 16px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: 999px; font: 500 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: ${dark ? '#9ad8a7' : '#1f7a3a'}; background: ${dark ? 'rgba(80,200,120,.12)' : 'rgba(31,122,58,.08)'}; }
 .logo { width: 112px; height: 112px; display: block; filter: drop-shadow(0 6px 18px rgba(183, 121, 31, ${dark ? '.35' : '.25'})); }
 /* Au plus 6 colonnes, autant que de favoris en dessous : la grille reste centrée avec 1 à 5 favoris. */
 .grid { display: grid; grid-template-columns: repeat(${Math.max(1, Math.min(6, bookmarks.slice(0, 12).length))}, 72px); gap: 18px 14px; margin-top: 44px; }
 .tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
 .ic { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font: 500 22px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
 .t { font-size: 11px; color: #8e8e93; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-</style></head><body><div class="head">${LOGO}</div>
+</style></head><body><div class="head">${LOGO}${privacy ? `<div class="priv"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.4-7 10-4-1.6-7-5.5-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>${escape(privacy)}</div>` : ''}</div>
 <div class="grid">${tiles}</div></body></html>`;
 }
 

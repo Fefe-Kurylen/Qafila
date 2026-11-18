@@ -395,4 +395,5 @@
         <item quantity="many">%d أداة تتبّع</item>
         <item quantity="other">%d أداة تتبّع</item>
     </plurals>
+    <string name="start_privacy">لا جمع للبيانات · كل شيء يبقى على هذا الجهاز</string>
 </resources>

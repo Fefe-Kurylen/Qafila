@@ -49,6 +49,8 @@ fun StartPage(store: BrowserStore, tab: BrowserTab, modifier: Modifier = Modifie
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Spacer(Modifier.height(48.dp))
             Image(painterResource(R.drawable.ic_qafila_logo), contentDescription = stringResource(R.string.app_name), modifier = Modifier.size(104.dp))
+            Spacer(Modifier.height(14.dp))
+            Text("🛡 " + stringResource(R.string.start_privacy), color = q.secondary, fontSize = 12.sp, textAlign = TextAlign.Center)
             if (tab.isPrivate) {
                 Spacer(Modifier.height(18.dp))
                 Text(stringResource(R.string.private_browsing_note), color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)

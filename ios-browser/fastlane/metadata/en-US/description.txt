@@ -2,6 +2,12 @@ Qafila means "caravan" in Arabic.
 
 Qafila is a fast, private and fully customizable browser for iPhone. Clean, elegant, with no ads and no tracking.
 
+YOUR DATA STAYS WITH YOU
+• No data collection, no account, no ads, no telemetry
+• History, bookmarks and settings stay on your device, never sent to Qafila
+• Private tabs: no trace once closed
+• Nothing is sold or shared: there is simply nothing to sell
+
 PUT EVERY BUTTON WHERE YOU WANT IT
 • Choose the buttons in the toolbar and in the menu, their order and size
 • Toolbar gallery with ready-made layouts: Complete, Navigation, Tools, Reader, Minimal, Zen

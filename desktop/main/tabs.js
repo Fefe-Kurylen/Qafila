@@ -268,7 +268,7 @@ class TabManager extends EventEmitter {
 
   loadStartPage(wc) {
     const t = this.t();
-    const html = scripts.startPage({ dark: this.isDark(), bookmarks: this.store.bookmarks, title: t('new_tab'), rtl: t.rtl, lang: t.lang });
+    const html = scripts.startPage({ dark: this.isDark(), bookmarks: this.store.bookmarks, title: t('new_tab'), rtl: t.rtl, lang: t.lang, privacy: t('start_privacy') });
     wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   }
 

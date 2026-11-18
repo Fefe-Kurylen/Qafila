@@ -10,6 +10,12 @@ Qafila means “caravan” in Arabic.
 
 Qafila is a fast, private and fully customizable web browser.
 
+YOUR DATA STAYS WITH YOU
+• No data collection, no account, no ads, no telemetry
+• History, bookmarks and settings stay on your device, never sent to Qafila
+• Private tabs: no trace once closed
+• Nothing is sold or shared: there is simply nothing to sell
+
 PUT EVERY BUTTON WHERE IT SUITS YOU
 • Choose the toolbar and menu buttons, their order and their size
 • Add separators to organize the menu into sections

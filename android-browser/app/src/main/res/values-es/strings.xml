@@ -377,4 +377,5 @@
         <item quantity="many">%d rastreadores</item>
         <item quantity="other">%d rastreadores</item>
     </plurals>
+    <string name="start_privacy">Sin recopilación de datos · Todo se queda en este dispositivo</string>
 </resources>

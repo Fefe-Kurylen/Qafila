@@ -10,6 +10,12 @@ Qafila signifie « caravane » en arabe.
 
 Qafila est un navigateur rapide, privé et entièrement personnalisable.
 
+VOS DONNÉES RESTENT CHEZ VOUS
+• Aucune collecte de données, aucun compte, aucune publicité, aucune télémétrie
+• Historique, favoris et réglages restent sur votre appareil, jamais envoyés à Qafila
+• Onglets privés : aucune trace une fois fermés
+• Rien n’est vendu ni partagé : il n’y a tout simplement rien à vendre
+
 PLACEZ CHAQUE BOUTON LÀ OÙ IL VOUS CONVIENT
 • Choisissez les boutons de la barre d'outils et du menu, leur ordre et leur taille
 • Ajoutez des séparateurs pour organiser le menu en sections

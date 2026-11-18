@@ -255,5 +255,8 @@
   "transfer_pw_export_warn_sub": "Anyone who opens it will see your passwords. Keep it safe and delete it after use.",
   "transfer_exported_passwords": "✅ Passwords exported",
   "size_interface": "Oberfläche",
-  "sizes_footer": "Oberfläche: vergrößert oder verkleinert die ganze Oberfläche von Qafila (Leiste, Menüs, Einstellungen). Die Textgröße der Seiten stellen Sie unter Lesen ein."
+  "sizes_footer": "Oberfläche: vergrößert oder verkleinert die ganze Oberfläche von Qafila (Leiste, Menüs, Einstellungen). Die Textgröße der Seiten stellen Sie unter Lesen ein.",
+  "start_privacy": "Keine Datenerfassung · Alles bleibt auf diesem Gerät",
+  "privacy_card_title": "Qafila sammelt nichts",
+  "privacy_card_sub": "Kein Konto, keine Werbung, keine Telemetrie. Verlauf, Lesezeichen und Passwörter bleiben auf diesem Gerät; private Tabs hinterlassen keine Spuren."
 }

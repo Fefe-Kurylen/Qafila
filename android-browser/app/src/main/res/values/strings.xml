@@ -390,4 +390,5 @@
         <item quantity="many">%d traqueurs</item>
         <item quantity="other">%d traqueurs</item>
     </plurals>
+    <string name="start_privacy">Aucune collecte · Tout reste sur cet appareil</string>
 </resources>

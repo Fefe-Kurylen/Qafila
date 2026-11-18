@@ -371,4 +371,5 @@
         <item quantity="one">%d Tracker</item>
         <item quantity="other">%d Tracker</item>
     </plurals>
+    <string name="start_privacy">Keine Datenerfassung · Alles bleibt auf diesem Gerät</string>
 </resources>

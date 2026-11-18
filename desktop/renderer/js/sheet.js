@@ -107,7 +107,8 @@ P.settings = () => {
   const lang = s.language ? t('lang_' + s.language) : t('language_system');
   return {
     title: actionLabel('settings'), root: true,
-    body: group([
+    body: `<button class="priv-card" data-nav="privacy"><span class="priv-ic">${icon('shieldHalf', 22)}</span><span class="priv-t">${esc(t('privacy_card_title'))}<span class="priv-s">${esc(t('privacy_card_sub'))}</span></span></button>`
+      + group([
       navRow('grid', t('page_gallery'), '', 'gallery'),
       sup
         ? `<button class="s-row" data-do="support"><span class="s-ic heart">${icon('heart', 20)}</span><span class="s-l">${esc(t('page_support'))}</span><span class="s-chev">${icon('external', 16)}</span></button>`
