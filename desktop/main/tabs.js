@@ -114,7 +114,7 @@ class TabManager extends EventEmitter {
    * @param {() => boolean} o.isDark thème sombre effectif
    * @param {boolean} [o.offline] mode démo hors ligne : pages d'article locales
    */
-  constructor({ win, store, blocker, t, isDark, offline = false, userAgent }) {
+  constructor({ win, store, blocker, t, isDark, offline = false, userAgent, electronUserAgent }) {
     super();
     this.win = win;
     this.store = store;
@@ -138,6 +138,8 @@ class TabManager extends EventEmitter {
     this.attached = null;        // onglet dont la vue est affichée
     this.pageBounds = { x: 0, y: 0, width: 0, height: 0 };
     this.userAgent = desktopUserAgent(userAgent);
+    /** Identité Electron d'origine, présentée telle quelle aux pages de connexion de Google (useElectronIdentity). */
+    this.electronUA = String(electronUserAgent || userAgent || '');
     /** Identité appliquée à chaque page (setIdentity) : évite de la renvoyer à chaque navigation. */
     this.identity = new Map();
     /** Indices client demandés par chaque origine (Accept-CH), par session : la navigation privée n'en garde rien. */
@@ -185,6 +187,14 @@ class TabManager extends EventEmitter {
     // Un seul gestionnaire onBeforeSendHeaders par session : indices client d'un vrai Chrome (voir clientHintHeaders).
     ses.webRequest.onBeforeSendHeaders({ urls: ['https://*/*', 'wss://*/*'] }, (details, cb) => {
       const ident = this.identity.get(details.webContentsId);
+      // Pages de connexion de Google (et tout ce que charge une page en identité Electron) : identité Electron d'origine,
+      // sans indices client par en-têtes, exactement comme Electron les envoie (voir useElectronIdentity).
+      if (ident === 'electron' || ((ident === undefined || ident === 'chrome') && isGoogleLogin(details.url))) {
+        const headers = { ...details.requestHeaders };
+        for (const k of Object.keys(headers)) if (k.toLowerCase().startsWith('sec-ch-ua') || k.toLowerCase() === 'user-agent') delete headers[k];
+        headers['User-Agent'] = this.electronUA;
+        return cb({ requestHeaders: headers });
+      }
       if (ident !== undefined && ident !== 'chrome') return cb({});
       let origin = '';
       try { origin = new URL(details.url).origin; } catch { return cb({}); }
@@ -391,9 +401,12 @@ class TabManager extends EventEmitter {
 
     wc.on('did-start-loading', () => update({ loading: true, progress: 0.1 }));
     wc.on('did-stop-loading', () => { update({ loading: false, progress: 1 }); navState(); this.emit('glass', tabId); });
+    const follow = (url) => this.followGoogleLogin(wc, url, () => this.applyUserAgent(tabId));
+    wc.on('will-redirect', (e) => { if (e.isMainFrame) follow(e.url); });
     wc.on('did-start-navigation', (e) => {
       const { isMainFrame, isSameDocument, initiator, url } = e;
       if (!isMainFrame || isSameDocument) return;
+      follow(url);
       this.navSeq.set(wc.id, (this.navSeq.get(wc.id) || 0) + 1);
       // Fichier déposé sur la page ou toute autre navigation vers file: : arrêtée, page d'erreur à la place.
       if (isFileURL(url)) {
@@ -483,6 +496,7 @@ class TabManager extends EventEmitter {
     });
     wc.on('will-navigate', (e) => {
       const { url } = e;
+      follow(url);
       let scheme = '';
       try { scheme = new URL(url).protocol; } catch { return; }
       if (scheme === 'file:') { e.preventDefault(); setImmediate(() => { if (!wc.isDestroyed()) this.showError(wc, this.t()('file_blocked'), url); }); return; }
@@ -545,7 +559,11 @@ class TabManager extends EventEmitter {
     wc.on('input-event', (_e, ev) => { if (GESTURE_EVENTS.has(ev?.type)) this.lastGesture.set(wc.id, Date.now()); });
     // Fenêtre de connexion (« Se connecter avec Google ») : même identité Chrome que les onglets.
     this.setIdentity(wc, this.userAgent);
+    const follow = (url) => this.followGoogleLogin(wc, url, () => this.setIdentity(wc, this.userAgent));
+    wc.on('will-redirect', (e) => { if (e.isMainFrame) follow(e.url); });
+    wc.on('did-start-navigation', (e) => { if (e.isMainFrame && !e.isSameDocument) follow(e.url); });
     wc.on('will-navigate', (e) => {
+      follow(e.url);
       let scheme = '';
       try { scheme = new URL(e.url).protocol; } catch { return; }
       if (scheme === 'file:') { e.preventDefault(); return; }
@@ -795,9 +813,32 @@ class TabManager extends EventEmitter {
     if (!wc || !tab) return;
     const s = this.store.settings;
     const ua = s.customUserAgent ? s.customUserAgent : (this.isDesktop(tab) ? this.userAgent : MOBILE_UA);
+    if (ua === this.userAgent && isGoogleLogin(wc.getURL() || tab.url)) { this.useElectronIdentity(wc); return; }
     this.setIdentity(wc, ua);
   }
   applyUserAgentToOpenTabs() { for (const id of this.views.keys()) this.applyUserAgent(id); }
+
+  /**
+   * Pages de connexion de Google (accounts.google.com, accounts.youtube.com) : Google refuse les navigateurs intégrés
+   * qui se présentent comme Chrome (« Ce navigateur ou cette application ne sont peut-être pas sécurisés ») mais accepte
+   * l'identité Electron d'origine, à condition qu'elle soit cohérente partout : en-tête User-Agent, navigator.userAgent
+   * et navigator.userAgentData (marques Chromium d'Electron), sans indices client ajoutés ni objet window.chrome
+   * (preload/page.js). Appelée avant chaque navigation principale (will-navigate, will-redirect, did-start-navigation) ;
+   * en quittant ces pages, l'identité habituelle revient (`restore`).
+   */
+  followGoogleLogin(wc, url, restore) {
+    if (!wc || wc.isDestroyed()) return;
+    const current = this.identity.get(wc.id);
+    if (isGoogleLogin(url)) { if (current === 'chrome') this.useElectronIdentity(wc); }
+    else if (current === 'electron' && /^https?:/.test(url)) { this.identity.delete(wc.id); restore(); }
+  }
+
+  useElectronIdentity(wc) {
+    if (!wc || wc.isDestroyed() || this.identity.get(wc.id) === 'electron') return;
+    this.identity.set(wc.id, 'electron');
+    try { if (wc.debugger.isAttached()) wc.debugger.detach(); } catch { /* déjà détaché */ }
+    wc.setUserAgent(this.electronUA);
+  }
 
   /**
    * Identité d'une page : user agent Chrome ordinaire → identité Google Chrome complète (user agent réduit + indices

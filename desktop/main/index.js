@@ -49,7 +49,9 @@ app.setName('Qafila');
 // second bouton dans la barre des tâches au lieu de s'allumer. Constante (main/app-id.js) : electron-builder retire
 // « build » du package.json empaqueté ; un test vérifie qu'elle reste égale à build.appId.
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
-// User agent « Chrome ordinaire » partout (sans Electron/… ni Qafila/…) : la connexion Google l'exige.
+// User agent « Chrome ordinaire » partout (sans Electron/… ni Qafila/…), sauf sur les pages de connexion de Google.
+// Identité Electron d'origine (avec « Electron/… ») : seule acceptée par Google sur ses pages de connexion (tabs.js).
+const ELECTRON_UA = app.userAgentFallback;
 app.userAgentFallback = desktopUserAgent(app.userAgentFallback);
 if (SMOKE_DIR) {
   app.setPath('userData', path.join(SMOKE_DIR, 'userData'));
@@ -951,7 +953,7 @@ function createWindow() {
 
   Q.favicons = new FaviconCache(() => broadcast());
   Q.blocker = new Blocker(() => Q.store.settings, (wcId) => Q.tabs.pageURLFor(wcId));
-  Q.tabs = new TabManager({ win: Q.win, store: Q.store, blocker: Q.blocker, t: translator, isDark, offline: OFFLINE, userAgent: app.userAgentFallback });
+  Q.tabs = new TabManager({ win: Q.win, store: Q.store, blocker: Q.blocker, t: translator, isDark, offline: OFFLINE, userAgent: app.userAgentFallback, electronUserAgent: ELECTRON_UA });
 
   // Boutons des extensions dans la barre (<browser-action-list>) : préchargement de la session du chrome.
   try {

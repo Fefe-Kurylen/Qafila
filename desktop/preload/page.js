@@ -6,7 +6,8 @@ const { ipcRenderer, contextBridge } = require('electron');
 
 // Pages de Google : objet window.chrome présent comme dans Google Chrome (sans lui, la connexion Google prend Qafila
 // pour une application intégrée non sécurisée). Objet inerte : aucune fonction ne donne accès à quoi que ce soit.
-if (/(^|\.)(google\.com|youtube\.com)$/.test(location.hostname)) {
+// Pages de connexion exclues : elles reçoivent l'identité Electron d'origine (main/tabs.js useElectronIdentity).
+if (/(^|\.)(google\.com|youtube\.com)$/.test(location.hostname) && !/^accounts\.(google|youtube)\.com$/.test(location.hostname)) {
   const t0 = Date.now() / 1000;
   try {
     contextBridge.exposeInMainWorld('chrome', {
