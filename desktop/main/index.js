@@ -1071,6 +1071,12 @@ if (GOT_LOCK) app.whenReady().then(async () => {
 
   createWindow();
   Q.updater = new Updater({ onChange: broadcast, isAutomatic: () => Q.store.settings.autoUpdate !== false, demo: DEMO });
+  // Avant l'installation : état enregistré, extensions déchargées, fenêtres de connexion et pages fermées.
+  Q.updater.beforeInstall = () => {
+    Q.store?.saveNow();
+    Q.extensions?.shutdown();
+    for (const w of BrowserWindow.getAllWindows()) if (w !== Q.win && !w.isDestroyed()) w.destroy();
+  };
   // Extensions Chrome (Chrome Web Store, boutons dans la barre, menus) : session normale seulement.
   Q.extensions = new Extensions({
     tabs: Q.tabs, win: () => Q.win, t: translator, newTab, selectTab, closeTab,

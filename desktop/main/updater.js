@@ -146,7 +146,12 @@ class Updater {
   async install() {
     if (this.state.status === 'ready' && this.au) {
       // isSilent (pas d'assistant d'installation), isForceRunAfter (Qafila se relance tout seul).
-      setImmediate(() => { try { this.au.quitAndInstall(true, true); } catch { this.set({ status: 'error' }); } });
+      // Fenêtres fermées d'abord (pages, extensions, fenêtres de connexion) : aucun fichier de Qafila ne reste verrouillé
+      // quand l'installateur remplace l'application (sinon « Échec de désinstallation des anciens fichiers »).
+      setImmediate(() => {
+        try { this.beforeInstall?.(); } catch { /* fermeture au mieux */ }
+        try { this.au.quitAndInstall(true, true); } catch { this.set({ status: 'error' }); }
+      });
       return true;
     }
     if (this.manual && this.state.status === 'available') {
