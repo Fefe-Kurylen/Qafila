@@ -36,6 +36,7 @@ export function applyTheme() {
   root.style.setProperty('--bm', (bookmarksBarOn() ? bk.h : 0) + 'px');
   root.style.setProperty('--bm-row', (bk.h - 2) + 'px');
   root.style.setProperty('--bm-font', bk.font + 'px');
+  root.style.setProperty('--bm-opt', bk.opt + 'px');
   // La page est toujours posée à côté de la bande : la bande a son propre fond, couleur du thème ou du site (barre « Auto »).
   root.style.setProperty('--strip-color', p.site ? `rgb(${p.site.join(',')})` : (st.dark ? '#000000' : '#ffffff'));
   // Au défilement : barre réduite à la mini-adresse (Réduire) ou masquée (Masquer), décidé par le processus principal.
@@ -287,7 +288,7 @@ function renderBookmarksBar() {
     : `<button class="bm bm-add" data-action="addBookmark">${icon(actionIcon('addBookmark', {}), 14)}<span>${esc(t('bookmarks_bar_add'))}</span></button><span class="bm-empty">${esc(t('bookmarks_bar_empty', mac ? '⌘D' : t('kbd_ctrl') + '+D'))}</span>`;
   // À droite : options rapides (page en favori, tous les favoris, historique, réglages).
   const st = actionState();
-  const opts = ['addBookmark', 'bookmarks', 'history', 'settings'].map((id) => `<button class="bm-all${id === 'addBookmark' && st.bookmarked ? ' on' : ''}" data-bmact="${id}" title="${esc(actionLabel(id))}" aria-label="${esc(actionLabel(id))}">${icon(actionIcon(id, st), 15)}</button>`).join('');
+  const opts = ['addBookmark', 'bookmarks', 'history', 'settings'].map((id) => `<button class="bm-all${id === 'addBookmark' && st.bookmarked ? ' on' : ''}" data-bmact="${id}" title="${esc(actionLabel(id))}" aria-label="${esc(actionLabel(id))}">${icon(actionIcon(id, st), bookmarkSizes().opt)}</button>`).join('');
   const html = `<div class="bm-list">${items}</div><div class="bm-opts">${opts}</div>`;
   if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
 }

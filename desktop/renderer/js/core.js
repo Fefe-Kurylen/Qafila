@@ -7,7 +7,7 @@ export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 /** Hauteurs (px), selon les réglages de taille : capsule flottante (pilule d'adresse, rayon concentrique), barre pleine largeur, barre de favoris. */
 export const SIZES = {
   bar: { small: { bar: 48, pill: 34, btn: 40, full: 46 }, medium: { bar: 56, pill: 40, btn: 44, full: 52 }, large: { bar: 64, pill: 44, btn: 46, full: 56 } },
-  bookmarks: { small: { h: 22, font: 11, ic: 12 }, medium: { h: 26, font: 12, ic: 14 }, large: { h: 30, font: 13, ic: 16 } },
+  bookmarks: { small: { h: 26, font: 12, ic: 14, opt: 17 }, medium: { h: 30, font: 13, ic: 16, opt: 19 }, large: { h: 34, font: 14, ic: 18, opt: 21 } },
 };
 export const barSizes = () => SIZES.bar[settings().barSize] || SIZES.bar.medium;
 export const bookmarkSizes = () => SIZES.bookmarks[settings().bookmarksBarSize] || SIZES.bookmarks.medium;

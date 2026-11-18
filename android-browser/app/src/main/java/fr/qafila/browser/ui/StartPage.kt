@@ -1,5 +1,8 @@
 package fr.qafila.browser.ui
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +26,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,7 +48,7 @@ fun StartPage(store: BrowserStore, tab: BrowserTab, modifier: Modifier = Modifie
     BoxWithConstraints(modifier.fillMaxSize().background(q.page)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Spacer(Modifier.height(48.dp))
-            Text(stringResource(R.string.app_name), color = q.text, fontSize = 46.sp, fontFamily = FontFamily.Serif, letterSpacing = (-1).sp)
+            Image(painterResource(R.drawable.ic_qafila_logo), contentDescription = stringResource(R.string.app_name), modifier = Modifier.size(104.dp))
             if (tab.isPrivate) {
                 Spacer(Modifier.height(18.dp))
                 Text(stringResource(R.string.private_browsing_note), color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)

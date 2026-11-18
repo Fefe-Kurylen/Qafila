@@ -16,6 +16,7 @@ Usage (voir README.md) :
   python3 generate.py --png      # en plus, toutes les PNG (iOS, Android, Play, PC, site)
   python3 generate.py --check    # vérifie seulement la géométrie
 """
+import json
 import os
 import subprocess
 import sys
@@ -172,6 +173,23 @@ def vd_background(name, pal):
     return '\n'.join(lines) + '\n'
 
 
+def vd_logo():
+    """Logo complet (tuile arrondie en dégradé + symbole) en VectorDrawable, pour la page d'accueil Android."""
+    pal = PALETTES['classic']
+    lines = ['<?xml version="1.0" encoding="utf-8"?>',
+             '<!-- Logo de Qafila (page d\'accueil). Généré par shared/icon/generate.py : ne pas modifier à la main. -->',
+             '<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" '
+             'android:width="96dp" android:height="96dp" android:viewportWidth="512" android:viewportHeight="512">']
+    x0, x1, r = 24, 488, 110
+    tile = (f'M{x0 + r},{x0} L{x1 - r},{x0} A{r},{r} 0 0 1 {x1},{x0 + r} L{x1},{x1 - r} A{r},{r} 0 0 1 {x1 - r},{x1} '
+            f'L{x0 + r},{x1} A{r},{r} 0 0 1 {x0},{x1 - r} L{x0},{x0 + r} A{r},{r} 0 0 1 {x0 + r},{x0} Z')
+    lines += _vd_gradient(tile, pal['bg'], x0, x0, x1, x1)
+    for _, d, a in items(256, 256, (x1 - x0) / TILE):
+        lines.append(f'    <path android:fillColor="{pal["fg"]}"' + (f' android:fillAlpha="{a}"' if a < 1 else '') + f' android:pathData="{d}" />')
+    lines.append('</vector>')
+    return '\n'.join(lines) + '\n'
+
+
 def adaptive(name):
     suf = ANDROID_SUFFIX[name]
     bg = '@drawable/ic_launcher_background' if name == 'classic' else f'@color/ic_launcher_background{suf}'
@@ -277,6 +295,11 @@ def main():
     write(os.path.join(ANDROID_RES, 'drawable/ic_launcher_background.xml'), vd_background('classic', PALETTES['classic']))
     write(os.path.join(ANDROID_RES, 'values/ic_launcher_background.xml'), colors())
     write(os.path.join(HERE, 'mono.svg'), svg(PALETTES['classic'], background=False, mono='#000000'))
+    # Logo de la page d'accueil (à la place du mot « Qafila ») : PC, iPhone, Android.
+    logo = svg(PALETTES['classic'], size=512).replace('<svg ', '<svg class="logo" role="img" aria-label="Qafila" ', 1).replace('id="bg"', 'id="qlbg"').replace('url(#bg)', 'url(#qlbg)').strip()
+    write(os.path.join(REPO, 'desktop/main/logo.js'), "'use strict';\n// Logo de Qafila (page d'accueil). Généré par shared/icon/generate.py : ne pas modifier à la main.\nmodule.exports = " + json.dumps(logo) + ";\n")
+    write(os.path.join(REPO, 'ios-browser/QafilaBrowser/Web/QafilaLogo.swift'), "// Logo de Qafila (page d'accueil). Généré par shared/icon/generate.py : ne pas modifier à la main.\nenum QafilaLogo {\n    static let svg = #\"\"\"\n" + logo + "\n\"\"\"#\n}\n")
+    write(os.path.join(ANDROID_RES, 'drawable/ic_qafila_logo.xml'), vd_logo())
     if '--png' in sys.argv:
         pngs()
     print('ok')

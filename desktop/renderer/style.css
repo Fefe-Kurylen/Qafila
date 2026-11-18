@@ -445,11 +445,11 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .bm .fav.img { background: transparent; }
 .bm-add { opacity: .85; }
 .bm-empty { line-height: var(--bm-row, 24px); padding: 0 6px; opacity: .55; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bm-all { flex: none; width: 26px; height: var(--bm-row, 24px); border-radius: 12px; display: grid; place-items: center; opacity: .55; }
-.bm-opts { flex: none; display: flex; gap: 2px; margin-left: 8px; }
+.bm-all { flex: none; width: calc(var(--bm-opt, 19px) + 16px); height: var(--bm-row, 28px); border-radius: calc(var(--bm-row, 28px) / 2); display: grid; place-items: center; opacity: .72; }
+.bm-all svg { width: var(--bm-opt, 19px); height: var(--bm-opt, 19px); }
+.bm-opts { flex: none; display: flex; gap: 4px; margin-left: 10px; }
 .bm-all.on { opacity: 1; color: var(--accent-bar); }
 .bm-all:hover { opacity: 1; background: color-mix(in srgb, var(--mini-fg) 8%, transparent); }
-.bm-all svg { width: 15px; height: 15px; }
 :root.mac .bmbar button { -webkit-app-region: no-drag; }
 :root.mac:not(.overlay-open) .bmbar { -webkit-app-region: drag; }
 .slot { display: contents; }

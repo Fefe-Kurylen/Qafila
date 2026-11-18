@@ -305,7 +305,7 @@ class Transfer {
     const { response } = await dialog.showMessageBox(win, { type: 'warning', title: 'Qafila', message: this.t('transfer_pw_export_warn'), detail: this.t('transfer_pw_export_warn_sub'),
       buttons: [this.t('transfer_export'), this.t('cancel')], defaultId: 1, cancelId: 1, noLink: true });
     if (response !== 0) return { ok: false };
-    const file = await this.save(`Qafila - mots de passe - ${today()}.csv`, this.vault.exportCSV(), [{ name: 'CSV', extensions: ['csv'] }]);
+    const file = await this.save(`Qafila - mots de passe - ${today()}.csv`, this.vault.exportCSV());
     if (file) await this.exported(file, this.t('transfer_exported_passwords'));
     return { ok: !!file };
   }
@@ -333,12 +333,15 @@ class Transfer {
     return true;
   }
 
-  async save(defaultName, content, filters) {
-    const win = this.win();
-    const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('downloads'), defaultName), filters });
-    if (r.canceled || !r.filePath) return null;
-    try { fs.writeFileSync(r.filePath, content, 'utf8'); } catch { await this.report(false, this.t('transfer_write_failed')); return null; }
-    return r.filePath;
+  /** Enregistre directement dans le dossier de téléchargement (réglage de Qafila, sinon Téléchargements), sans question. */
+  async save(defaultName, content) {
+    const dir = (this.downloadFolder && this.downloadFolder()) || app.getPath('downloads');
+    const ext = path.extname(defaultName);
+    const stem = defaultName.slice(0, defaultName.length - ext.length);
+    let file = path.join(dir, defaultName);
+    for (let i = 1; fs.existsSync(file) && i < 1000; i++) file = path.join(dir, `${stem} (${i})${ext}`);
+    try { fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(file, content, { encoding: 'utf8', flag: 'wx' }); } catch { await this.report(false, this.t('transfer_write_failed')); return null; }
+    return file;
   }
 
   async exported(file, title) {
@@ -350,7 +353,7 @@ class Transfer {
   async exportBookmarks() {
     const list = this.store.bookmarks;
     if (!list.length) { await this.report(false, this.t('transfer_no_bookmarks')); return false; }
-    const file = await this.save(`Qafila - favoris - ${today()}.html`, bookmarksHTML(list), [{ name: 'HTML', extensions: ['html'] }]);
+    const file = await this.save(`Qafila - favoris - ${today()}.html`, bookmarksHTML(list));
     if (file) await this.exported(file, this.t('transfer_exported_bookmarks', list.length));
     return !!file;
   }
@@ -360,7 +363,7 @@ class Transfer {
     for (const [k, v] of Object.entries(this.store.settings)) if (!BACKUP_SKIP.has(k)) settings[k] = v;
     const data = { format: BACKUP_FORMAT, v: 1, app: 'Qafila PC', version: app.getVersion(), exportedAt: new Date().toISOString(),
       settings, bookmarks: this.store.bookmarks.map((b) => ({ title: b.title, url: b.url, addedAt: b.addedAt })) };
-    const file = await this.save(`Qafila - sauvegarde - ${today()}.json`, JSON.stringify(data, null, 2) + '\n', [{ name: 'JSON', extensions: ['json'] }]);
+    const file = await this.save(`Qafila - sauvegarde - ${today()}.json`, JSON.stringify(data, null, 2) + '\n');
     if (file) await this.exported(file, this.t('transfer_exported_backup'));
     return !!file;
   }

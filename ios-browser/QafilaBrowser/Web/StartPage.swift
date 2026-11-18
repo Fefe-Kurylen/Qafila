@@ -15,12 +15,12 @@ enum StartPage {
         * { -webkit-tap-highlight-color: transparent; }
         body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; font-family: -apple-system, system-ui; background: var(--bg); color: var(--fg); }
         .head { margin-top: 26vh; text-align: center; }
-        h1 { font-family: "New York", "Iowan Old Style", Georgia, serif; font-weight: 500; font-size: 40px; letter-spacing: -.02em; margin: 0; }
+        .logo { width: 104px; height: 104px; display: block; filter: drop-shadow(0 6px 18px rgba(183, 121, 31, .25)); }
         .grid { display: grid; grid-template-columns: repeat(4, 72px); gap: 18px 14px; margin-top: 44px; }
         .tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
         .ic { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font: 500 22px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
         .t { font-size: 11px; color: #8e8e93; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        </style></head><body><div class="head"><h1>Qafila</h1></div>
+        </style></head><body><div class="head">\(QafilaLogo.svg)</div>
         <div class="grid">\(tiles)</div></body></html>
         """
     }

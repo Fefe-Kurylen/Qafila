@@ -1054,7 +1054,7 @@ if (GOT_LOCK) app.whenReady().then(async () => {
   // Coffre de mots de passe (démonstration et tests : dossier temporaire, jamais celui de l'utilisateur).
   const vaultDir = DEMO ? fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'qafila-vault-')) : app.getPath('userData');
   Q.vault = new Vault({ dir: vaultDir, safeStorage, clipboard, onChange: () => broadcast() });
-  Q.transfer = new Transfer({ store: Q.store, vault: Q.vault, win: () => Q.win, t: (...x) => translator()(...x), onChange: () => broadcast(), onSettingChanged, refresh: () => Q.tabs?.refreshStartPages() });
+  Q.transfer = new Transfer({ store: Q.store, vault: Q.vault, win: () => Q.win, downloadFolder: () => downloadFolder(), t: (...x) => translator()(...x), onChange: () => broadcast(), onSettingChanged, refresh: () => Q.tabs?.refreshStartPages() });
 
   ipc.register({
     get win() { return Q.win; }, get chrome() { return Q.chrome; }, get store() { return Q.store; }, get tabs() { return Q.tabs; }, get blocker() { return Q.blocker; }, demo: DEMO,

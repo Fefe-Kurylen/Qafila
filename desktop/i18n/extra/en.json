@@ -214,7 +214,7 @@
   "transfer_export_passwords": "Passwords",
   "transfer_export_passwords_sub": "Unencrypted CSV file · asks for the master password",
   "transfer_export_header": "Export",
-  "transfer_export_footer": "Files are saved where you choose (Downloads by default). Nothing is sent over the internet.",
+  "transfer_export_footer": "Files go straight to your Downloads folder. Nothing is sent over the internet.",
   "transfer_undo_bookmarks": "Undo the import of %1$d bookmarks (%2$s)",
   "transfer_undo_passwords": "Undo the import of %1$d passwords (%2$s)",
   "transfer_last_import": "Last import",

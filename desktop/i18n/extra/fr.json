@@ -215,7 +215,7 @@
   "transfer_export_passwords": "Mots de passe",
   "transfer_export_passwords_sub": "Fichier CSV non chiffré · demande le mot de passe principal",
   "transfer_export_header": "Exporter",
-  "transfer_export_footer": "Les fichiers sont enregistrés là où vous le choisissez (Téléchargements par défaut). Rien n'est envoyé sur internet.",
+  "transfer_export_footer": "Les fichiers vont directement dans votre dossier Téléchargements. Rien n'est envoyé sur internet.",
   "transfer_undo_bookmarks": "Annuler l'import de %1$d favoris (%2$s)",
   "transfer_undo_passwords": "Annuler l'import de %1$d mots de passe (%2$s)",
   "transfer_last_import": "Dernier import",
