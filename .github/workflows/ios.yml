@@ -1,5 +1,6 @@
 # Qafila Browser iOS : compilation de vérification à chaque push ; dès que les secrets App Store Connect sont là,
 # chaque push sur main envoie aussi une version sur TestFlight (l'iPhone se met à jour tout seul) ; App Store à la demande.
+# (Si GitHub manque de Mac disponibles, le travail peut attendre puis être annulé : un nouvel envoi le relance.)
 name: Qafila iOS
 
 on:
