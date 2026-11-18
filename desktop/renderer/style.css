@@ -525,3 +525,22 @@ browser-action-list.ext-actions::part(badge) { font-size: 9px; }
 .bm-select { appearance: auto; cursor: pointer; }
 .bmm-empty { border: 1.5px dashed var(--sep); border-radius: 14px; padding: 26px 12px; }
 .bmbar .bm-folder svg { color: var(--accent, #C8922B); }
+
+/* Menu d'un dossier de la barre de favoris */
+#dim.clear { background: transparent; animation: none; }
+.bmmenu { width: 280px; padding: 6px 0; }
+.bmmenu .m-line { height: 36px; font-size: 14px; gap: 10px; padding: 0 14px; }
+.bmmenu .m-line .fav { flex: none; }
+.bmm-fic { display: inline-grid; color: var(--accent, #C8922B); flex: none; }
+.bmm-head b { font-weight: 600; }
+.bmmenu-empty { color: var(--bsecondary, var(--secondary)); cursor: default; }
+.bmmenu-empty:hover { background: transparent; }
+
+/* ===== Style classique minimaliste : angles droits, aucune transparence ni flou, ombres remplacées par un filet ===== */
+:root.ui-classic *, :root.ui-classic *::before, :root.ui-classic *::after { border-radius: 0 !important; }
+:root.ui-classic .card-glass, :root.ui-classic .bar, :root.ui-classic .bseg, :root.ui-classic .menu, :root.ui-classic .suggest,
+:root.ui-classic .sheet-card, :root.ui-classic .g-card, :root.ui-classic .pill-btn, :root.ui-classic .round, :root.ui-classic .bm-tool {
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-shadow: 0 0 0 1px var(--bsep, rgba(0, 0, 0, .12)) !important; }
+:root.ui-classic .card-glass, :root.ui-classic .menu, :root.ui-classic .suggest { background: rgb(var(--bar-rgb)) !important; }
+:root.ui-classic #dim { background: rgba(0, 0, 0, .06); }
+:root.ui-classic .menu.in, :root.ui-classic .suggest { animation: none; }

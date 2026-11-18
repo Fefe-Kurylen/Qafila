@@ -281,5 +281,13 @@
   "bm_already": "Cette page est déjà dans les favoris",
   "bm_root_other": "Autres favoris",
   "bm_root_mobile": "Favoris sur mobile",
-  "bm_root_menu": "Menu des favoris"
+  "bm_root_menu": "Menu des favoris",
+  "transfer_filed": "📁 %1$d favoris déjà présents ont été rangés dans leurs dossiers d'origine.",
+  "bm_folder_empty_short": "Dossier vide",
+  "bm_open_all": "Ouvrir les %1$d favoris",
+  "bm_manage": "Gérer ce dossier",
+  "ui_style": "Style de l'interface",
+  "ui_style_modern": "Moderne",
+  "ui_style_classic": "Classique minimaliste",
+  "ui_style_footer": "Classique minimaliste : barre pleine largeur, sans transparence ni arrondis, menus et réglages à angles droits."
 }

@@ -14,7 +14,7 @@ rmSync(out, { recursive: true, force: true });
 const expected = ['01-page', '02-menu', '03-address', '04-tabs', '05-tabs-grid', '06-tabs-popup', '07-settings', '08-appearance', '09-gallery',
   '10-editor', '11-find', '12-start', '13-dark', '14-dark-menu', '15-dark-tabs', '16-dark-settings', '17-bottom-glass', '18-chrome-strip', '19-history', '20-bookmarks',
   '21-ar-page', '22-ar-settings', '23-ar-menu', '24-appearance-style', '25-about', '26-reader', '27-bottom-fixed', '28-shrink', '29-toolbar-settings',
-  '37-sizes-large', '38-sizes-small', '39-extension-button', '40-extension-popup', '41-extensions', '42-site-permissions', '43-passwords-new', '44-passwords-list', '45-transfer', '46-ui-125'];
+  '37-sizes-large', '38-sizes-small', '39-extension-button', '40-extension-popup', '41-extensions', '42-site-permissions', '43-passwords-new', '44-passwords-list', '45-transfer', '46-ui-125', '47-classic-page', '48-classic-menu', '49-classic-settings', '50-classic-start', '51-modern-start-folders'];
 const useXvfb = process.platform === 'linux' && !process.env.DISPLAY;
 const electronArgs = ['electron', '.', '--no-sandbox', `--smoke=${out}`];
 const [cmd, args] = useXvfb ? ['xvfb-run', ['-a', '-s', '-screen 0 1440x900x24', 'npx', ...electronArgs]] : ['npx', electronArgs];

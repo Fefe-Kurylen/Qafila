@@ -25,10 +25,11 @@ const DESKTOP_ONLY = [
   { key: 'uiScale', section: 'appearance', type: 'number', default: 1, range: [0.8, 1.5], sync: false, platforms: ['desktop'] },
   { key: 'barSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
   { key: 'barLayout', section: 'appearance', type: 'enum:BarLayout', default: 'split', sync: false, platforms: ['desktop'] },
+  { key: 'uiStyle', section: 'appearance', type: 'enum:UiStyle', default: 'modern', sync: false, platforms: ['desktop'] },
   { key: 'titleBarSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
   { key: 'bookmarksBarSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
 ];
-const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] }, UiSize: { values: ['small', 'medium', 'large'] }, BarLayout: { values: ['one', 'split'] } };
+const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] }, UiSize: { values: ['small', 'medium', 'large'] }, BarLayout: { values: ['one', 'split'] }, UiStyle: { values: ['modern', 'classic'] } };
 
 let schema = null;
 

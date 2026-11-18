@@ -472,6 +472,7 @@ function onSettingChanged(key) {
   if (key === 'javascriptDisabledHosts') Q.tabs.reloadForJavaScript(s.javascriptDisabledHosts || []);
   if (key === 'textZoom') Q.tabs.applyZoom();
   if (key === 'language') { Q.t = null; translator(); Q.tabs.refreshStartPages(); }
+  if (key === 'uiStyle') Q.tabs.refreshStartPages();
   // Mises à jour automatiques réactivées : recherche tout de suite (sinon au prochain passage, toutes les 6 heures).
   if (key === 'autoUpdate' && s.autoUpdate && Q.updater) Q.updater.check();
   if (key === 'titleBarSize') { updateTitlebar(); layout(); }
@@ -1550,6 +1551,29 @@ async function runSmoke() {
   Q.glass.refresh(0);
   await wait(500);
   await shot('01-page');
+  { // Vrai clic souris sur un favori de la barre (événements d'entrée, pas de .click()) : normal, puis après Ctrl+T.
+    const realClick = async (sel) => {
+      const r = await Q.chrome.webContents.executeJavaScript(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, z: devicePixelRatio }; })()`);
+      if (!r) return 'absent';
+      const zf = Q.chrome.webContents.getZoomFactor();
+      const x = Math.round(r.x * zf), y = Math.round(r.y * zf);
+      const hit = await Q.chrome.webContents.executeJavaScript(`(() => { const e = document.elementFromPoint(${r.x}, ${r.y}); return e ? (e.closest('[data-bm],[data-bmfolder]') ? 'bm' : e.tagName + '#' + e.id + '.' + e.className) : 'rien'; })()`);
+      Q.chrome.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+      Q.chrome.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+      await wait(1200);
+      return hit;
+    };
+    const before = Q.store.selected;
+    const urlOf = () => Q.store.tabs.find((t) => t.id === Q.store.selected)?.url;
+    const h1 = await realClick('#bmbar [data-bm]');
+    console.log('CLIC-FAVORI normal :', h1, '→', urlOf());
+    newTab({ focus: true }); await wait(1200);
+    const h2 = await realClick('#bmbar [data-bm]:nth-of-type(2)');
+    console.log('CLIC-FAVORI après Ctrl+T :', h2, '→', urlOf());
+    if (h1 !== 'bm' || h2 !== 'bm') report.errors.push(`favoris : clic intercepté (${h1} / ${h2})`);
+    void before;
+    Q.smokeRealClick = realClick;
+  }
   demoScreen('menu'); await wait(900); await shot('02-menu');
   demoScreen('address', { text: 'cara' }); await wait(1200); await shot('03-address');
   demoScreen('none'); await wait(400);
@@ -1588,6 +1612,12 @@ async function runSmoke() {
     Q.store.addFolder('Maroc', fo.id);
     for (const b of Q.store.bookmarks.slice(-2)) Q.store.moveItem('bookmark', b.id, fo.id);
   }
+  demoScreen('none'); await wait(600);
+  { const h = await Q.smokeRealClick('#bmbar [data-bmfolder]'); await wait(500); await shot('20a-folder-menu');
+    const opened = await Q.chrome.webContents.executeJavaScript(`!document.getElementById('bmmenu').hidden && document.querySelectorAll('#bmmenu [data-bmm-open]').length`);
+    if (h !== 'bm' || !opened) report.errors.push(`favoris : menu du dossier non ouvert (${h} / ${opened})`);
+    await Q.chrome.webContents.executeJavaScript(`document.querySelector('#bmmenu [data-bmm-folder]')?.click()`); await wait(400); await shot('20d-folder-sub');
+    demoScreen('none'); await wait(400); }
   demoScreen('bookmarks'); await wait(900); await shot('20-bookmarks');
   { const js = (code) => Q.chrome.webContents.executeJavaScript(code).catch(() => {});
     await js(`document.querySelector('#sheet [data-bmgo]:not([data-bmgo=""])')?.click()`); await wait(600); await shot('20b-bookmarks-folder');
@@ -1643,6 +1673,15 @@ async function runSmoke() {
   Q.store.setSetting('uiScale', 1.25); onSettingChanged('uiScale'); await wait(900); await shot('46-ui-125');
   if (Math.abs(Q.chrome.webContents.getZoomFactor() - 1.25) > 0.01) fail(`taille de l'interface : zoom ${Q.chrome.webContents.getZoomFactor()}`);
   Q.store.setSetting('uiScale', 1); onSettingChanged('uiScale'); await wait(600);
+  { // Style classique minimaliste : page, menu, page d'accueil avec dossiers, réglages ; puis retour au style moderne.
+    const tb0 = Q.store.settings.toolbar;
+    set('uiStyle', 'classic'); set('toolbar', { ...tb0, style: 'classic' }); set('barLayout', 'one'); await wait(1200); Q.glass.refresh(0); await wait(400);
+    await shot('47-classic-page');
+    demoScreen('menu'); await wait(900); await shot('48-classic-menu'); demoScreen('none'); await wait(400);
+    demoScreen('appearance'); await wait(900); await shot('49-classic-settings'); demoScreen('none'); await wait(400);
+    newTab({}); await wait(1500); await shot('50-classic-start');
+    set('uiStyle', 'modern'); set('toolbar', tb0); set('barLayout', 'split'); await wait(900); await shot('51-modern-start-folders');
+  }
   await Q.vault.create('phrase de démonstration', false);
   Q.vault.add({ url: 'https://fr.wikipedia.org/w/index.php?title=Connexion', username: 'lina@example.org', password: 'Zéphyr-2026!' });
   Q.vault.add({ url: 'https://github.com/login', username: 'lina-dev', password: 'caravane-du-désert' });

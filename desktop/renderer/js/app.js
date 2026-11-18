@@ -11,7 +11,8 @@ import { perform } from './actions.js';
 // ----- Voile et surcouches -----
 onRender(() => {
   const dim = $('#dim');
-  dim.hidden = !['menu', 'editing', 'sheet'].includes(S.overlay);
+  dim.hidden = !['menu', 'editing', 'sheet', 'bmmenu'].includes(S.overlay);
+  dim.classList.toggle('clear', S.overlay === 'bmmenu');
   dim.classList.toggle('strong', S.overlay === 'sheet');
   document.documentElement.classList.toggle('overlay-tabs', S.overlay === 'tabs');
   // macOS : la barre déplace la fenêtre seulement quand aucune surcouche ne la recouvre (style.css).

@@ -280,5 +280,13 @@
   "bm_already": "Esta página ya está en marcadores",
   "bm_root_other": "Otros marcadores",
   "bm_root_mobile": "Marcadores del móvil",
-  "bm_root_menu": "Menú de marcadores"
+  "bm_root_menu": "Menú de marcadores",
+  "transfer_filed": "📁 %1$d marcadores existentes se han ordenado en sus carpetas de origen.",
+  "bm_folder_empty_short": "Carpeta vacía",
+  "bm_open_all": "Abrir los %1$d marcadores",
+  "bm_manage": "Gestionar esta carpeta",
+  "ui_style": "Estilo de la interfaz",
+  "ui_style_modern": "Moderno",
+  "ui_style_classic": "Clásico minimalista",
+  "ui_style_footer": "Clásico minimalista: barra a todo el ancho, sin transparencia ni esquinas redondeadas, menús y ajustes en ángulo recto."
 }

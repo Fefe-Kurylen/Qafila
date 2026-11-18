@@ -280,5 +280,13 @@
   "bm_already": "Diese Seite ist bereits ein Lesezeichen",
   "bm_root_other": "Weitere Lesezeichen",
   "bm_root_mobile": "Mobile Lesezeichen",
-  "bm_root_menu": "Lesezeichenmenü"
+  "bm_root_menu": "Lesezeichenmenü",
+  "transfer_filed": "📁 %1$d vorhandene Lesezeichen wurden in ihre ursprünglichen Ordner einsortiert.",
+  "bm_folder_empty_short": "Leerer Ordner",
+  "bm_open_all": "Alle %1$d Lesezeichen öffnen",
+  "bm_manage": "Diesen Ordner verwalten",
+  "ui_style": "Oberflächenstil",
+  "ui_style_modern": "Modern",
+  "ui_style_classic": "Klassisch minimal",
+  "ui_style_footer": "Klassisch minimal: Leiste in voller Breite, ohne Transparenz und abgerundete Ecken, eckige Menüs und Einstellungen."
 }

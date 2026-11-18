@@ -141,27 +141,47 @@ pre { white-space: pre-wrap; font-size: 15px; }
 </style></head><body><h1>${escape(title)}</h1><div class="meta">${byline ? escape(byline) + ' · ' : ''}${escape(host)}</div>${renderReaderTree(tree)}</body></html>`;
 }
 
-/** Page de démarrage locale : logo de Qafila, tuiles de favoris (aucune requête réseau). */
-function startPage({ dark, bookmarks = [], title = 'Qafila', rtl = false, lang = 'fr', privacy = '' }) {
-  const tiles = bookmarks.slice(0, 12).map((b) => {
+/**
+ * Page de démarrage locale : logo de Qafila, tuiles des favoris de la racine, puis une section par dossier (ses
+ * favoris et ceux de ses sous-dossiers). Aucune requête réseau. `classic` : style classique minimaliste (angles droits).
+ */
+function startPage({ dark, bookmarks = [], folders = [], title = 'Qafila', rtl = false, lang = 'fr', privacy = '', classic = false }) {
+  const tile = (b) => {
     const letter = String(b.title || '').trim().slice(0, 1).toUpperCase();
-    return `<a class="tile" href="${escape(b.url)}"><span class="ic">${escape(letter)}</span><span class="t">${escape(b.title)}</span></a>`;
-  }).join('');
+    return `<a class="tile" href="${escape(b.url)}" title="${escape(b.title)}"><span class="ic">${escape(letter)}</span><span class="t">${escape(b.title)}</span></a>`;
+  };
+  const ids = new Set(folders.map((f) => f.id));
+  const rootMarks = bookmarks.filter((b) => !b.folder || !ids.has(b.folder)).slice(0, 12);
+  const inside = (fid) => { const out = new Set([fid]); let grew = true; while (grew) { grew = false; for (const f of folders) if (f.parent && out.has(f.parent) && !out.has(f.id)) { out.add(f.id); grew = true; } } return out; };
+  const sections = folders.filter((f) => !f.parent || !ids.has(f.parent)).map((f) => {
+    const set = inside(f.id);
+    const marks = bookmarks.filter((b) => set.has(b.folder)).slice(0, 12);
+    return marks.length ? { f, marks } : null;
+  }).filter(Boolean);
+  const cols = (n) => Math.max(1, Math.min(6, n));
+  const folderIcon = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 7.2A1.8 1.8 0 0 1 5.8 5.4h3.9l2 2.2h6.5A1.8 1.8 0 0 1 20 9.4v8.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 17.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+  const r = classic ? 0 : 14;
   return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 ${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <style>
-:root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${dark ? '#000000' : '#ffffff'}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? '#1c1c1e' : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; }
-body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
-.head { margin-top: 26vh; text-align: center; display: flex; flex-direction: column; align-items: center; }
-.priv { margin-top: 16px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: 999px; font: 500 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: ${dark ? '#9ad8a7' : '#1f7a3a'}; background: ${dark ? 'rgba(80,200,120,.12)' : 'rgba(31,122,58,.08)'}; }
+:root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${dark ? '#000000' : '#ffffff'}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? '#1c1c1e' : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; --sep: ${dark ? '#2c2c2e' : '#e5e5ea'}; }
+body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); padding-bottom: 56px; }
+.head { margin-top: ${sections.length ? '12vh' : '26vh'}; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.priv { margin-top: 16px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: ${classic ? 0 : 999}px; font: 500 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: ${dark ? '#9ad8a7' : '#1f7a3a'}; background: ${dark ? 'rgba(80,200,120,.12)' : 'rgba(31,122,58,.08)'}; }
 .logo { width: 112px; height: 112px; display: block; filter: drop-shadow(0 6px 18px rgba(183, 121, 31, ${dark ? '.35' : '.25'})); }
-/* Au plus 6 colonnes, autant que de favoris en dessous : la grille reste centrée avec 1 à 5 favoris. */
-.grid { display: grid; grid-template-columns: repeat(${Math.max(1, Math.min(6, bookmarks.slice(0, 12).length))}, 72px); gap: 18px 14px; margin-top: 44px; }
+/* Au plus 6 colonnes, autant que de favoris : chaque grille reste centrée. */
+.grid { display: grid; gap: 18px 14px; margin-top: 44px; justify-content: center; }
 .tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
-.ic { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font: 500 22px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
+.ic { width: 56px; height: 56px; border-radius: ${r}px; display: flex; align-items: center; justify-content: center; font: 500 22px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
+.tile:hover .ic { outline: 2px solid ${dark ? '#3a3a3c' : '#d1d1d6'}; }
 .t { font-size: 11px; color: #8e8e93; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec { margin-top: 40px; display: flex; flex-direction: column; align-items: center; }
+.sec h2 { display: flex; align-items: center; gap: 7px; margin: 0; padding-bottom: 8px; min-width: 240px; justify-content: center; border-bottom: 1px solid var(--sep); font: 600 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: ${dark ? '#d8b26a' : '#9a6a12'}; letter-spacing: .02em; }
+.sec .grid { margin-top: 18px; }
 </style></head><body><div class="head">${LOGO}${privacy ? `<div class="priv"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.4-7 10-4-1.6-7-5.5-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>${escape(privacy)}</div>` : ''}</div>
-<div class="grid">${tiles}</div></body></html>`;
+${rootMarks.length ? `<div class="grid" style="grid-template-columns: repeat(${cols(rootMarks.length)}, 72px)">${rootMarks.map(tile).join('')}</div>` : ''}
+${sections.map(({ f, marks }) => `<section class="sec"><h2>${folderIcon}<span>${escape(f.name)}</span></h2><div class="grid" style="grid-template-columns: repeat(${cols(marks.length)}, 72px)">${marks.map(tile).join('')}</div></section>`).join('\n')}
+</body></html>`;
 }
 
 /** Page d'erreur dans la langue de l'interface ; l'adresse reste de gauche à droite. */

@@ -107,3 +107,18 @@ test('favoris : dossiers conservés à l\'import Chromium et à l\'aller-retour 
   assert.equal(travail.children[0].name, 'Outils');
   assert.equal(travail.children[0].children[0].url, 'https://b.example/');
 });
+
+test('favoris : réimport, les favoris déjà présents à la racine vont dans leur dossier d\'origine', () => {
+  const { Store } = require('../main/store.js');
+  const dir = mkdtempSync(join(tmpdir(), 'qm-'));
+  const store = new Store(dir);
+  store.load();
+  store.addBookmark('Aide', 'https://support.mozilla.org/');
+  const tr = new T.Transfer({ store, refresh() {}, onChange() {}, t: (k) => k });
+  const r = tr.merge([{ title: 'Aide', url: 'https://support.mozilla.org', folderPath: ['Mozilla Firefox'] }, { title: 'Neuf', url: 'https://n.example/', folderPath: ['Mozilla Firefox'] }], 'Firefox');
+  assert.deepEqual([r.added, r.already, r.filed], [1, 1, 1]);
+  const f = store.folders.find((x) => x.name === 'Mozilla Firefox');
+  assert.ok(f);
+  assert.equal(store.bookmarks.filter((b) => b.folder === f.id).length, 2);
+  clearTimeout(store._timer);
+});

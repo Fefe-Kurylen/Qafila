@@ -280,5 +280,13 @@
   "bm_already": "This page is already bookmarked",
   "bm_root_other": "Other bookmarks",
   "bm_root_mobile": "Mobile bookmarks",
-  "bm_root_menu": "Bookmarks menu"
+  "bm_root_menu": "Bookmarks menu",
+  "transfer_filed": "📁 %1$d existing bookmarks were filed into their original folders.",
+  "bm_folder_empty_short": "Empty folder",
+  "bm_open_all": "Open all %1$d bookmarks",
+  "bm_manage": "Manage this folder",
+  "ui_style": "Interface style",
+  "ui_style_modern": "Modern",
+  "ui_style_classic": "Classic minimal",
+  "ui_style_footer": "Classic minimal: full-width toolbar, no transparency or rounded corners, square menus and settings."
 }

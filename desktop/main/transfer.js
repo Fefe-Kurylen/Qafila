@@ -238,21 +238,32 @@ class Transfer {
 
   /** Ajoute les favoris absents ; renvoie { added, already }. */
   merge(items, source) {
-    const known = new Set(this.store.bookmarks.map((b) => urlKey(b.url)));
+    const byKey = new Map(this.store.bookmarks.map((b) => [urlKey(b.url), b]));
+    const known = new Set(byKey.keys());
     const fresh = [];
+    const created = new Set();
     let already = 0;
+    let filed = 0;
     for (const it of items) {
       const k = urlKey(it.url);
-      if (known.has(k)) { already++; continue; }
+      if (known.has(k)) {
+        already++;
+        // Déjà dans Qafila mais à la racine (import d'avant les dossiers) : rangé dans son dossier d'origine.
+        const b = byKey.get(k);
+        if (b && !b.folder && Array.isArray(it.folderPath) && it.folderPath.length) {
+          const target = this.store.ensureFolderPath(it.folderPath, created);
+          if (target && this.store.moveItem('bookmark', b.id, target)) filed++;
+        }
+        continue;
+      }
       known.add(k);
       fresh.push(it);
     }
-    const created = new Set();
     const added = this.store.addBookmarks(fresh, created);
     if (added.length) this.last = { source, ids: added.map((b) => b.id), folders: [...created], at: Date.now() };
     this.refresh();
     this.onChange();
-    return { added: added.length, already };
+    return { added: added.length, already, filed };
   }
 
   async report(ok, title, detail) {
@@ -267,7 +278,7 @@ class Transfer {
     try { items = readBrowser(b, this.rootNames()); } catch { items = []; }
     if (!items.length) { await this.report(false, this.t('transfer_none_found', b.label)); return false; }
     const r = this.merge(items, b.label);
-    await this.report(true, this.t('transfer_imported', r.added, b.label), r.already ? this.t('transfer_already', r.already) : '');
+    await this.report(true, this.t('transfer_imported', r.added, b.label), this.mergeDetail(r));
     return true;
   }
 
@@ -295,7 +306,7 @@ class Transfer {
       const items = flattenNetscape(parsed.roots);
       if (!items.length) { await this.report(false, this.t('transfer_empty_file')); return false; }
       const r = this.merge(items, path.basename(file));
-      await this.report(true, this.t('transfer_imported_file', r.added), r.already ? this.t('transfer_already', r.already) : '');
+      await this.report(true, this.t('transfer_imported_file', r.added), this.mergeDetail(r));
       return true;
     }
     if (d.format === 'chrome-csv' || d.format === 'firefox-csv') return this.importPasswords(text, P, d, file);
@@ -390,6 +401,11 @@ class Transfer {
     const file = await this.save(`Qafila - sauvegarde - ${today()}.json`, JSON.stringify(data, null, 2) + '\n');
     if (file) await this.exported(file, this.t('transfer_exported_backup'));
     return !!file;
+  }
+
+  /** Détail d'un import : doublons ignorés, favoris existants rangés dans leurs dossiers. */
+  mergeDetail(r) {
+    return [r.already ? this.t('transfer_already', r.already) : '', r.filed ? this.t('transfer_filed', r.filed) : ''].filter(Boolean).join('\n');
   }
 
   /** Noms (traduits) des dossiers racine des autres navigateurs. */

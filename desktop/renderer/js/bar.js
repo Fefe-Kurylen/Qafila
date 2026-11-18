@@ -22,6 +22,8 @@ export function applyTheme() {
   root.classList.toggle('bar-dark', p.contentDark);
   root.classList.toggle('bottom', tb.position === 'bottom');
   for (const s of ['classic', 'glass', 'floating']) root.classList.toggle('style-' + s, (tb.style || 'floating') === s);
+  // Style classique minimaliste : angles droits, aucune transparence (style.css :root.ui-classic).
+  root.classList.toggle('ui-classic', settings().uiStyle === 'classic');
   root.style.setProperty('--bar-rgb', p.bar.join(','));
   root.style.setProperty('--alpha', p.alpha.toFixed(3));
   root.style.setProperty('--alpha-solid', (p.style === 'classic' ? 1 : 1 - 0.12 * p.transparency).toFixed(3));
@@ -234,6 +236,11 @@ function alignSuggestions(box) {
   box.style.left = left + 'px';
   box.style.right = 'auto';
   box.style.width = Math.min(window.innerWidth - left - 12, r.width + 12) + 'px';
+  // Sous la barre de favoris (barre en haut) : les favoris restent visibles et cliquables pendant la saisie.
+  const bm = $('#bmbar');
+  const top = !document.documentElement.classList.contains('bottom');
+  if (top && bm && !bm.hidden) { const b = bm.getBoundingClientRect(); box.style.top = Math.round(Math.max(r.bottom, b.bottom) + 6) + 'px'; }
+  else box.style.top = '';
 }
 
 function commit(text) {
@@ -265,6 +272,72 @@ function refreshEditingButtons() {
     const html = slot ? (slot.action === 'menu' ? updateButton() : '') + button(slot, st, count) : '';
     if (el.innerHTML !== html) el.innerHTML = html;
   }
+}
+
+// ----- Menu d'un dossier de la barre de favoris (comme Chrome) -----
+/** Clic sur un dossier : sa liste s'ouvre sous lui ; second clic sur le même dossier : fermeture. */
+function toggleFolderMenu(btn) {
+  const id = btn.dataset.bmfolder;
+  if (S.overlay === 'bmmenu' && S.bmMenu?.stack?.[0] === id) { setOverlay('none'); return; }
+  const r = btn.getBoundingClientRect();
+  S.bmMenu = { stack: [id], x: r.left, y: r.bottom + 4 };
+  setOverlay('bmmenu');
+}
+function renderFolderMenu() {
+  const el = $('#bmmenu');
+  if (!el) return;
+  const on = S.overlay === 'bmmenu' && S.bmMenu;
+  if (!on) { if (!el.hidden) { el.hidden = true; el.innerHTML = ''; el.dataset.html = ''; } return; }
+  const folders = S.state?.folders || [];
+  const id = S.bmMenu.stack[S.bmMenu.stack.length - 1];
+  const cur = folders.find((f) => f.id === id);
+  if (!cur) { setOverlay('none'); return; }
+  const subs = folders.filter((f) => f.parent === id);
+  const marks = (S.state?.bookmarks || []).filter((b) => b.folder === id);
+  const ic = bookmarkSizes().ic;
+  const rows = [];
+  if (S.bmMenu.stack.length > 1) rows.push(`<button class="m-line bmm-head" data-bmm-back>${icon('chevronLeft', 15)}<span class="l"><b>${esc(cur.name)}</b></span></button>`, '<div class="m-gap"></div>');
+  for (const f of subs) rows.push(`<button class="m-line" data-bmm-folder="${esc(f.id)}"><span class="bmm-fic">${icon('folder', ic + 2)}</span><span class="l">${esc(f.name)}</span>${icon('chevronRight', 13)}</button>`);
+  if (subs.length && marks.length) rows.push('<div class="m-sep"></div>');
+  for (const b of marks) rows.push(`<button class="m-line" data-bmm-open="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span class="l"><bdi>${esc(b.title || b.url)}</bdi></span></button>`);
+  if (!subs.length && !marks.length) rows.push(`<div class="m-line bmmenu-empty"><span class="l">${esc(t('bm_folder_empty_short'))}</span></div>`);
+  rows.push('<div class="m-gap"></div>');
+  if (marks.length > 1) rows.push(`<button class="m-line" data-bmm-all>${icon('squares', 15)}<span class="l">${esc(t('bm_open_all', marks.length))}</span></button>`);
+  rows.push(`<button class="m-line" data-bmm-manage>${icon('sliders', 15)}<span class="l">${esc(t('bm_manage'))}</span></button>`);
+  const html = rows.join('');
+  if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
+  const wasHidden = el.hidden;
+  el.hidden = false;
+  const w = 280;
+  el.style.width = w + 'px';
+  el.style.left = Math.round(Math.max(8, Math.min(S.bmMenu.x, window.innerWidth - w - 8))) + 'px';
+  el.style.top = Math.round(S.bmMenu.y) + 'px';
+  el.style.maxHeight = Math.max(160, window.innerHeight - S.bmMenu.y - 12) + 'px';
+  if (wasHidden) { el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); }
+}
+onRender(renderFolderMenu);
+function installFolderMenuEvents() {
+  const el = $('#bmmenu');
+  el.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+  const open = (e, b) => {
+    const m = (S.state?.bookmarks || []).find((x) => x.id === b.dataset.bmmOpen);
+    if (!m) return;
+    if (e.button === 1 || e.ctrlKey || e.metaKey) { q.tabs.create({ url: m.url, select: false }); return; }
+    q.tabs.navigate(m.url); setOverlay('none');
+  };
+  el.addEventListener('click', (e) => {
+    let b;
+    if ((b = e.target.closest('[data-bmm-folder]'))) { S.bmMenu.stack.push(b.dataset.bmmFolder); renderNow(); return; }
+    if (e.target.closest('[data-bmm-back]')) { S.bmMenu.stack.pop(); renderNow(); return; }
+    if ((b = e.target.closest('[data-bmm-open]'))) { open(e, b); return; }
+    if (e.target.closest('[data-bmm-all]')) {
+      const id = S.bmMenu.stack[S.bmMenu.stack.length - 1];
+      for (const m of (S.state?.bookmarks || []).filter((x) => x.folder === id)) q.tabs.create({ url: m.url, select: false });
+      setOverlay('none'); return;
+    }
+    if (e.target.closest('[data-bmm-manage]')) { const id = S.bmMenu.stack[S.bmMenu.stack.length - 1]; setOverlay('none').then(() => openBookmarksFolder(id)); }
+  });
+  el.addEventListener('auxclick', (e) => { const b = e.target.closest('[data-bmm-open]'); if (b && e.button === 1) open(e, b); });
 }
 
 // ----- Barre de favoris -----
@@ -523,6 +596,7 @@ export function installBarEvents() {
       else if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
     }
   });
+  installFolderMenuEvents();
   const bm = $('#bmbar');
   bm.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); }); // pas de défilement automatique
   bm.addEventListener('click', (e) => {
@@ -530,7 +604,7 @@ export function installBarEvents() {
     if (o) { perform(o.dataset.bmact); return; }
     if (e.target.closest('.bm-add')) { perform('addBookmark'); return; }
     const fo = e.target.closest('[data-bmfolder]');
-    if (fo) { openBookmarksFolder(fo.dataset.bmfolder); return; }
+    if (fo) { toggleFolderMenu(fo); return; }
     const it = e.target.closest('[data-bm]');
     if (it) openBookmark(e, it);
   });

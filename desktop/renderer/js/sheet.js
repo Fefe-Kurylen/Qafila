@@ -244,6 +244,7 @@ P.appearance = () => {
     title: t('page_appearance'),
     // Aperçu collant : la barre reste visible pendant le réglage des couleurs, du style et de la transparence.
     body: preview(undefined, { sticky: true })
+      + group([`<div class="s-row seg-row"><div class="seg">${[['modern', 'ui_style_modern', 'uiStyleModern'], ['classic', 'ui_style_classic', 'uiStyleClassic']].map(([v, k, d]) => `<button class="${(s.uiStyle || 'modern') === v ? 'on' : ''}" data-do="${d}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('ui_style'), footer: t('ui_style_footer') })
       + group([segmented('appearance', [['system', t('appearance_system')], ['light', t('appearance_light')], ['dark', t('appearance_dark')]])], { header: t('theme') })
       + group([swatches('accent', accents)], { header: t('accent_color') })
       + group([swatches('barColorLight', bars)], { header: t('bar_color_light'), footer: t('bar_auto_light_desc') })
@@ -802,6 +803,9 @@ export function installSheetEvents() {
         return;
       }
       if (d === 'source') { q.openExternal('https://github.com/Fefe-Kurylen/qafila'); return; }
+      // Style de l'interface : Classique minimaliste = barre pleine largeur opaque, en une partie, angles droits.
+      if (d === 'uiStyleClassic') { await q.settings.set('uiStyle', 'classic'); await saveToolbar({ style: 'classic', preset: toolbar().preset }); await q.settings.set('barLayout', 'one'); return; }
+      if (d === 'uiStyleModern') { await q.settings.set('uiStyle', 'modern'); await saveToolbar({ style: 'floating', preset: toolbar().preset }); await q.settings.set('barLayout', 'split'); return; }
       if (d === 'resetToolbar') { await q.settings.applyPreset('complete'); toast(t('reset_bar_menu')); return; }
       if (d === 'extStore') { await q.extensions.openStore(); setOverlay('none'); return; }
       if (d === 'resetPerms') { await q.permissions.reset(null); return; }
