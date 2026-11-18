@@ -39,6 +39,12 @@ contextBridge.exposeInMainWorld('qafila', {
     remove: (idOrUrl) => invoke('bookmarks:remove', { id: idOrUrl }),
     update: (id, patch) => invoke('bookmarks:update', { id, patch }),
     toggleCurrent: () => invoke('bookmarks:toggleCurrent'),
+    addFolder: (name, parent) => invoke('bookmarks:addFolder', { name, parent }),
+    renameFolder: (id, name) => invoke('bookmarks:renameFolder', { id, name }),
+    removeFolder: (id) => invoke('bookmarks:removeFolder', { id }),
+    move: (kind, id, target) => invoke('bookmarks:move', { kind, id, target }),
+    reorder: (kind, id, delta) => invoke('bookmarks:reorder', { kind, id, delta }),
+    placeBefore: (kind, id, before) => invoke('bookmarks:placeBefore', { kind, id, before }),
   },
   history: {
     list: (opts = {}) => invoke('history:list', opts),

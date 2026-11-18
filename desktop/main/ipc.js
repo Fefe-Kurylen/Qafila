@@ -74,6 +74,15 @@ function register(a) {
   handle('bookmarks:remove', (p) => { store.removeBookmark(str(p.id)); a.tabs.refreshStartPages(); });
   handle('bookmarks:update', (p) => { store.updateBookmark(str(p.id), { title: str(p.patch?.title, 512), url: str(p.patch?.url) }); a.tabs.refreshStartPages(); });
   handle('bookmarks:toggleCurrent', () => a.toggleBookmark());
+  // Dossiers et rangement (gestionnaire de favoris).
+  const kind = (v) => (v === 'folder' ? 'folder' : 'bookmark');
+  const done = (r) => { a.tabs.refreshStartPages(); return r; };
+  handle('bookmarks:addFolder', (p) => done(store.addFolder(str(p.name, 200), str(p.parent, 64) || null)));
+  handle('bookmarks:renameFolder', (p) => done(store.renameFolder(str(p.id, 64), str(p.name, 200))));
+  handle('bookmarks:removeFolder', (p) => done(store.removeFolder(str(p.id, 64))));
+  handle('bookmarks:move', (p) => done(store.moveItem(kind(p.kind), str(p.id, 64), str(p.target, 64) || null)));
+  handle('bookmarks:reorder', (p) => done(store.reorderItem(kind(p.kind), str(p.id, 64), Number(p.delta) < 0 ? -1 : 1)));
+  handle('bookmarks:placeBefore', (p) => done(store.placeBefore(kind(p.kind), str(p.id, 64), str(p.before, 64))));
   handle('history:list', (p) => {
     const q = str(p.query, 256).toLowerCase();
     const limit = Math.min(2000, Math.max(1, Number(p.limit) || 500));

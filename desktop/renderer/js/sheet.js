@@ -6,8 +6,17 @@ import { rowHTML, addressCard } from './bar.js';
 import { menuHTML } from './menu.js';
 
 const local = { history: [], historyQuery: '', bookmarksQuery: '', confirmClear: false, adding: null, drag: null,
+  // Gestionnaire de favoris : dossier affiché, élément en cours de modification ('b:<id>' / 'f:<id>'), élément glissé.
+  bmFolder: null, bmEdit: null, bmDrag: null,
   // Mots de passe et transferts : champs de saisie (jamais écrits dans le HTML), liste du coffre, valeurs affichées.
   fields: {}, vaultList: null, vaultQuery: '', revealed: {}, vaultError: '', sources: null, addingLogin: false, busy: false };
+
+/** Gestionnaire de favoris ouvert directement dans un dossier (clic sur un dossier de la barre de favoris). */
+export async function openBookmarksFolder(id) {
+  await openSheet('bookmarks', true);
+  local.bmFolder = (S.state.folders || []).some((f) => f.id === id) ? id : null;
+  render();
+}
 
 /** Ouvre une page ; `reset` = nouvelle pile (sinon la page s'empile, bouton Retour). */
 export async function openSheet(page, reset = false) {
@@ -17,6 +26,7 @@ export async function openSheet(page, reset = false) {
   local.confirmClear = false;
   if (page === 'settings' || page === 'about') S.supportInfo = await q.support.info().catch(() => ({ configured: false }));
   if (page === 'history') await loadHistory();
+  if (page === 'bookmarks') { local.bmFolder = null; local.bmEdit = null; local.bookmarksQuery = ''; }
   if (page === 'passwords' || page === 'transfer') { local.fields = {}; local.revealed = {}; local.vaultError = ''; await loadVault(); }
   if (page === 'transfer') { local.sources = null; q.transfer.sources().then((s) => { local.sources = s || []; render(); }).catch(() => { local.sources = []; render(); }); }
   if (S.overlay !== 'sheet') await setOverlay('sheet'); else render();
@@ -483,19 +493,136 @@ async function saveToolbar(patch) {
 }
 
 // ----- Favoris et historique -----
+// Gestionnaire de favoris : dossiers (navigation, fil d'Ariane), favoris, recherche dans tous les dossiers,
+// modification en place (nom, adresse, dossier, ordre), glisser-déposer vers un dossier ou avant un autre favori.
+const bmFolders = () => S.state.folders || [];
+const bmFolder = (id) => bmFolders().find((f) => f.id === id) || null;
+function bmPath(id) {
+  const out = [];
+  for (let f = bmFolder(id), n = 0; f && n < 50; f = bmFolder(f.parent), n++) out.unshift(f);
+  return out;
+}
+function bmCount(id) {
+  const inside = (fid) => S.state.bookmarks.filter((b) => b.folder === fid).length + bmFolders().filter((f) => f.parent === fid).reduce((n, f) => n + inside(f.id), 0);
+  return inside(id);
+}
+/** Options « Dossier » : racine puis l'arborescence indentée ; `exclude` (dossier modifié) et ses sous-dossiers exclus. */
+function bmFolderOptions(selected, exclude) {
+  const opts = [`<option value=""${!selected ? ' selected' : ''}>${esc(t('bm_root'))}</option>`];
+  const walk = (parent, depth) => {
+    for (const f of bmFolders().filter((x) => (x.parent || null) === parent)) {
+      if (f.id === exclude) continue;
+      opts.push(`<option value="${esc(f.id)}"${f.id === selected ? ' selected' : ''}>${' '.repeat(depth)}${esc(f.name)}</option>`);
+      walk(f.id, depth + 1);
+    }
+  };
+  walk(null, 1);
+  return opts.join('');
+}
+function bmEditCard(kind, item) {
+  const isF = kind === 'f';
+  const where = isF ? item.parent : item.folder;
+  const field = (key, label, value, type = 'text') => `<div class="s-row bm-field"><span class="bm-lab">${esc(label)}</span><input class="s-input" data-field="${key}" type="${type}" value="${esc(value)}" spellcheck="false" autocomplete="off" data-enter="bmSave" dir="auto"></div>`;
+  const rows = [
+    field('bmName', t('bm_name'), isF ? item.name : item.title),
+    isF ? '' : field('bmUrl', t('bm_address'), item.url, 'url'),
+    `<div class="s-row bm-field"><span class="bm-lab">${esc(t('bm_folder'))}</span><select class="s-input bm-select" data-field="bmWhere">${bmFolderOptions(where || null, isF ? item.id : null)}</select></div>`,
+    `<div class="s-row bm-tools">
+      <button class="bm-tool" data-do="bmUp" title="${esc(t('bm_up'))}">${icon('chevronLeft', 16)}<span>${esc(t('bm_up'))}</span></button>
+      <button class="bm-tool" data-do="bmDown" title="${esc(t('bm_down'))}">${icon('chevronRight', 16)}<span>${esc(t('bm_down'))}</span></button>
+      <span class="bm-sp"></span>
+      <button class="bm-tool red" data-do="bmDelete">${icon('trash', 16)}<span>${esc(t(isF ? 'bm_delete_folder' : 'delete'))}</span></button>
+      <button class="bm-tool" data-do="bmCancel">${esc(t('cancel'))}</button>
+      <button class="bm-tool primary" data-do="bmSave">${esc(t('bm_save'))}</button>
+    </div>`,
+    isF ? `<div class="s-row muted"><span class="s-l">${esc(t('bm_delete_folder_sub'))}</span></div>` : '',
+  ];
+  return `<div class="bm-edit">${rows.filter(Boolean).join('<div class="g-sep"></div>')}</div>`;
+}
+function bmFolderRow(f, sub) {
+  if (local.bmEdit === 'f:' + f.id) return bmEditCard('f', f);
+  return `<div class="s-row link bm-row" role="button" tabindex="0" draggable="true" data-bmdrag="f:${esc(f.id)}" data-bmgo="${esc(f.id)}" data-bmdrop="${esc(f.id)}">`
+    + `<span class="s-ic bm-fic">${icon('folder', 22)}</span><span class="s-l">${esc(f.name)}<span class="s-sub">${esc(sub ?? t('bm_count', bmCount(f.id)))}</span></span>`
+    + `<button class="s-x" data-bmedit="f:${esc(f.id)}" title="${esc(t('bm_edit'))}">${icon('sliders', 17)}</button><span class="s-chev">${icon('chevronRight', 15)}</span></div>`;
+}
+function bmRow(b, sub) {
+  if (local.bmEdit === 'b:' + b.id) return bmEditCard('b', b);
+  const host = hostOf(b.url);
+  return `<div class="s-row link bm-row" role="button" tabindex="0" draggable="true" data-bmdrag="b:${esc(b.id)}" data-bmbefore="${esc(b.id)}" data-open="${esc(b.url)}">${faviconLetter(host)}`
+    + `<span class="s-l">${esc(b.title || host)}<span class="s-sub" dir="ltr">${esc(sub ?? host)}</span></span>`
+    + `<button class="s-x" data-bmedit="b:${esc(b.id)}" title="${esc(t('bm_edit'))}">${icon('sliders', 17)}</button>`
+    + `<button class="s-x" data-unbookmark="${esc(b.id)}" title="${esc(t('delete'))}">${icon('xmarkCircle', 18)}</button></div>`;
+}
 P.bookmarks = () => {
   const qy = local.bookmarksQuery.trim().toLowerCase();
-  const list = S.state.bookmarks.filter((b) => !qy || b.title.toLowerCase().includes(qy) || b.url.toLowerCase().includes(qy));
-  const rows = list.map((b) => {
-    const host = hostOf(b.url);
-    return `<div class="s-row link" role="button" tabindex="0" data-open="${esc(b.url)}">${faviconLetter(host)}<span class="s-l">${esc(b.title || host)}<span class="s-sub" dir="ltr">${esc(host)}</span></span><button class="s-x" data-unbookmark="${esc(b.id)}" title="${esc(t('delete'))}">${icon('xmarkCircle', 18)}</button></div>`;
-  });
-  return {
-    title: actionLabel('bookmarks'), root: true,
-    body: `<label class="t-search">${icon('search', 17)}<input data-search="bookmarksQuery" type="search" placeholder="${esc(t('search_bookmarks'))}" value="${esc(local.bookmarksQuery)}"></label>`
-      + (rows.length ? group(rows) : `<div class="t-empty">${esc(t('no_bookmarks'))}</div>`),
-  };
+  if (local.bmFolder && !bmFolder(local.bmFolder)) local.bmFolder = null;
+  const cur = local.bmFolder;
+  const path = bmPath(cur);
+  let body = `<label class="t-search">${icon('search', 17)}<input data-search="bookmarksQuery" type="search" placeholder="${esc(t('search_bookmarks'))}" value="${esc(local.bookmarksQuery)}"></label>`;
+  if (qy) {
+    const fs = bmFolders().filter((f) => f.name.toLowerCase().includes(qy)).map((f) => bmFolderRow(f, bmPath(f.parent).map((x) => x.name).join(' › ') || t('bm_root')));
+    const bs = S.state.bookmarks.filter((b) => b.title.toLowerCase().includes(qy) || b.url.toLowerCase().includes(qy))
+      .map((b) => bmRow(b, [hostOf(b.url), ...bmPath(b.folder).map((x) => x.name)].join(' · ')));
+    body += fs.length || bs.length ? group([...fs, ...bs]) : `<div class="t-empty">${esc(t('no_bookmarks'))}</div>`;
+    return { title: actionLabel('bookmarks'), root: true, body };
+  }
+  // Fil d'Ariane : chaque étape ouvre le dossier et reçoit les éléments déposés.
+  const crumbs = [`<button class="bm-crumb${cur ? '' : ' on'}" data-bmgo="" data-bmdrop="">${icon('bookmark', 14)}${esc(t('bm_root'))}</button>`]
+    .concat(path.map((f, i) => `<button class="bm-crumb${i === path.length - 1 ? ' on' : ''}" data-bmgo="${esc(f.id)}" data-bmdrop="${esc(f.id)}">${esc(f.name)}</button>`));
+  body += `<div class="bm-crumbs">${crumbs.join(`<span class="bm-crumb-sep">${icon('chevronRight', 12)}</span>`)}</div>`;
+  body += `<div class="bm-actions"><button class="bm-tool" data-do="bmNewFolder">${icon('folder', 16)}<span>${esc(t('bm_new_folder'))}</span></button>`
+    + (selectedTab()?.url && /^https?:/.test(selectedTab().url) ? `<button class="bm-tool" data-do="bmAddHere">${icon('plus', 16)}<span>${esc(t('bm_add_here'))}</span></button>` : '')
+    + (cur ? `<button class="bm-tool" data-do="bmUpLevel">${icon('arrowUpLeft', 16)}<span>${esc(t('bm_parent'))}</span></button>` : '') + '</div>';
+  const fRows = bmFolders().filter((f) => (f.parent || null) === cur).map((f) => bmFolderRow(f));
+  const bRows = S.state.bookmarks.filter((b) => (b.folder || null) === cur).map((b) => bmRow(b));
+  body += fRows.length || bRows.length ? group([...fRows, ...bRows], { footer: t('bm_footer') })
+    : `<div class="t-empty bmm-empty" data-bmdrop="${esc(cur || '')}">${esc(t(cur ? 'bm_folder_empty' : 'no_bookmarks'))}</div>`;
+  return { title: cur ? path.at(-1).name : actionLabel('bookmarks'), root: true, body };
 };
+
+async function bmAction(d) {
+  const f = local.fields;
+  const [kind, id] = (local.bmEdit || ':').split(':');
+  const k = kind === 'f' ? 'folder' : 'bookmark';
+  switch (d) {
+    case 'bmNewFolder': {
+      const nf = await q.bookmarks.addFolder(t('bm_new_folder_name'), local.bmFolder);
+      if (nf?.id) { local.bmEdit = 'f:' + nf.id; local.fields = { bmName: nf.name, bmWhere: local.bmFolder || '' }; }
+      render(); focusBmName(); return true;
+    }
+    case 'bmAddHere': {
+      const tab = selectedTab();
+      const b = await q.bookmarks.add(tab?.title || tab?.url || '', tab?.url || '');
+      if (b?.id && local.bmFolder) await q.bookmarks.move('bookmark', b.id, local.bmFolder);
+      toast(b?.id ? t('bm_added') : t('bm_already'));
+      return true;
+    }
+    case 'bmUpLevel': local.bmFolder = bmFolder(local.bmFolder)?.parent || null; local.bmEdit = null; render(); return true;
+    case 'bmCancel': local.bmEdit = null; local.fields = {}; render(); return true;
+    case 'bmUp': case 'bmDown': if (id) await q.bookmarks.reorder(k, id, d === 'bmUp' ? -1 : 1); return true;
+    case 'bmDelete':
+      if (!id) return true;
+      if (k === 'folder') await q.bookmarks.removeFolder(id); else await q.bookmarks.remove(id);
+      local.bmEdit = null; local.fields = {}; render(); return true;
+    case 'bmSave': {
+      if (!id) return true;
+      const name = (f.bmName ?? '').trim();
+      const where = f.bmWhere ?? null;
+      if (k === 'folder') {
+        if (name) await q.bookmarks.renameFolder(id, name);
+        if (where !== null && where !== (bmFolder(id)?.parent || '')) await q.bookmarks.move('folder', id, where);
+      } else {
+        const b = S.state.bookmarks.find((x) => x.id === id);
+        const url = (f.bmUrl ?? b?.url ?? '').trim();
+        await q.bookmarks.update(id, { title: name || b?.title || url, url: /^[a-z][a-z0-9+.-]*:/i.test(url) ? url : 'https://' + url });
+        if (where !== null && where !== (b?.folder || '')) await q.bookmarks.move('bookmark', id, where);
+      }
+      local.bmEdit = null; local.fields = {}; render(); return true;
+    }
+    default: return false;
+  }
+}
+function focusBmName() { setTimeout(() => { const i = $('#sheet')?.querySelector('[data-field="bmName"]'); if (i) { i.focus(); i.select(); } }, 30); }
 
 P.history = () => {
   const days = new Map();
@@ -558,6 +685,7 @@ onRender(renderSheet);
 const VAULT_ERRORS = { E_WEAK: 'vault_err_weak', E_WRONG: 'vault_err_wrong', E_INVALID: 'vault_err_invalid', E_NO_KEYCHAIN: 'vault_err_keychain', E_LOCKED: 'vault_err_locked' };
 const vaultErr = (r) => t(VAULT_ERRORS[r?.error] || 'vault_err_generic');
 async function vaultAction(d, b) {
+  if (d.startsWith('bm') && (await bmAction(d))) return true;
   const f = local.fields;
   const busy = async (fn) => { if (local.busy) return; local.busy = true; try { await fn(); } finally { local.busy = false; } };
   switch (d) {
@@ -624,6 +752,16 @@ export function installSheetEvents() {
     if ((b = g('[data-unperm]'))) { await q.permissions.reset(JSON.parse(b.dataset.unperm)); return; }
     if ((b = g('[data-unhost]'))) { const k = b.dataset.unhost; const v = JSON.parse(b.dataset.v); await q.settings.set(k, (settings()[k] || []).filter((h) => h !== v)); return; }
     if ((b = g('[data-preset]'))) { await q.settings.applyPreset(b.dataset.preset); return; }
+    if ((b = g('[data-bmedit]'))) {
+      e.stopPropagation();
+      const v = b.dataset.bmedit;
+      local.bmEdit = local.bmEdit === v ? null : v;
+      const [k, id] = v.split(':');
+      const it = k === 'f' ? bmFolder(id) : S.state.bookmarks.find((x) => x.id === id);
+      local.fields = it ? (k === 'f' ? { bmName: it.name, bmWhere: it.parent || '' } : { bmName: it.title, bmUrl: it.url, bmWhere: it.folder || '' }) : {};
+      render(); if (local.bmEdit) focusBmName(); return;
+    }
+    if ((b = g('[data-bmgo]'))) { local.bmFolder = b.dataset.bmgo || null; local.bmEdit = null; render(); $('#sheet-body')?.scrollTo(0, 0); return; }
     if ((b = g('[data-unbookmark]'))) { e.stopPropagation(); await q.bookmarks.remove(b.dataset.unbookmark); return; }
     if ((b = g('[data-unhistory]'))) { e.stopPropagation(); await q.history.remove(b.dataset.unhistory); await loadHistory(); render(); return; }
     if ((b = g('[data-open]'))) { await q.tabs.navigate(b.dataset.open); setOverlay('none'); return; }
@@ -679,6 +817,42 @@ export function installSheetEvents() {
   });
   // Clic sur le voile autour de la feuille : fermeture.
   el.addEventListener('mousedown', (e) => { if (e.target === el) setOverlay('none'); });
+  // Glisser-déposer dans le gestionnaire de favoris : sur un dossier ou une étape du fil d'Ariane = ranger dedans ;
+  // sur un favori (favori glissé) = placer juste avant lui.
+  el.addEventListener('dragstart', (e) => {
+    const r = e.target.closest?.('[data-bmdrag]');
+    if (!r) return;
+    const [k, id] = r.dataset.bmdrag.split(':');
+    local.bmDrag = { kind: k === 'f' ? 'folder' : 'bookmark', id };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    r.classList.add('dragging');
+  });
+  el.addEventListener('dragend', () => { local.bmDrag = null; for (const x of el.querySelectorAll('.drop-on, .drop-before, .dragging')) x.classList.remove('drop-on', 'drop-before', 'dragging'); });
+  const bmTarget = (e) => {
+    const d = local.bmDrag;
+    if (!d) return null;
+    const into = e.target.closest?.('[data-bmdrop]');
+    if (into && !(d.kind === 'folder' && into.dataset.bmdrop === d.id)) return { el: into, cls: 'drop-on', go: () => q.bookmarks.move(d.kind, d.id, into.dataset.bmdrop || null) };
+    const before = e.target.closest?.('[data-bmbefore]');
+    if (before && d.kind === 'bookmark' && before.dataset.bmbefore !== d.id) return { el: before, cls: 'drop-before', go: () => q.bookmarks.placeBefore('bookmark', d.id, before.dataset.bmbefore) };
+    return null;
+  };
+  el.addEventListener('dragover', (e) => {
+    const tg = bmTarget(e);
+    for (const x of el.querySelectorAll('.drop-on, .drop-before')) if (x !== tg?.el) x.classList.remove('drop-on', 'drop-before');
+    if (!tg) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    tg.el.classList.add(tg.cls);
+  });
+  el.addEventListener('drop', async (e) => {
+    const tg = bmTarget(e);
+    if (!tg) return;
+    e.preventDefault();
+    local.bmDrag = null;
+    await tg.go();
+  });
   el.addEventListener('input', async (e) => {
     const d = e.target.dataset;
     if (d.range) {

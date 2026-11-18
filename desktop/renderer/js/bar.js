@@ -6,6 +6,7 @@ import {
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
 import { perform, actionState, isActive, isEnabled } from './actions.js';
+import { openBookmarksFolder } from './sheet.js';
 
 const SIZES = { small: 17, medium: 20, large: 23 };
 const WEIGHTS = { thin: 1.15, regular: 1.5, bold: 2 };
@@ -281,10 +282,12 @@ function renderBookmarksBar() {
   const on = bookmarksBarOn() && S.overlay !== 'tabs';
   el.hidden = !on;
   if (!on) return;
-  const list = S.state?.bookmarks || [];
+  // Racine des favoris : dossiers d'abord (ouvrent le gestionnaire dans ce dossier), puis favoris.
+  const list = (S.state?.bookmarks || []).filter((b) => !b.folder);
+  const folders = (S.state?.folders || []).filter((f) => !f.parent);
   const mac = S.cfg?.app?.platform === 'darwin';
-  const items = list.length
-    ? list.map((b) => `<button class="bm" data-bm="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span><bdi>${esc(b.title)}</bdi></span></button>`).join('')
+  const items = list.length || folders.length
+    ? folders.map((f) => `<button class="bm bm-folder" data-bmfolder="${esc(f.id)}" title="${esc(f.name)}">${icon('folder', bookmarkSizes().ic)}<span><bdi>${esc(f.name)}</bdi></span></button>`).join('') + list.map((b) => `<button class="bm" data-bm="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span><bdi>${esc(b.title)}</bdi></span></button>`).join('')
     : `<button class="bm bm-add" data-action="addBookmark">${icon(actionIcon('addBookmark', {}), 14)}<span>${esc(t('bookmarks_bar_add'))}</span></button><span class="bm-empty">${esc(t('bookmarks_bar_empty', mac ? '⌘D' : t('kbd_ctrl') + '+D'))}</span>`;
   // À droite : options rapides (page en favori, tous les favoris, historique, réglages).
   const st = actionState();
@@ -526,6 +529,8 @@ export function installBarEvents() {
     const o = e.target.closest('[data-bmact]');
     if (o) { perform(o.dataset.bmact); return; }
     if (e.target.closest('.bm-add')) { perform('addBookmark'); return; }
+    const fo = e.target.closest('[data-bmfolder]');
+    if (fo) { openBookmarksFolder(fo.dataset.bmfolder); return; }
     const it = e.target.closest('[data-bm]');
     if (it) openBookmark(e, it);
   });

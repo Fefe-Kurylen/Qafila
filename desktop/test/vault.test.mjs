@@ -87,3 +87,23 @@ test('transfert : profil Chromium lu (barre de favoris, autres, dossiers)', () =
   const list = T.readChromium(dir);
   assert.deepEqual(list.map((b) => b.url), ['https://aeon.co/', 'https://x.example/']);
 });
+
+test('favoris : dossiers conservés à l\'import Chromium et à l\'aller-retour HTML', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qc-'));
+  mkdirSync(join(dir, 'Default'));
+  writeFileSync(join(dir, 'Default', 'Bookmarks'), JSON.stringify({ roots: {
+    bookmark_bar: { type: 'folder', children: [{ type: 'url', name: 'A', url: 'https://a.example/' }, { type: 'folder', name: 'Travail', children: [{ type: 'folder', name: 'Outils', children: [{ type: 'url', name: 'B', url: 'https://b.example/' }] }] }] },
+    other: { type: 'folder', children: [{ type: 'url', name: 'C', url: 'https://c.example/' }] },
+  } }));
+  const list = T.readChromium(dir, { other: 'Autres', synced: 'Mobile', menu: 'Menu' });
+  assert.deepEqual(list.map((b) => b.folderPath), [[], ['Travail', 'Outils'], ['Autres']]);
+  const P = await import('../../shared/import/parse.mjs');
+  const folders = [{ id: 'f1', name: 'Travail', parent: null }, { id: 'f2', name: 'Outils', parent: 'f1' }];
+  const html = T.bookmarksHTML([{ title: 'A', url: 'https://a.example/' }, { title: 'B', url: 'https://b.example/', folder: 'f2' }], folders);
+  const parsed = P.parseNetscapeHtml(html);
+  assert.equal(parsed.counts.bookmarks, 2);
+  const travail = parsed.roots.find((r) => r.type === 'folder');
+  assert.equal(travail.name, 'Travail');
+  assert.equal(travail.children[0].name, 'Outils');
+  assert.equal(travail.children[0].children[0].url, 'https://b.example/');
+});

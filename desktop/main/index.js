@@ -253,7 +253,7 @@ function describeTabs() {
 function describeState() {
   const t = translator();
   return {
-    tabs: describeTabs(), selected: Q.store.selected, bookmarks: Q.store.bookmarks, historyCount: Q.store.history.length,
+    tabs: describeTabs(), selected: Q.store.selected, bookmarks: Q.store.bookmarks, folders: Q.store.folders, historyCount: Q.store.history.length,
     settings: Q.store.settings, dark: isDark(), lang: t.lang, rtl: t.rtl, closedTabs: Q.store.closedTabs.length,
     downloads: describeDownloads(), sitePermissions: Q.store.sitePermissions, extensions: describeExtensions(), vault: Q.vault ? Q.vault.status() : { state: 'none' }, transfer: Q.transfer ? Q.transfer.describe() : null, update: Q.updater ? Q.updater.state : { status: 'disabled' }, collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
     fullscreenNotice: Q.isFullscreenPage && Q.fullscreenNotice !== null ? { host: Q.fullscreenNotice } : null,
@@ -1569,7 +1569,22 @@ async function runSmoke() {
   set('toolbar', { ...Q.store.settings.toolbar, position: 'top', style: 'floating' });
   await wait(900);
   demoScreen('history'); await wait(900); await shot('19-history');
+  { // Dossiers de favoris : un dossier « Voyages » avec deux favoris, un sous-dossier, dans la barre et le gestionnaire.
+    const fo = Q.store.addFolder('Voyages');
+    Q.store.addFolder('Maroc', fo.id);
+    for (const b of Q.store.bookmarks.slice(-2)) Q.store.moveItem('bookmark', b.id, fo.id);
+  }
   demoScreen('bookmarks'); await wait(900); await shot('20-bookmarks');
+  { const js = (code) => Q.chrome.webContents.executeJavaScript(code).catch(() => {});
+    await js(`document.querySelector('#sheet [data-bmgo]:not([data-bmgo=""])')?.click()`); await wait(600); await shot('20b-bookmarks-folder');
+    await js(`document.querySelector('#sheet [data-bmedit^="b:"]')?.click()`); await wait(600); await shot('20c-bookmarks-edit');
+    // Modification réelle : nouveau nom, rangé à la racine, enregistré.
+    await js(`(() => { const i = document.querySelector('#sheet [data-field="bmName"]'); i.value = 'Marmiton FR'; i.dispatchEvent(new Event('input', { bubbles: true }));
+      const s = document.querySelector('#sheet [data-field="bmWhere"]'); s.value = ''; s.dispatchEvent(new Event('input', { bubbles: true }));
+      document.querySelector('#sheet [data-do="bmSave"]').click(); })()`);
+    await wait(600);
+    const edited = Q.store.bookmarks.find((b) => b.title === 'Marmiton FR');
+    if (!edited || edited.folder !== null) { report.errors.push('favoris : modification non enregistrée'); console.error('favoris : modification non enregistrée', edited); } }
   demoScreen('none'); await wait(500);
   // Apparence, bas de page : style de la barre et curseur Transparence (aperçu en direct).
   demoScreen('appearance'); await wait(900); demoScreen('scroll', { top: 'end' }); await wait(500); await shot('24-appearance-style');

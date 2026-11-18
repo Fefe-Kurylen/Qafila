@@ -37,6 +37,7 @@ class Store extends EventEmitter {
     this.tabs = [];
     this.selected = null;
     this.bookmarks = [];
+    this.folders = [];   // dossiers de favoris { id, name, parent (id ou null = racine / barre), addedAt }
     this.history = [];
     this.settings = settingsSchema.defaults();
     this.closedTabs = []; // pile des onglets fermés (« Rouvrir l'onglet fermé »)
@@ -69,8 +70,12 @@ class Store extends EventEmitter {
     try {
       this.tabs = (Array.isArray(raw.tabs) ? raw.tabs : []).filter((t) => t && !t.isPrivate).map(normalizeTab);
       this.bookmarks = (Array.isArray(raw.bookmarks) ? raw.bookmarks : []).filter((b) => b && b.url).map((b) => ({
-        id: b.id || uuid(), title: String(b.title || ''), url: String(b.url), addedAt: num(b.addedAt),
+        id: b.id || uuid(), title: String(b.title || ''), url: String(b.url), addedAt: num(b.addedAt), folder: b.folder ? String(b.folder) : null,
       }));
+      this.folders = (Array.isArray(raw.folders) ? raw.folders : []).filter((f) => f && f.id).map((f) => ({
+        id: String(f.id), name: String(f.name || '').slice(0, 200), parent: f.parent ? String(f.parent) : null, addedAt: num(f.addedAt),
+      }));
+      this.repairFolders();
       this.history = (Array.isArray(raw.history) ? raw.history : []).filter((h) => h && h.url).map((h) => ({
         id: h.id || uuid(), title: String(h.title || ''), url: String(h.url), visitedAt: num(h.visitedAt),
       })).slice(0, HISTORY_MAX);
@@ -81,7 +86,7 @@ class Store extends EventEmitter {
         : this.tabs.reduce((best, t) => (!best || t.lastVisited > best.lastVisited ? t : best), null)?.id ?? null;
     } catch (e) {
       // Contenu inattendu malgré un JSON valide : même protection qu'un fichier corrompu.
-      this.tabs = []; this.bookmarks = []; this.history = []; this.selected = null; this.settings = settingsSchema.defaults();
+      this.tabs = []; this.bookmarks = []; this.folders = []; this.history = []; this.selected = null; this.settings = settingsSchema.defaults();
       this.setAsideUnreadable(e);
     }
     this.closeExpiredTabs();
@@ -107,6 +112,7 @@ class Store extends EventEmitter {
       tabs: this.tabs.filter((t) => !t.isPrivate),
       selected: this.tabs.find((t) => t.id === this.selected && !t.isPrivate) ? this.selected : null,
       bookmarks: this.bookmarks,
+      folders: this.folders,
       history: this.history,
       settings: this.settings,
       sitePermissions: this.sitePermissions,
@@ -221,20 +227,24 @@ class Store extends EventEmitter {
 
   isBookmarked(url) { return !!url && this.bookmarks.some((b) => b.url === url); }
 
-  addBookmark(title, url) {
+  addBookmark(title, url, folder = null) {
     if (!url || this.isBookmarked(url)) return null;
-    const b = { id: uuid(), title: String(title || url), url, addedAt: Date.now() };
+    const b = { id: uuid(), title: String(title || url), url, addedAt: Date.now(), folder: this.folderOrNull(folder) };
     this.bookmarks.unshift(b);
     this.scheduleSave();
     return b;
   }
 
-  /** Ajout en lot (import) à la suite des favoris existants ; renvoie les favoris créés. */
-  addBookmarks(list) {
+  /**
+   * Ajout en lot (import) à la suite des favoris existants ; renvoie les favoris créés. `it.folderPath` (noms de
+   * dossiers depuis la racine) recrée l'arborescence d'origine ; les dossiers créés sont ajoutés à `created`.
+   */
+  addBookmarks(list, created = null) {
     const added = [];
     for (const it of list) {
       if (!it?.url) continue;
-      const b = { id: uuid(), title: String(it.title || it.url).slice(0, 512), url: String(it.url), addedAt: Number(it.addedAt) || Date.now() };
+      const folder = Array.isArray(it.folderPath) && it.folderPath.length ? this.ensureFolderPath(it.folderPath, created) : this.folderOrNull(it.folder);
+      const b = { id: uuid(), title: String(it.title || it.url).slice(0, 512), url: String(it.url), addedAt: Number(it.addedAt) || Date.now(), folder };
       this.bookmarks.push(b);
       added.push(b);
     }
@@ -242,12 +252,134 @@ class Store extends EventEmitter {
     return added;
   }
 
-  /** Retrait en lot (annulation d'un import) ; renvoie le nombre retiré. */
-  removeBookmarks(ids) {
+  /** Retrait en lot (annulation d'un import) ; renvoie le nombre retiré. Les dossiers `folderIds` restés vides partent aussi. */
+  removeBookmarks(ids, folderIds = null) {
     const n = this.bookmarks.length;
     this.bookmarks = this.bookmarks.filter((b) => !ids.has(b.id));
-    if (this.bookmarks.length !== n) this.scheduleSave();
+    let removedFolders = false;
+    if (folderIds && folderIds.size) {
+      // Du plus profond au plus haut : un dossier vidé de ses sous-dossiers importés devient vide à son tour.
+      for (let again = true; again;) {
+        again = false;
+        for (const f of [...this.folders]) {
+          if (!folderIds.has(f.id) || this.bookmarks.some((b) => b.folder === f.id) || this.folders.some((x) => x.parent === f.id)) continue;
+          this.folders = this.folders.filter((x) => x.id !== f.id);
+          again = true; removedFolders = true;
+        }
+      }
+    }
+    if (this.bookmarks.length !== n || removedFolders) this.scheduleSave();
     return n - this.bookmarks.length;
+  }
+
+  // ----- Dossiers de favoris -----
+  folderOrNull(id) { return id && this.folders.some((f) => f.id === id) ? String(id) : null; }
+
+  /** Dossiers sans parent valide ou pris dans une boucle : remis à la racine ; favoris d'un dossier disparu : à la racine. */
+  repairFolders() {
+    const ids = new Set(this.folders.map((f) => f.id));
+    for (const f of this.folders) if (f.parent && (!ids.has(f.parent) || f.parent === f.id)) f.parent = null;
+    for (const f of this.folders) {
+      const seen = new Set([f.id]);
+      for (let p = f.parent; p; p = this.folders.find((x) => x.id === p)?.parent) { if (seen.has(p)) { f.parent = null; break; } seen.add(p); }
+    }
+    for (const b of this.bookmarks) if (b.folder && !ids.has(b.folder)) b.folder = null;
+  }
+
+  /** `id` est `ancestor` ou se trouve à l'intérieur. */
+  isInside(id, ancestor) {
+    for (let p = id, n = 0; p && n < 1000; p = this.folders.find((x) => x.id === p)?.parent, n++) if (p === ancestor) return true;
+    return false;
+  }
+
+  addFolder(name, parent = null) {
+    const f = { id: uuid(), name: String(name || '').trim().slice(0, 200), parent: this.folderOrNull(parent), addedAt: Date.now() };
+    this.folders.push(f);
+    this.scheduleSave();
+    return f;
+  }
+
+  /** Chemin de noms depuis la racine : dossiers existants réutilisés (même nom, même parent), les autres créés. */
+  ensureFolderPath(names, created = null) {
+    let parent = null;
+    for (const raw of names) {
+      const name = String(raw || '').trim().slice(0, 200);
+      if (!name) continue;
+      let f = this.folders.find((x) => x.parent === parent && x.name === name);
+      if (!f) { f = { id: uuid(), name, parent, addedAt: Date.now() }; this.folders.push(f); if (created) created.add(f.id); }
+      parent = f.id;
+    }
+    return parent;
+  }
+
+  renameFolder(id, name) {
+    const f = this.folders.find((x) => x.id === id);
+    const v = String(name || '').trim().slice(0, 200);
+    if (!f || !v) return false;
+    f.name = v;
+    this.scheduleSave();
+    return true;
+  }
+
+  /** Supprime un dossier : son contenu (favoris et sous-dossiers) remonte dans le dossier parent, rien n'est perdu. */
+  removeFolder(id) {
+    const f = this.folders.find((x) => x.id === id);
+    if (!f) return false;
+    for (const x of this.folders) if (x.parent === id) x.parent = f.parent;
+    for (const b of this.bookmarks) if (b.folder === id) b.folder = f.parent;
+    this.folders = this.folders.filter((x) => x.id !== id);
+    this.scheduleSave();
+    return true;
+  }
+
+  /** Range un favori (kind 'bookmark') ou un dossier (kind 'folder') dans `target` (null = racine). */
+  moveItem(kind, id, target) {
+    const dest = this.folderOrNull(target);
+    if (target && !dest) return false;
+    if (kind === 'folder') {
+      const f = this.folders.find((x) => x.id === id);
+      if (!f || (dest && this.isInside(dest, id)) || f.parent === dest) return false;
+      // En fin de liste dans son nouveau dossier.
+      this.folders = this.folders.filter((x) => x.id !== id).concat({ ...f, parent: dest });
+    } else {
+      const b = this.bookmarks.find((x) => x.id === id);
+      if (!b || b.folder === dest) return false;
+      this.bookmarks = this.bookmarks.filter((x) => x.id !== id).concat({ ...b, folder: dest });
+    }
+    this.scheduleSave();
+    return true;
+  }
+
+  /** Déplace un élément d'un cran (delta -1 / +1) parmi ceux du même dossier. */
+  reorderItem(kind, id, delta) {
+    const arr = kind === 'folder' ? this.folders : this.bookmarks;
+    const parentOf = (x) => (kind === 'folder' ? x.parent : x.folder) || null;
+    const i = arr.findIndex((x) => x.id === id);
+    if (i < 0) return false;
+    const p = parentOf(arr[i]);
+    let j = i + (delta < 0 ? -1 : 1);
+    while (j >= 0 && j < arr.length && parentOf(arr[j]) !== p) j += delta < 0 ? -1 : 1;
+    if (j < 0 || j >= arr.length) return false;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    this.scheduleSave();
+    return true;
+  }
+
+  /** Place un élément juste avant `beforeId` (même type), dans le dossier de celui-ci : glisser-déposer. */
+  placeBefore(kind, id, beforeId) {
+    const key = kind === 'folder' ? 'folders' : 'bookmarks';
+    const arr = this[key];
+    const item = arr.find((x) => x.id === id);
+    const ref = arr.find((x) => x.id === beforeId);
+    if (!item || !ref || item === ref) return false;
+    const parent = kind === 'folder' ? ref.parent : ref.folder;
+    if (kind === 'folder' && parent && this.isInside(parent, id)) return false;
+    const moved = kind === 'folder' ? { ...item, parent } : { ...item, folder: parent };
+    const rest = arr.filter((x) => x.id !== id);
+    rest.splice(rest.indexOf(ref), 0, moved);
+    this[key] = rest;
+    this.scheduleSave();
+    return true;
   }
 
   removeBookmark(idOrUrl) {

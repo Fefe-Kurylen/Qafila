@@ -63,17 +63,22 @@ function chromiumFiles(dir) {
   return files;
 }
 
-function readChromium(dir) {
+/** Noms des dossiers racine des autres navigateurs (la barre de favoris devient la racine de Qafila). */
+const ROOT_NAMES = { other: 'Autres favoris', synced: 'Favoris sur mobile', menu: 'Menu des favoris' };
+
+function readChromium(dir, names = ROOT_NAMES) {
   const out = [];
   for (const file of chromiumFiles(dir)) {
     let json;
     try { json = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { continue; }
-    const walk = (node) => {
+    const walk = (node, folderPath) => {
       if (!node || out.length >= MAX_IMPORT) return;
-      if (node.type === 'url' && webURL(node.url)) out.push({ title: String(node.name || ''), url: node.url, addedAt: chromiumDate(node.date_added) });
-      for (const c of Array.isArray(node.children) ? node.children : []) walk(c);
+      if (node.type === 'url' && webURL(node.url)) out.push({ title: String(node.name || ''), url: node.url, addedAt: chromiumDate(node.date_added), folderPath });
+      for (const c of Array.isArray(node.children) ? node.children : []) walk(c, c.type === 'folder' ? [...folderPath, String(c.name || '')] : folderPath);
     };
-    for (const k of ['bookmark_bar', 'other', 'synced']) walk(json?.roots?.[k]);
+    walk(json?.roots?.bookmark_bar, []);
+    walk(json?.roots?.other, [names.other]);
+    walk(json?.roots?.synced, [names.synced]);
   }
   return out;
 }
@@ -128,22 +133,29 @@ function firefoxBackup(dir) {
   return best?.f || null;
 }
 
-function readFirefox(dir) {
+const FIREFOX_ROOTS = { toolbar_____: null, menu________: 'menu', unfiled_____: 'other', mobile______: 'synced' };
+
+function readFirefox(dir, names = ROOT_NAMES) {
   const file = firefoxBackup(dir);
   if (!file) return [];
   const json = JSON.parse(readMozLz4(file));
   const out = [];
-  const walk = (node) => {
+  const walk = (node, folderPath, depth) => {
     if (!node || out.length >= MAX_IMPORT) return;
-    if (node.type === 'text/x-moz-place' && webURL(node.uri)) out.push({ title: String(node.title || ''), url: node.uri, addedAt: node.dateAdded ? Math.round(Number(node.dateAdded) / 1000) || null : null });
-    for (const c of Array.isArray(node.children) ? node.children : []) walk(c);
+    if (node.type === 'text/x-moz-place' && webURL(node.uri)) out.push({ title: String(node.title || ''), url: node.uri, addedAt: node.dateAdded ? Math.round(Number(node.dateAdded) / 1000) || null : null, folderPath });
+    for (const c of Array.isArray(node.children) ? node.children : []) {
+      if (c.type !== 'text/x-moz-place-container') { walk(c, folderPath, depth + 1); continue; }
+      // Dossiers racine de Firefox (barre, menu, autres, mobile) : la barre devient la racine de Qafila.
+      if (depth === 0 && c.guid in FIREFOX_ROOTS) { const r = FIREFOX_ROOTS[c.guid]; walk(c, r ? [names[r]] : [], depth + 1); continue; }
+      walk(c, [...folderPath, String(c.title || '')], depth + 1);
+    }
   };
-  walk(json);
+  walk(json, [], 0);
   return out;
 }
 
-function readBrowser(b) {
-  return b.kind === 'firefox' ? readFirefox(b.dir) : readChromium(b.dir);
+function readBrowser(b, names = ROOT_NAMES) {
+  return b.kind === 'firefox' ? readFirefox(b.dir, names) : readChromium(b.dir, names);
 }
 
 // ----- Fichiers -----
@@ -160,23 +172,33 @@ function parser() {
 
 function flattenNetscape(roots) {
   const out = [];
-  const walk = (n) => {
+  const walk = (n, folderPath) => {
     if (!n || out.length >= MAX_IMPORT) return;
-    if (n.type === 'bookmark' && webURL(n.url)) out.push({ title: String(n.title || ''), url: n.url, addedAt: n.addedAt ?? null });
-    for (const c of Array.isArray(n.children) ? n.children : []) walk(c);
+    if (n.type === 'bookmark' && webURL(n.url)) out.push({ title: String(n.title || ''), url: n.url, addedAt: n.addedAt ?? null, folderPath });
+    // Barre de favoris du fichier (ou dossier sans nom) : racine de Qafila ; autres dossiers conservés.
+    for (const c of Array.isArray(n.children) ? n.children : []) walk(c, c.type === 'folder' && !c.toolbar && c.name ? [...folderPath, String(c.name)] : folderPath);
   };
-  for (const r of roots || []) walk(r);
+  for (const r of roots || []) walk(r, r?.type === 'folder' && !r.toolbar && r.name ? [String(r.name)] : []);
   return out;
 }
 
 const escHTML = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Favoris au format HTML Netscape (shared/IMPORT.md §10.2), accepté par Chrome, Edge, Firefox et Safari. */
-function bookmarksHTML(list) {
+function bookmarksHTML(list, folders = []) {
   const sec = (ms) => Math.floor((Number(ms) || Date.now()) / 1000);
   const lines = ['<!DOCTYPE NETSCAPE-Bookmark-file-1>', '<!-- This is an automatically generated file.', '     It will be read and overwritten.', '     DO NOT EDIT! -->',
     '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">', '<TITLE>Bookmarks</TITLE>', '<H1>Bookmarks</H1>', '<DL><p>'];
-  for (const b of list) lines.push(`    <DT><A HREF="${escHTML(b.url)}" ADD_DATE="${sec(b.addedAt)}">${escHTML(b.title || b.url)}</A>`);
+  const ids = new Set(folders.map((f) => f.id));
+  const level = (parent, pad) => {
+    for (const f of folders.filter((x) => (x.parent || null) === parent)) {
+      lines.push(`${pad}<DT><H3 ADD_DATE="${sec(f.addedAt)}">${escHTML(f.name)}</H3>`, `${pad}<DL><p>`);
+      level(f.id, pad + '    ');
+      lines.push(`${pad}</DL><p>`);
+    }
+    for (const b of list.filter((x) => ((x.folder && ids.has(x.folder)) ? x.folder : null) === parent)) lines.push(`${pad}<DT><A HREF="${escHTML(b.url)}" ADD_DATE="${sec(b.addedAt)}">${escHTML(b.title || b.url)}</A>`);
+  };
+  level(null, '    ');
   lines.push('</DL><p>');
   return lines.join('\n') + '\n';
 }
@@ -225,8 +247,9 @@ class Transfer {
       known.add(k);
       fresh.push(it);
     }
-    const added = this.store.addBookmarks(fresh);
-    if (added.length) this.last = { source, ids: added.map((b) => b.id), at: Date.now() };
+    const created = new Set();
+    const added = this.store.addBookmarks(fresh, created);
+    if (added.length) this.last = { source, ids: added.map((b) => b.id), folders: [...created], at: Date.now() };
     this.refresh();
     this.onChange();
     return { added: added.length, already };
@@ -241,7 +264,7 @@ class Transfer {
     const b = browserDirs().find((x) => x.id === id);
     if (!b) return false;
     let items = [];
-    try { items = readBrowser(b); } catch { items = []; }
+    try { items = readBrowser(b, this.rootNames()); } catch { items = []; }
     if (!items.length) { await this.report(false, this.t('transfer_none_found', b.label)); return false; }
     const r = this.merge(items, b.label);
     await this.report(true, this.t('transfer_imported', r.added, b.label), r.already ? this.t('transfer_already', r.already) : '');
@@ -327,7 +350,8 @@ class Transfer {
       if (this.store.setSetting(k, v)) { this.onSettingChanged(k); changed++; }
     }
     const items = (Array.isArray(data.bookmarks) ? data.bookmarks : []).filter((b) => b && webURL(b.url)).slice(0, MAX_IMPORT)
-      .map((b) => ({ title: String(b.title || ''), url: b.url, addedAt: Number(b.addedAt) || null }));
+      .map((b) => ({ title: String(b.title || ''), url: b.url, addedAt: Number(b.addedAt) || null,
+        folderPath: Array.isArray(b.folderPath) ? b.folderPath.map((x) => String(x || '').slice(0, 200)).filter(Boolean).slice(0, 20) : [] }));
     const r = this.merge(items, this.t('transfer_backup'));
     await this.report(true, this.t('transfer_backup_done'), this.t('transfer_backup_done_sub', r.added));
     return true;
@@ -353,7 +377,7 @@ class Transfer {
   async exportBookmarks() {
     const list = this.store.bookmarks;
     if (!list.length) { await this.report(false, this.t('transfer_no_bookmarks')); return false; }
-    const file = await this.save(`Qafila - favoris - ${today()}.html`, bookmarksHTML(list));
+    const file = await this.save(`Qafila - favoris - ${today()}.html`, bookmarksHTML(list, this.store.folders));
     if (file) await this.exported(file, this.t('transfer_exported_bookmarks', list.length));
     return !!file;
   }
@@ -362,17 +386,27 @@ class Transfer {
     const settings = {};
     for (const [k, v] of Object.entries(this.store.settings)) if (!BACKUP_SKIP.has(k)) settings[k] = v;
     const data = { format: BACKUP_FORMAT, v: 1, app: 'Qafila PC', version: app.getVersion(), exportedAt: new Date().toISOString(),
-      settings, bookmarks: this.store.bookmarks.map((b) => ({ title: b.title, url: b.url, addedAt: b.addedAt })) };
+      settings, bookmarks: this.store.bookmarks.map((b) => ({ title: b.title, url: b.url, addedAt: b.addedAt, folderPath: this.folderPath(b.folder) })) };
     const file = await this.save(`Qafila - sauvegarde - ${today()}.json`, JSON.stringify(data, null, 2) + '\n');
     if (file) await this.exported(file, this.t('transfer_exported_backup'));
     return !!file;
+  }
+
+  /** Noms (traduits) des dossiers racine des autres navigateurs. */
+  rootNames() { return { other: this.t('bm_root_other'), synced: this.t('bm_root_mobile'), menu: this.t('bm_root_menu') }; }
+
+  /** Noms des dossiers depuis la racine jusqu'à `id`. */
+  folderPath(id) {
+    const out = [];
+    for (let p = id, n = 0; p && n < 50; n++) { const f = this.store.folders.find((x) => x.id === p); if (!f) break; out.unshift(f.name); p = f.parent; }
+    return out;
   }
 
   /** Annule le dernier import : retire les favoris qu'il avait ajoutés. */
   undo() {
     if (!this.last) return 0;
     const ids = new Set(this.last.ids);
-    const n = this.store.removeBookmarks(ids);
+    const n = this.store.removeBookmarks(ids, new Set(this.last.folders || []));
     this.last = null;
     this.refresh();
     this.onChange();

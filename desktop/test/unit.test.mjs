@@ -304,3 +304,45 @@ test('indices client par en-têtes : base partout, détaillés quand demandés (
   assert.match(full['sec-ch-ua-full-version-list'], /"Google Chrome";v="\d+\.\d+\.\d+\.\d+"/);
   assert.equal(full['viewport-width'], undefined);
 });
+
+test('favoris : dossiers (création, rangement, ordre, suppression sans perte, réparation, import en arborescence)', () => {
+  const dir = tmpDir();
+  const s = new Store(dir);
+  s.load();
+  const a = s.addBookmark('A', 'https://a.example/');
+  const b = s.addBookmark('B', 'https://b.example/');
+  const f = s.addFolder('Travail');
+  const g = s.addFolder('Outils', f.id);
+  assert.ok(s.moveItem('bookmark', a.id, g.id));
+  assert.equal(s.bookmarks.find((x) => x.id === a.id).folder, g.id);
+  assert.ok(!s.moveItem('folder', f.id, g.id), 'un dossier ne va pas dans son propre sous-dossier');
+  assert.ok(s.moveItem('folder', g.id, null));
+  // Ordre parmi les éléments du même dossier.
+  const c = s.addBookmark('C', 'https://c.example/');
+  const root = () => s.bookmarks.filter((x) => !x.folder).map((x) => x.title);
+  assert.deepEqual(root(), ['C', 'B']);
+  assert.ok(s.reorderItem('bookmark', b.id, -1));
+  assert.deepEqual(root(), ['B', 'C']);
+  assert.ok(s.placeBefore('bookmark', c.id, b.id));
+  assert.deepEqual(root(), ['C', 'B']);
+  // Suppression d'un dossier : son contenu remonte.
+  s.moveItem('folder', g.id, f.id);
+  assert.ok(s.removeFolder(f.id));
+  assert.equal(s.folders.find((x) => x.id === g.id).parent, null);
+  assert.ok(s.removeFolder(g.id));
+  assert.equal(s.bookmarks.find((x) => x.id === a.id).folder, null);
+  // Import : arborescence recréée et réutilisée ; annulation : dossiers importés vides retirés.
+  const created = new Set();
+  const added = s.addBookmarks([{ title: 'X', url: 'https://x.example/', folderPath: ['Autres', 'Sub'] }, { title: 'Y', url: 'https://y.example/', folderPath: ['Autres'] }], created);
+  assert.equal(created.size, 2);
+  assert.equal(s.removeBookmarks(new Set(added.map((x) => x.id)), created), 2);
+  assert.equal(s.folders.length, 0);
+  // Réparation au chargement : boucle et favori orphelin.
+  clearTimeout(s._timer);
+  fs.writeFileSync(path.join(dir, 'state.json'), JSON.stringify({ bookmarks: [{ id: 'k', title: 'K', url: 'https://k.example/', folder: 'zz' }], folders: [{ id: 'p', name: 'P', parent: 'q' }, { id: 'q', name: 'Q', parent: 'p' }] }));
+  const r = new Store(dir);
+  r.load();
+  assert.equal(r.bookmarks[0].folder, null);
+  assert.ok(r.folders.some((x) => x.parent === null));
+  clearTimeout(r._timer);
+});
