@@ -127,7 +127,11 @@
         }
       ],
       "identity": "-",
-      "hardenedRuntime": false
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "NSCameraUsageDescription": "Un site que vous visitez demande la caméra (visioconférence). Qafila vous demande d'abord votre accord, site par site.",
+        "NSMicrophoneUsageDescription": "Un site que vous visitez demande le micro (visioconférence). Qafila vous demande d'abord votre accord, site par site."
+      }
     },
     "publish": [
       {
