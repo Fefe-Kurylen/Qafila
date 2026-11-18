@@ -63,6 +63,44 @@ function chromeMetadata() {
 const GOOGLE_LOGIN_HOSTS = new Set(['accounts.google.com', 'accounts.youtube.com']);
 const isGoogleLogin = (url) => GOOGLE_LOGIN_HOSTS.has(hostOf(url));
 
+// Indices client envoyés par en-têtes (Sec-CH-UA…). Electron ne les envoie jamais, même quand navigator.userAgentData
+// annonce « Google Chrome » : Google voit l'incohérence et refuse la connexion. Comme Chrome : indices de base sur
+// toute requête https, indices détaillés quand le site les a demandés (Accept-CH / Critical-CH, mémorisés par origine)
+// et toujours pour les domaines de Google (un Chrome qui les connaît déjà).
+const CH_LOW = ['sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform'];
+const CH_GOOGLE = /(^|\.)(google\.[a-z.]+|youtube\.com|gstatic\.com|googleapis\.com|googleusercontent\.com|withgoogle\.com)$/;
+const chBrands = (list) => list.map((b) => `"${b.brand}";v="${b.version}"`).join(', ');
+function clientHintHeaders(requested = new Set(), meta = chromeMetadata()) {
+  const all = {
+    'sec-ch-ua': chBrands(meta.brands),
+    'sec-ch-ua-mobile': meta.mobile ? '?1' : '?0',
+    'sec-ch-ua-platform': `"${meta.platform}"`,
+    'sec-ch-ua-full-version-list': chBrands(meta.fullVersionList),
+    'sec-ch-ua-full-version': `"${meta.fullVersion}"`,
+    'sec-ch-ua-platform-version': `"${meta.platformVersion}"`,
+    'sec-ch-ua-arch': `"${meta.architecture}"`,
+    'sec-ch-ua-bitness': `"${meta.bitness}"`,
+    'sec-ch-ua-model': `"${meta.model}"`,
+    'sec-ch-ua-wow64': meta.wow64 ? '?1' : '?0',
+    'sec-ch-ua-form-factors': '"Desktop"',
+  };
+  const out = {};
+  for (const k of CH_LOW) out[k] = all[k];
+  for (const k of requested) if (all[k]) out[k] = all[k];
+  return out;
+}
+/** Indices demandés par une réponse (en-têtes Accept-CH et Critical-CH), en minuscules. */
+function requestedHints(responseHeaders = {}) {
+  const set = new Set();
+  for (const [k, v] of Object.entries(responseHeaders)) {
+    const key = k.toLowerCase();
+    if (key !== 'accept-ch' && key !== 'critical-ch') continue;
+    for (const h of [].concat(v).join(',').split(',')) { const t = h.trim().toLowerCase(); if (t.startsWith('sec-ch-ua')) set.add(t); }
+  }
+  return set;
+}
+const ALL_HINTS = new Set(Object.keys(clientHintHeaders(new Set(['sec-ch-ua-full-version-list', 'sec-ch-ua-full-version', 'sec-ch-ua-platform-version', 'sec-ch-ua-arch', 'sec-ch-ua-bitness', 'sec-ch-ua-model', 'sec-ch-ua-wow64', 'sec-ch-ua-form-factors']))));
+
 function hostOf(url) { try { return new URL(url).hostname.toLowerCase(); } catch { return ''; } }
 function stripWWW(h) { return h.startsWith('www.') ? h.slice(4) : h; }
 
@@ -102,6 +140,8 @@ class TabManager extends EventEmitter {
     this.userAgent = desktopUserAgent(userAgent);
     /** Identité appliquée à chaque page (setIdentity) : évite de la renvoyer à chaque navigation. */
     this.identity = new Map();
+    /** Indices client demandés par chaque origine (Accept-CH), par session : la navigation privée n'en garde rien. */
+    this.hintPrefs = new WeakMap();
     this.permissions = new SitePermissions({ store, win: () => this.win, t });
     this.popups = new Set();       // fenêtres de connexion ouvertes par les sites (window.open avec dimensions)
     this.persistent = session.fromPartition('persist:qafila');
@@ -141,8 +181,25 @@ class TabManager extends EventEmitter {
     // Un seul gestionnaire onHeadersReceived par session : JavaScript désactivé = « script-src 'none' » ajouté au
     // document (les politiques s'additionnent : le site ne peut pas l'assouplir). Cadre principal : réglage de son
     // adresse ; sous-cadre : réglage de la page qui le contient (comme Chrome, réglage par site de premier niveau).
+    this.hintPrefs.set(ses, new Map());
+    // Un seul gestionnaire onBeforeSendHeaders par session : indices client d'un vrai Chrome (voir clientHintHeaders).
+    ses.webRequest.onBeforeSendHeaders({ urls: ['https://*/*', 'wss://*/*'] }, (details, cb) => {
+      const ident = this.identity.get(details.webContentsId);
+      if (ident !== undefined && ident !== 'chrome') return cb({});
+      let origin = '';
+      try { origin = new URL(details.url).origin; } catch { return cb({}); }
+      const host = hostOf(details.url);
+      const asked = CH_GOOGLE.test(host) ? ALL_HINTS : (this.hintPrefs.get(ses)?.get(origin) || undefined);
+      const headers = { ...details.requestHeaders };
+      for (const k of Object.keys(headers)) if (k.toLowerCase().startsWith('sec-ch-ua')) delete headers[k];
+      cb({ requestHeaders: Object.assign(headers, clientHintHeaders(asked)) });
+    });
     ses.webRequest.onHeadersReceived({ urls: ['http://*/*', 'https://*/*'] }, (details, cb) => {
       const { resourceType } = details;
+      if ((resourceType === 'mainFrame' || resourceType === 'subFrame') && details.url.startsWith('https://')) {
+        const asked = requestedHints(details.responseHeaders);
+        if (asked.size) { try { this.hintPrefs.get(ses)?.set(new URL(details.url).origin, asked); } catch { /* adresse invalide */ } }
+      }
       if (resourceType !== 'mainFrame' && resourceType !== 'subFrame') return cb({});
       const top = resourceType === 'mainFrame' ? details.url : (this.pageURLFor(details.webContentsId) || details.url);
       if (this.isJavaScriptEnabled(top)) return cb({});
@@ -181,6 +238,7 @@ class TabManager extends EventEmitter {
     if (!this.private) return null;
     const s = this.private;
     this.privateHttpOnlyHosts.clear();
+    if (this.private) this.hintPrefs.set(this.private, new Map());
     this.closePopups({ privateOnly: true });
     this.permissions.privateAnswers.clear();
     this.emit('private-dropped');
@@ -849,4 +907,4 @@ class TabManager extends EventEmitter {
   }
 }
 
-module.exports = { copyText, TabManager, desktopUserAgent, MOBILE_UA, CHROME_UA, chromeMetadata, isGoogleLogin, hostOf, stripWWW };
+module.exports = { copyText, TabManager, desktopUserAgent, MOBILE_UA, CHROME_UA, chromeMetadata, clientHintHeaders, requestedHints, isGoogleLogin, hostOf, stripWWW };

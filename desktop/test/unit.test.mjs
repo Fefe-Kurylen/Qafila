@@ -290,3 +290,17 @@ test('identité Chrome : user agent réduit et indices client avec la marque Goo
   assert.ok(isGoogleLogin('https://accounts.google.com/v3/signin/identifier?hl=fr'));
   for (const u of ['https://mail.google.com/', 'https://accounts.google.com.evil.example/']) assert.ok(!isGoogleLogin(u), u);
 });
+
+test('indices client par en-têtes : base partout, détaillés quand demandés (Accept-CH)', () => {
+  const { clientHintHeaders, requestedHints } = require('../main/tabs.js');
+  const base = clientHintHeaders();
+  assert.deepEqual(Object.keys(base).sort(), ['sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform']);
+  assert.match(base['sec-ch-ua'], /^"Google Chrome";v="\d+", "Chromium";v="\d+", "Not\/A\)Brand";v="24"$/);
+  assert.equal(base['sec-ch-ua-mobile'], '?0');
+  const asked = requestedHints({ 'Accept-CH': ['Sec-CH-UA-Arch, Sec-CH-UA-Full-Version-List, Viewport-Width'], 'critical-ch': 'Sec-CH-UA-Bitness' });
+  assert.deepEqual([...asked].sort(), ['sec-ch-ua-arch', 'sec-ch-ua-bitness', 'sec-ch-ua-full-version-list']);
+  const full = clientHintHeaders(asked);
+  assert.equal(full['sec-ch-ua-bitness'], '"64"');
+  assert.match(full['sec-ch-ua-full-version-list'], /"Google Chrome";v="\d+\.\d+\.\d+\.\d+"/);
+  assert.equal(full['viewport-width'], undefined);
+});
