@@ -23,6 +23,9 @@ const shortcuts = require('./shortcuts');
 const { APP_ID } = require('./app-id');
 const { safeFilename, extensionOf, zoneIdentifier } = require('./filename');
 const { Updater } = require('./updater');
+// Mises à jour intégrées (GitHub) coupées : les mises à jour passeront par le Microsoft Store et l'App Store.
+// main/updater.js reste en place ; le remettre à true réactive le bouton « Mettre à jour » et la page À propos.
+const SELF_UPDATE = false;
 const { Extensions } = require('./extensions');
 
 const argv = process.argv.slice(1);
@@ -1070,13 +1073,15 @@ if (GOT_LOCK) app.whenReady().then(async () => {
   });
 
   createWindow();
-  Q.updater = new Updater({ onChange: broadcast, isAutomatic: () => Q.store.settings.autoUpdate !== false, demo: DEMO });
-  // Avant l'installation : état enregistré, extensions déchargées, fenêtres de connexion et pages fermées.
-  Q.updater.beforeInstall = () => {
-    Q.store?.saveNow();
-    Q.extensions?.shutdown();
-    for (const w of BrowserWindow.getAllWindows()) if (w !== Q.win && !w.isDestroyed()) w.destroy();
-  };
+  if (SELF_UPDATE) {
+    Q.updater = new Updater({ onChange: broadcast, isAutomatic: () => Q.store.settings.autoUpdate !== false, demo: DEMO });
+    // Avant l'installation : état enregistré, extensions déchargées, fenêtres de connexion et pages fermées.
+    Q.updater.beforeInstall = () => {
+      Q.store?.saveNow();
+      Q.extensions?.shutdown();
+      for (const w of BrowserWindow.getAllWindows()) if (w !== Q.win && !w.isDestroyed()) w.destroy();
+    };
+  }
   // Extensions Chrome (Chrome Web Store, boutons dans la barre, menus) : session normale seulement.
   Q.extensions = new Extensions({
     tabs: Q.tabs, win: () => Q.win, t: translator, newTab, selectTab, closeTab,
@@ -1086,8 +1091,7 @@ if (GOT_LOCK) app.whenReady().then(async () => {
   Q.extensions.init({ webStore: !DEMO })
     .then(() => (SMOKE_DIR ? Q.extensions.loadUnpacked(path.join(__dirname, '..', 'test', 'fixtures', 'extension')) : null))
     .catch((e) => console.error('extensions :', e?.message || e));
-  Q.updater.start();
-  Q.win.on('focus', () => Q.updater?.maybeCheck());
+  if (Q.updater) { Q.updater.start(); Q.win.on('focus', () => Q.updater?.maybeCheck()); }
   if (!SMOKE_DIR) for (const url of urlsFromArgv(argv)) newTab({ url });
   if (SMOKE_DIR) runSmoke().catch((e) => { console.error('Smoke :', e); app.exit(1); });
 });
@@ -1597,6 +1601,7 @@ async function runSmoke() {
   demoScreen('about'); await wait(900); await shot('25-about');
   demoScreen('none'); await wait(500);
   // Mise à jour prête (état simulé, rien n'est téléchargé) : bouton « Mettre à jour » dans la barre et page À propos.
+  if (Q.updater) {
   Q.updater.state = { status: 'ready', version: '0.9.2', percent: 100, manual: false };
   broadcast(); await wait(900); Q.glass.refresh(0); await wait(400); await shot('34-update-button');
   demoScreen('about'); await wait(900); await shot('35-update-about');
@@ -1604,6 +1609,7 @@ async function runSmoke() {
   set('appearance', 'dark'); await wait(1500); Q.glass.refresh(0); await wait(400); await shot('36-update-dark');
   set('appearance', 'light');
   Q.updater.state = { status: 'disabled', version: null, percent: null, manual: false };
+  }
   // Extensions : bouton de l'extension d'essai dans la barre, sa fenêtre, réglages ; autorisations des sites.
   const fail = (m) => { report.errors.push(m); console.error('smoke :', m); };
   for (let i = 0; i < 30 && !(Q.extensions?.ready && Q.extensions.list().length); i++) await wait(200);

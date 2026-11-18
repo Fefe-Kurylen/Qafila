@@ -430,7 +430,7 @@ P.about = () => {
     body: `<div class="about-head"><div class="serif">Qafila</div></div>`
       + group([`<div class="s-row"><span class="s-l">${esc(t('version'))}</span><span class="s-v">${esc(a.version)}</span></div>`,
         `<div class="s-row"><span class="s-l">${esc(t('engine_label'))}</span><span class="s-v">${esc(t('about_engine_desktop', a.electron, a.chrome))}</span></div>`], { footer: t('about_privacy') })
-      + updatesGroup()
+      + (S.state?.update?.status && S.state.update.status !== 'disabled' ? updatesGroup() : '')
       + group([`<button class="s-row" data-do="source"><span class="s-l">${esc(t('source_code'))}</span><span class="s-chev">${icon('external', 16)}</span></button>`])
       + group(shortcutList(a.platform === 'darwin').map(([k, id]) => `<div class="s-row"><span class="s-ic">${icon(actionIcon(id, {}), 18)}</span><span class="s-l">${esc(actionLabel(id))}</span><span class="kbd" dir="ltr">${esc(k)}</span></div>`), { header: t('shortcuts') }),
   };
