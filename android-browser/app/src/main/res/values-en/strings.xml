@@ -308,7 +308,7 @@
     <string name="version">Version</string>
     <string name="engine">Engine</string>
     <string name="about_privacy">No telemetry, no account. History, bookmarks and settings stay on this device. Private tabs leave no history or cache.</string>
-    <string name="source_code">Source code</string>
+    <string name="source_code">Support</string>
     <string name="new_tabs_group">New tabs</string>
     <string name="other_sites">Other sites</string>
     <string name="no_private_tabs">No private tabs.\nTap + to open one.</string>

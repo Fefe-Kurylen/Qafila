@@ -1,4 +1,6 @@
 # Qafila Browser iOS : compilation de vérification à chaque push ; dès que les secrets App Store Connect sont là,
+# Dépôt privé (minutes Mac de GitHub comptées x10) : lancé seulement quand ce fichier change ; les versions
+# signées iPhone / Mac sont fabriquées par le travail « Qafila - Apple » (dépôt Pyramid-code, branche qafila-apple).
 # chaque push sur main envoie aussi une version sur TestFlight (l'iPhone se met à jour tout seul) ; App Store à la demande.
 # (Si GitHub manque de Mac disponibles, le travail peut attendre puis être annulé : un nouvel envoi le relance.)
 name: Qafila iOS
@@ -6,9 +8,7 @@ name: Qafila iOS
 on:
   push:
     branches: [main]
-    paths: ["ios-browser/**", "shared/support.json", ".github/workflows/ios.yml"]
-  pull_request:
-    paths: ["ios-browser/**", "shared/support.json"]
+    paths: [".github/workflows/ios.yml"]
   workflow_dispatch:
     inputs:
       lane:

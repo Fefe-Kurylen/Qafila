@@ -648,7 +648,7 @@ struct AboutSettings: View {
                 LabeledContent("Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
                 LabeledContent("Moteur", value: "WebKit")
                 LabeledContent("Données collectées", value: L("Aucune"))
-                Link("Code source", destination: URL(string: "https://github.com/Fefe-Kurylen/qafila")!)
+                Link(L("Assistance"), destination: URL(string: "https://fefe-kurylen.github.io/Qafila/")!)
             }
         }
         .navigationTitle("À propos")

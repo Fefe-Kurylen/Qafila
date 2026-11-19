@@ -308,7 +308,7 @@
     <string name="version">Versión</string>
     <string name="engine">Motor</string>
     <string name="about_privacy">Sin telemetría ni cuenta. El historial, los marcadores y los ajustes se quedan en este dispositivo. Las pestañas privadas no dejan historial ni caché.</string>
-    <string name="source_code">Código fuente</string>
+    <string name="source_code">Soporte</string>
     <string name="new_tabs_group">Pestañas nuevas</string>
     <string name="other_sites">Otros sitios</string>
     <string name="no_private_tabs">No hay pestañas privadas.\nToca + para abrir una.</string>

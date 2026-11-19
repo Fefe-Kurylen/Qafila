@@ -802,7 +802,7 @@ export function installSheetEvents() {
         else if (r?.status === 'error') toast(t('update_status_error'));
         return;
       }
-      if (d === 'source') { q.openExternal('https://github.com/Fefe-Kurylen/qafila'); return; }
+      if (d === 'source') { q.openExternal('https://fefe-kurylen.github.io/Qafila/'); return; }
       // Style de l'interface : Classique minimaliste = barre pleine largeur opaque, en une partie, angles droits.
       if (d === 'uiStyleClassic') { await q.settings.set('uiStyle', 'classic'); await saveToolbar({ style: 'classic', preset: toolbar().preset }); await q.settings.set('barLayout', 'one'); return; }
       if (d === 'uiStyleModern') { await q.settings.set('uiStyle', 'modern'); await saveToolbar({ style: 'floating', preset: toolbar().preset }); await q.settings.set('barLayout', 'split'); return; }

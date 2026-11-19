@@ -308,7 +308,7 @@
     <string name="version">الإصدار</string>
     <string name="engine">المحرك</string>
     <string name="about_privacy">لا قياس عن بُعد ولا حساب. يبقى السجل والإشارات المرجعية والإعدادات على هذا الجهاز. لا تترك علامات التبويب الخاصة سجلًا ولا ذاكرة تخزين مؤقت.</string>
-    <string name="source_code">الشيفرة المصدرية</string>
+    <string name="source_code">الدعم</string>
     <string name="new_tabs_group">علامات تبويب جديدة</string>
     <string name="other_sites">مواقع أخرى</string>
     <string name="no_private_tabs">لا توجد علامات تبويب خاصة.\nالمس + لفتح واحدة.</string>

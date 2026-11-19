@@ -308,7 +308,7 @@
     <string name="version">Version</string>
     <string name="engine">Engine</string>
     <string name="about_privacy">Keine Telemetrie, kein Konto. Verlauf, Lesezeichen und Einstellungen bleiben auf diesem Gerät. Private Tabs hinterlassen weder Verlauf noch Cache.</string>
-    <string name="source_code">Quellcode</string>
+    <string name="source_code">Hilfe</string>
     <string name="new_tabs_group">Neue Tabs</string>
     <string name="other_sites">Andere Websites</string>
     <string name="no_private_tabs">Keine privaten Tabs.\nTippen Sie auf +, um einen zu öffnen.</string>

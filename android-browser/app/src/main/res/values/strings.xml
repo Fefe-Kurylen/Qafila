@@ -321,7 +321,7 @@
     <string name="version">Version</string>
     <string name="engine">Moteur</string>
     <string name="about_privacy">Aucune télémétrie, aucun compte. L\'historique, les favoris et les réglages restent sur cet appareil. Les onglets privés ne laissent ni historique ni cache.</string>
-    <string name="source_code">Code source</string>
+    <string name="source_code">Assistance</string>
     <string name="new_tabs_group">Nouveaux onglets</string>
     <string name="other_sites">Autres sites</string>
     <string name="no_private_tabs">Aucun onglet privé.\nTouchez + pour en ouvrir un.</string>

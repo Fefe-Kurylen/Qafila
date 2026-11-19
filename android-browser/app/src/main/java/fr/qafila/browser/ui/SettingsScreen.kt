@@ -730,7 +730,7 @@ private fun AboutPage(store: BrowserStore) {
         }
         Spacer(Modifier.height(20.dp))
         GroupCard {
-            ActionRow(stringResource(R.string.source_code), icon = QIcon.CHEVRON_RIGHT) { store.showSettings.value = false; store.newTab(url = "https://github.com/Fefe-Kurylen/Qafila") }
+            ActionRow(stringResource(R.string.source_code), icon = QIcon.CHEVRON_RIGHT) { store.showSettings.value = false; store.newTab(url = "https://fefe-kurylen.github.io/Qafila/") }
         }
     }
 }

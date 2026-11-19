@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [".github/workflows/screenshots.yml", "ios-browser/QafilaBrowser/**", "android-browser/app/src/**", "android-browser/play/capture-screenshots.sh"]
+    paths: [".github/workflows/screenshots.yml"]
 
 concurrency:
   group: qafila-screenshots-${{ github.ref }}
