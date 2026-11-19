@@ -27,6 +27,10 @@ targets:
   QafilaBrowser:
     type: application
     platform: iOS
+    # iPhone seulement (XcodeGen met iPhone + iPad par défaut au niveau de la cible ; l'App Store exigeait alors des captures iPad).
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: "1"
     # Abonnement « Soutenir Qafila » simulé quand l'appli est lancée depuis Xcode (sans compte App Store Connect).
     scheme:
       storeKitConfiguration: Qafila.storekit
