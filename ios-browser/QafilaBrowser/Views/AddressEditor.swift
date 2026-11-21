@@ -101,22 +101,27 @@ struct SuggestionsPanel: View {
         VStack(alignment: .leading, spacing: 0) {
             if showingDefaults {
                 if !store.bookmarks.isEmpty {
-                    header("FAVORIS")
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 14) {
-                            ForEach(store.bookmarks.prefix(10)) { b in
-                                Button { go(b.url.absoluteString) } label: {
-                                    VStack(spacing: 6) {
-                                        Text(String(b.title.prefix(1)).uppercased())
-                                            .font(.system(size: 22, weight: .semibold, design: .serif))
-                                            .frame(width: 56, height: 56)
-                                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.07)))
-                                        Text(b.title).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1).frame(width: 66)
-                                    }
-                                }.buttonStyle(.plain)
-                            }
-                        }.padding(.horizontal, 14)
-                    }.padding(.bottom, 8)
+                    if store.settings.favoritesStyle == .icons {
+                        FavoritesGrid(icons: store.tabManager.siteIcons, limit: 8) { go($0.url.absoluteString) }
+                            .padding(.bottom, 6)
+                    } else {
+                        header("FAVORIS")
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(store.bookmarks.prefix(10)) { b in
+                                    Button { go(b.url.absoluteString) } label: {
+                                        VStack(spacing: 6) {
+                                            Text(String(b.title.prefix(1)).uppercased())
+                                                .font(.system(size: 22, weight: .semibold, design: .serif))
+                                                .frame(width: 56, height: 56)
+                                                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.07)))
+                                            Text(b.title).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1).frame(width: 66)
+                                        }
+                                    }.buttonStyle(.plain)
+                                }
+                            }.padding(.horizontal, 14)
+                        }.padding(.bottom, 8)
+                    }
                 }
                 let recent = Array(store.history.prefix(4))
                 if !recent.isEmpty {
@@ -159,4 +164,74 @@ struct SuggestionsPanel: View {
     }
 
     private func go(_ s: String) { store.navigate(s); editor.reset() }
+}
+
+/// Favoris façon Safari : titre « Favoris » et « Tout afficher », grille de 4 grandes icônes de sites avec leur nom.
+struct FavoritesGrid: View {
+    @EnvironmentObject var store: BrowserStore
+    @ObservedObject var icons: SiteIcons
+    var limit = 8
+    var open: (Bookmark) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Favoris").font(.system(size: 22, weight: .bold))
+                Spacer()
+                Button { store.isEditingAddress = false; store.showBookmarks = true } label: {
+                    HStack(spacing: 3) {
+                        Text("Tout afficher").font(.system(size: 16, weight: .semibold))
+                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundStyle(.secondary)
+                    .frame(minHeight: 36).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 4), spacing: 16) {
+                ForEach(store.bookmarks.prefix(limit)) { b in
+                    Button { open(b) } label: { FavoriteTile(bookmark: b, image: icons.images[b.url.host ?? ""] ?? store.tabManager.icon(for: b.url.host)) }
+                        .buttonStyle(CardPressStyle())
+                }
+            }
+        }
+        .padding(.horizontal, 18).padding(.top, 10)
+    }
+}
+
+struct FavoriteTile: View {
+    let bookmark: Bookmark
+    let image: UIImage?
+    var body: some View {
+        VStack(spacing: 7) {
+            FavoriteTileIcon(bookmark: bookmark, image: image, size: 66)
+            Text(bookmark.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
+                .lineLimit(2).multilineTextAlignment(.center).frame(maxWidth: 80)
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+    }
+}
+
+/// Carré arrondi avec l'icône du site (ou sa première lettre).
+struct FavoriteTileIcon: View {
+    let bookmark: Bookmark
+    let image: UIImage?
+    var size: CGFloat = 66
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+        shape.fill(Color.primary.opacity(0.08))
+            .frame(width: size, height: size)
+            .overlay {
+                if let image {
+                    Image(uiImage: image).resizable().interpolation(.high).scaledToFit()
+                        .frame(width: size * 0.6, height: size * 0.6)
+                        .clipShape(RoundedRectangle(cornerRadius: size * 0.14, style: .continuous))
+                } else {
+                    Text(String(bookmark.title.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased())
+                        .font(.system(size: size * 0.4, weight: .semibold, design: .rounded)).foregroundStyle(.secondary)
+                }
+            }
+            .overlay(shape.strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.75))
+    }
 }

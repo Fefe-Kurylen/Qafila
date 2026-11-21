@@ -324,3 +324,14 @@
 "Taille de l'interface" = "حجم الواجهة";
 "Taille de la barre, de ses textes et du menu." = "حجم الشريط ونصوصه والقائمة.";
 "Page de démarrage" = "صفحة البداية";
+
+/* Favoris en icônes (v2) */
+"Icônes (grille)" = "أيقونات (شبكة)";
+"Lettres (ligne)" = "أحرف (سطر)";
+"Affichage des favoris" = "عرض المفضلة";
+"Grandes icônes des sites comme dans Safari, ou lettres en ligne." = "أيقونات كبيرة للمواقع كما في Safari، أو أحرف في سطر.";
+"Tout afficher" = "عرض الكل";
+"Terminé" = "تم";
+"Modifier" = "تعديل";
+"Ouvrir dans un nouvel onglet" = "فتح في علامة تبويب جديدة";
+"Supprimer" = "حذف";

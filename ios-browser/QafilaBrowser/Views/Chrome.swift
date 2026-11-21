@@ -23,7 +23,7 @@ struct ChromePalette {
     /// Carte d'adresse posée sur le verre : blanc à 12–16 % sur verre sombre, 55–65 % sur verre clair (plus opaque quand le verre l'est).
     func glassCard(_ transparency: Double) -> Color {
         let solid = 1 - min(max(transparency, 0), 1)
-        return contentScheme == .dark ? Color.white.opacity(0.12 + 0.04 * solid) : Color.white.opacity(0.55 + 0.10 * solid)
+        return contentScheme == .dark ? Color.white.opacity(0.10 + 0.05 * solid) : Color.white.opacity(0.42 + 0.15 * solid)
     }
 }
 
@@ -89,7 +89,9 @@ struct GlassSurface: View {
     @ViewBuilder private var surface: some View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
-            let glass = Glass.regular.tint(palette.bar.opacity(1 - t))
+            // Teinte légère : le verre laisse vraiment voir la page (avant, la teinte presque opaque le rendait
+            // identique au style Classique). Transparence 0 % = verre fortement teinté, 100 % = verre clair.
+            let glass = Glass.regular.tint(palette.bar.opacity((1 - t) * 0.6))
             Color.clear.glassEffect(interactive ? glass.interactive() : glass, in: shape)
         } else {
             fallback
@@ -102,7 +104,7 @@ struct GlassSurface: View {
     /// iOS 17/18 : matériau ultra-fin teinté (liseré et ombre ajoutés par `body`, communs à toutes les versions).
     private var fallback: some View {
         shape.fill(.ultraThinMaterial)
-            .overlay(shape.fill(palette.bar.opacity(0.05 + (1 - t) * 0.95)))
+            .overlay(shape.fill(palette.bar.opacity(0.04 + (1 - t) * 0.56)))
     }
 }
 

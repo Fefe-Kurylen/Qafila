@@ -310,6 +310,10 @@ struct AppearanceSettings: View {
                 Picker("Taille de l'interface", selection: $store.settings.interfaceSize) { ForEach(InterfaceSize.allCases) { Text($0.label).tag($0) } }
                     .pickerStyle(.segmented)
             } header: { Text("Taille de l'interface") } footer: { Text("Taille de la barre, de ses textes et du menu.") }
+            Section {
+                Picker("Favoris", selection: $store.settings.favoritesStyle) { ForEach(FavoritesStyle.allCases) { Text($0.label).tag($0) } }
+                    .pickerStyle(.segmented)
+            } header: { Text("Affichage des favoris") } footer: { Text("Grandes icônes des sites comme dans Safari, ou lettres en ligne.") }
             Section("Couleur d'accent") {
                 SwatchRow(items: AccentColor.allCases, selection: $store.settings.accent, color: { $0.color }, label: { $0.label })
             }

@@ -2,11 +2,14 @@ import Foundation
 
 /// Page de démarrage locale (aucune requête réseau) et page d'erreur.
 enum StartPage {
-    static func html(dark: Bool, bookmarks: [(title: String, url: String)] = []) -> String {
+    /// `iconGrid` : favoris en grandes icônes de sites façon Safari (titre « Favoris » au-dessus) ; sinon lettres.
+    static func html(dark: Bool, bookmarks: [(title: String, url: String, icon: String?)] = [], iconGrid: Bool = true) -> String {
         let tiles = bookmarks.map { b -> String in
             let letter = String(b.title.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased()
-            return "<a class=\"tile\" href=\"\(escape(b.url))\"><span class=\"ic\">\(escape(letter))</span><span class=\"t\">\(escape(b.title))</span></a>"
+            let face = b.icon.map { "<img src=\"\($0)\" alt=\"\">" } ?? escape(letter)
+            return "<a class=\"tile\" href=\"\(escape(b.url))\"><span class=\"ic\(b.icon == nil ? "" : " img")\">\(face)</span><span class=\"t\">\(escape(b.title))</span></a>"
         }.joined()
+        let title = iconGrid && !bookmarks.isEmpty ? "<div class=\"fh\">\(escape(L("Favoris")))</div>" : ""
         return """
         <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
@@ -22,8 +25,13 @@ enum StartPage {
         .tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
         .ic { width: 64px; height: 64px; border-radius: 17px; display: flex; align-items: center; justify-content: center; font: 600 26px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
         .t { font-size: 13px; font-weight: 600; color: #8e8e93; max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ic.img { background: var(--tile); overflow: hidden; }
+        .ic.img img { width: 40px; height: 40px; border-radius: 9px; object-fit: contain; }
+        .wrap { display: flex; flex-direction: column; align-items: stretch; margin-top: 46px; }
+        .fh { font: 700 22px -apple-system, system-ui; margin: 0 0 14px 2px; }
+        .wrap .grid { margin-top: 0; }
         </style></head><body><div class="head">\(QafilaLogo.svg)<div class="priv">🛡︎ \(escape(L("Aucune collecte · Tout reste sur cet appareil")))</div></div>
-        <div class="grid">\(tiles)</div></body></html>
+        <div class="wrap">\(title)<div class="grid">\(tiles)</div></div></body></html>
         """
     }
 

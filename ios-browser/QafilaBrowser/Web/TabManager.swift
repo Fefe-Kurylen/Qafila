@@ -10,6 +10,12 @@ final class LoadState: ObservableObject {
     @Published var loading: Set<UUID> = []
 }
 
+/// Icônes des sites favoris (grille façon Safari, page de démarrage), à part : seules les vues des favoris l'observent.
+@MainActor
+final class SiteIcons: ObservableObject {
+    @Published var images: [String: UIImage] = [:]
+}
+
 /// Conserve une WKWebView par onglet (l'état de navigation survit aux changements d'onglet), applique les règles de blocage,
 /// le mode sombre, le user agent, et remonte titre / URL / progression au store.
 @MainActor
@@ -34,6 +40,14 @@ final class TabManager: NSObject, ObservableObject {
     private var faviconQueue: [(host: String, icon: String)] = []
     private var faviconWaiting: [String: [UUID]] = [:]
     private var faviconActive = 0
+    let siteIcons = SiteIcons()
+    /// Icônes gardées sur l'appareil (dossier Caches) : la grille des favoris s'affiche tout de suite au lancement.
+    private static let iconFolder: URL = {
+        let u = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("site-icons", isDirectory: true)
+        try? FileManager.default.createDirectory(at: u, withIntermediateDirectories: true)
+        return u
+    }()
+    private static func iconFile(_ host: String) -> URL { iconFolder.appendingPathComponent(host.replacingOccurrences(of: "/", with: "_")) }
 
     override init() {
         super.init()
@@ -156,8 +170,31 @@ final class TabManager: NSObject, ObservableObject {
     }
 
     private func loadStartPage(_ web: WKWebView) {
-        let marks = (store?.bookmarks ?? []).prefix(12).map { (title: $0.title, url: $0.url.absoluteString) }
-        web.loadHTMLString(StartPage.html(dark: store?.isDarkScheme ?? false, bookmarks: Array(marks)), baseURL: nil)
+        let icons = store?.settings.favoritesStyle != .letters
+        var marks: [(title: String, url: String, icon: String?)] = []
+        for b in (store?.bookmarks ?? []).prefix(12) {
+            var data: String?
+            if icons {
+                data = iconDataURL(for: b.url.host)
+                if data == nil { _ = icon(for: b.url.host) }   // téléchargée pour la prochaine fois
+            }
+            marks.append((title: b.title, url: b.url.absoluteString, icon: data))
+        }
+        web.loadHTMLString(StartPage.html(dark: store?.isDarkScheme ?? false, bookmarks: Array(marks), iconGrid: icons), baseURL: nil)
+    }
+
+    /// Une icône de favori vient d'arriver : les pages de démarrage ouvertes sont redessinées (une fois, un peu plus tard).
+    private var startRefresh: DispatchWorkItem?
+    private func refreshStartPagesSoon() {
+        startRefresh?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.refreshStartPages() }
+        startRefresh = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
+    }
+
+    func refreshStartPages() {
+        guard let store else { return }
+        for t in store.tabs where t.url == nil { if let web = views[t.id] { loadStartPage(web) } }
     }
 
     /// Réglages qui s'appliquent à toutes les pages ouvertes : zoom du texte, gestes de bord d'écran.
@@ -228,6 +265,29 @@ final class TabManager: NSObject, ObservableObject {
         guard let store else { return }
         for t in store.tabs { if let h = t.url?.host, let d = t.faviconData, faviconCache[h] == nil { faviconCache[h] = d } }
         for t in store.tabs where t.faviconData == nil && !t.isPrivate { if let h = t.url?.host { fetchFavicon("", host: h, id: t.id) } }
+    }
+
+    /// Icône d'un site (mémoire, puis disque) ; sinon téléchargée en arrière-plan et publiée dans `siteIcons`.
+    func icon(for host: String?) -> UIImage? {
+        guard let host, !host.isEmpty else { return nil }
+        if let img = siteIcons.images[host] { return img }
+        if let d = faviconCache[host] ?? (try? Data(contentsOf: Self.iconFile(host))), !d.isEmpty, let img = UIImage(data: d) {
+            faviconCache[host] = d
+            DispatchQueue.main.async { [weak self] in if self?.siteIcons.images[host] == nil { self?.siteIcons.images[host] = img } }
+            return img
+        }
+        if faviconCache[host] == nil, faviconWaiting[host] == nil {
+            faviconQueue.append((host: host, icon: ""))
+            faviconWaiting[host] = []
+            startNextFavicon()
+        }
+        return nil
+    }
+
+    /// Icône en image intégrable dans la page de démarrage (adresse data:), si elle est connue.
+    func iconDataURL(for host: String?) -> String? {
+        guard let host, let d = faviconCache[host] ?? (try? Data(contentsOf: Self.iconFile(host))), !d.isEmpty, UIImage(data: d) != nil else { return nil }
+        return "data:image/png;base64," + d.base64EncodedString()
     }
 
     func applyUserAgentToOpenTabs() { for id in views.keys { applyUserAgent(id) } }
@@ -346,6 +406,11 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.faviconCache[host] = found
+                if !found.isEmpty, let img = UIImage(data: found) {
+                    try? found.write(to: Self.iconFile(host), options: .atomic)
+                    self.siteIcons.images[host] = img
+                    self.refreshStartPagesSoon()
+                }
                 for id in self.faviconWaiting.removeValue(forKey: host) ?? [] { self.setFavicon(found, for: id) }
                 self.faviconActive -= 1
                 self.startNextFavicon()

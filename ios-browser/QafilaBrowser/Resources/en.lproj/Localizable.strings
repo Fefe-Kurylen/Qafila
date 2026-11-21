@@ -324,3 +324,14 @@
 "Taille de l'interface" = "Interface size";
 "Taille de la barre, de ses textes et du menu." = "Size of the toolbar, its text and the menu.";
 "Page de démarrage" = "Start page";
+
+/* Favoris en icônes (v2) */
+"Icônes (grille)" = "Icons (grid)";
+"Lettres (ligne)" = "Letters (row)";
+"Affichage des favoris" = "Favorites display";
+"Grandes icônes des sites comme dans Safari, ou lettres en ligne." = "Large site icons like in Safari, or letters in a row.";
+"Tout afficher" = "Show all";
+"Terminé" = "Done";
+"Modifier" = "Edit";
+"Ouvrir dans un nouvel onglet" = "Open in new tab";
+"Supprimer" = "Delete";

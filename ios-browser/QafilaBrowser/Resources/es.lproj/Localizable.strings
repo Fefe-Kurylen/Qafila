@@ -324,3 +324,14 @@
 "Taille de l'interface" = "Tamaño de la interfaz";
 "Taille de la barre, de ses textes et du menu." = "Tamaño de la barra, sus textos y el menú.";
 "Page de démarrage" = "Página de inicio";
+
+/* Favoris en icônes (v2) */
+"Icônes (grille)" = "Iconos (cuadrícula)";
+"Lettres (ligne)" = "Letras (fila)";
+"Affichage des favoris" = "Visualización de favoritos";
+"Grandes icônes des sites comme dans Safari, ou lettres en ligne." = "Iconos grandes de los sitios como en Safari, o letras en fila.";
+"Tout afficher" = "Ver todo";
+"Terminé" = "OK";
+"Modifier" = "Editar";
+"Ouvrir dans un nouvel onglet" = "Abrir en una pestaña nueva";
+"Supprimer" = "Eliminar";

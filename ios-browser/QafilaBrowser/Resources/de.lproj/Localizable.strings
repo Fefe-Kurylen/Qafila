@@ -324,3 +324,14 @@
 "Taille de l'interface" = "Größe der Oberfläche";
 "Taille de la barre, de ses textes et du menu." = "Größe der Leiste, ihrer Texte und des Menüs.";
 "Page de démarrage" = "Startseite";
+
+/* Favoris en icônes (v2) */
+"Icônes (grille)" = "Symbole (Raster)";
+"Lettres (ligne)" = "Buchstaben (Zeile)";
+"Affichage des favoris" = "Anzeige der Favoriten";
+"Grandes icônes des sites comme dans Safari, ou lettres en ligne." = "Große Website-Symbole wie in Safari oder Buchstaben in einer Zeile.";
+"Tout afficher" = "Alle anzeigen";
+"Terminé" = "Fertig";
+"Modifier" = "Bearbeiten";
+"Ouvrir dans un nouvel onglet" = "In neuem Tab öffnen";
+"Supprimer" = "Löschen";
