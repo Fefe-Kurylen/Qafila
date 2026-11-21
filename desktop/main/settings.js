@@ -27,9 +27,14 @@ const DESKTOP_ONLY = [
   { key: 'barLayout', section: 'appearance', type: 'enum:BarLayout', default: 'split', sync: false, platforms: ['desktop'] },
   { key: 'uiStyle', section: 'appearance', type: 'enum:UiStyle', default: 'modern', sync: false, platforms: ['desktop'] },
   { key: 'titleBarSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
+  // Traduction intégrée : pages dans une autre langue traduites sur place automatiquement (jamais en privé).
+  { key: 'autoTranslate', section: 'reading', type: 'boolean', default: true, sync: false, platforms: ['desktop'] },
+  // Arrière-plan (bande autour de la barre, barre de titre, page de démarrage), selon le thème de l'ordinateur :
+  // Blanc en thème clair ; Graphite ou Noir en thème sombre.
+  { key: 'darkBackground', section: 'appearance', type: 'enum:DarkBackground', default: 'graphite', sync: false, platforms: ['desktop'] },
   { key: 'bookmarksBarSize', section: 'appearance', type: 'enum:UiSize', default: 'medium', sync: false, platforms: ['desktop'] },
 ];
-const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] }, UiSize: { values: ['small', 'medium', 'large'] }, BarLayout: { values: ['one', 'split'] }, UiStyle: { values: ['modern', 'classic'] } };
+const DESKTOP_ENUMS = { Language: { values: ['', 'fr', 'en', 'ar', 'es', 'de'] }, UiSize: { values: ['small', 'medium', 'large'] }, BarLayout: { values: ['one', 'split'] }, UiStyle: { values: ['modern', 'classic'] }, DarkBackground: { values: ['graphite', 'black'] } };
 
 let schema = null;
 
@@ -143,4 +148,8 @@ function sanitize(raw) {
   return out;
 }
 
-module.exports = { describe, defaults, validate, sanitize, presetConfig, defaultToolbar, DESKTOP_DEFAULTS };
+/** Arrière-plan de la fenêtre : Blanc en thème clair, Graphite (gris chaud) ou Noir en thème sombre. */
+const BACKGROUNDS = { white: '#ffffff', graphite: '#262624', black: '#000000' };
+function backgroundColor(settings, dark) { return dark ? (BACKGROUNDS[settings?.darkBackground] || BACKGROUNDS.graphite) : BACKGROUNDS.white; }
+
+module.exports = { describe, defaults, validate, sanitize, presetConfig, defaultToolbar, DESKTOP_DEFAULTS, BACKGROUNDS, backgroundColor };

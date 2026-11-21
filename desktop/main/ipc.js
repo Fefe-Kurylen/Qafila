@@ -1,6 +1,6 @@
 'use strict';
 // Canaux IPC du chrome (window.qafila.*) : chaque canal valide ses arguments ; rien n'est exposé au-delà de cette liste.
-const { ipcMain, shell, app, nativeTheme, dialog } = require('electron');
+const { ipcMain, shell, app, nativeTheme, dialog, Menu } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const contract = require('./contract');
@@ -74,6 +74,21 @@ function register(a) {
   handle('bookmarks:remove', (p) => { store.removeBookmark(str(p.id)); a.tabs.refreshStartPages(); });
   handle('bookmarks:update', (p) => { store.updateBookmark(str(p.id), { title: str(p.patch?.title, 512), url: str(p.patch?.url) }); a.tabs.refreshStartPages(); });
   handle('bookmarks:toggleCurrent', () => a.toggleBookmark());
+  // Clic droit sur un favori ou un dossier de la barre : menu natif, l'action choisie est renvoyée au chrome.
+  handle('bookmarks:contextMenu', (p) => new Promise((resolve) => {
+    const t = a.t();
+    const isF = p.kind === 'folder';
+    let chosen = null;
+    const pick = (v) => () => { chosen = v; };
+    const items = isF
+      ? [{ label: t('bm_manage'), click: pick('manage') }, { label: t('bm_edit'), click: pick('edit') }, { type: 'separator' }, { label: t('bm_delete_folder'), click: pick('delete') }]
+      : [{ label: t('open_in_new_tab'), click: pick('newTab') }, { label: t('open_in_private_tab'), click: pick('privateTab') }, { type: 'separator' },
+        { label: t('bm_edit'), click: pick('edit') }, { label: t('action_copy_link'), click: pick('copy') }, { type: 'separator' }, { label: t('delete'), click: pick('delete') }];
+    Menu.buildFromTemplate(items).popup({ window: a.win, callback: () => setImmediate(() => {
+      if (chosen === 'copy') { const b = store.bookmarks.find((x) => x.id === str(p.id, 64)); if (b) copyText(b.url); }
+      resolve(chosen);
+    }) });
+  }));
   // Dossiers et rangement (gestionnaire de favoris).
   const kind = (v) => (v === 'folder' ? 'folder' : 'bookmark');
   const done = (r) => { a.tabs.refreshStartPages(); return r; };

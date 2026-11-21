@@ -145,7 +145,7 @@ pre { white-space: pre-wrap; font-size: 15px; }
  * Page de démarrage locale : logo de Qafila, tuiles des favoris de la racine, puis une section par dossier (ses
  * favoris et ceux de ses sous-dossiers). Aucune requête réseau. `classic` : style classique minimaliste (angles droits).
  */
-function startPage({ dark, bookmarks = [], folders = [], title = 'Qafila', rtl = false, lang = 'fr', privacy = '', classic = false }) {
+function startPage({ dark, bg = null, bookmarks = [], folders = [], title = 'Qafila', rtl = false, lang = 'fr', privacy = '', classic = false }) {
   const tile = (b) => {
     const letter = String(b.title || '').trim().slice(0, 1).toUpperCase();
     return `<a class="tile" href="${escape(b.url)}" title="${escape(b.title)}"><span class="ic">${escape(letter)}</span><span class="t">${escape(b.title)}</span></a>`;
@@ -164,7 +164,7 @@ function startPage({ dark, bookmarks = [], folders = [], title = 'Qafila', rtl =
   return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 ${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <style>
-:root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${dark ? '#000000' : '#ffffff'}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? '#1c1c1e' : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; --sep: ${dark ? '#2c2c2e' : '#e5e5ea'}; }
+:root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${bg || (dark ? '#000000' : '#ffffff')}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? (bg && bg !== '#000000' ? 'rgba(255,255,255,.08)' : '#1c1c1e') : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; --sep: ${dark ? '#2c2c2e' : '#e5e5ea'}; }
 body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); padding-bottom: 56px; }
 .head { margin-top: ${sections.length ? '12vh' : '26vh'}; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .priv { margin-top: 16px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: ${classic ? 0 : 999}px; font: 500 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: ${dark ? '#9ad8a7' : '#1f7a3a'}; background: ${dark ? 'rgba(80,200,120,.12)' : 'rgba(31,122,58,.08)'}; }
@@ -185,10 +185,10 @@ ${sections.map(({ f, marks }) => `<section class="sec"><h2>${folderIcon}<span>${
 }
 
 /** Page d'erreur dans la langue de l'interface ; l'adresse reste de gauche à droite. */
-function errorPage({ title, message, url, lang = 'fr', rtl = false, dark = false }) {
+function errorPage({ title, message, url, lang = 'fr', rtl = false, dark = false, bg = null }) {
   return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${cspMeta(CSP_LOCAL)}<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title>
-<style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:24px;background:${dark ? '#000000' : '#ffffff'};color:${dark ? '#f2f2f7' : '#1c1c1e'}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
+<style>:root{color-scheme:${dark ? 'dark' : 'light'}}body{margin:0;min-height:100vh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:24px;background:${bg || (dark ? '#000000' : '#ffffff')};color:${dark ? '#f2f2f7' : '#1c1c1e'}}h1{font-size:22px;font-weight:600;margin:0 0 8px}p{color:#8e8e93;font-size:15px;max-width:360px}</style>
 </head><body><h1>${escape(title)}</h1><p dir="auto">${escape(message)}</p><p dir="ltr" style="font-size:13px;word-break:break-all">${escape(url)}</p></body></html>`;
 }
 

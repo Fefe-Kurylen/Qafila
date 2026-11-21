@@ -18,6 +18,17 @@ export async function openBookmarksFolder(id) {
   render();
 }
 
+/** Clic droit › Modifier sur un favori ou un dossier de la barre : gestionnaire ouvert sur la fiche de modification. */
+export async function openBookmarkEdit(kind, id) {
+  const it = kind === 'f' ? bmFolder(id) : (S.state.bookmarks || []).find((x) => x.id === id);
+  if (!it) return;
+  await openSheet('bookmarks', true);
+  local.bmFolder = (kind === 'f' ? it.parent : it.folder) || null;
+  local.bmEdit = kind + ':' + id;
+  local.fields = kind === 'f' ? { bmName: it.name, bmWhere: it.parent || '' } : { bmName: it.title, bmUrl: it.url, bmWhere: it.folder || '' };
+  render(); focusBmName();
+}
+
 /** Ouvre une page ; `reset` = nouvelle pile (sinon la page s'empile, bouton Retour). */
 export async function openSheet(page, reset = false) {
   if (reset || S.overlay !== 'sheet') S.sheet = [];
@@ -84,6 +95,15 @@ function buttonRow(label, doId, { red = false, center = false } = {}) {
 function swatches(key, list) {
   const v = settings()[key];
   return `<div class="swatches">${list.map(([val, label, css]) => `<button class="sw${val === v ? ' on' : ''}" data-set="${key}" data-v="${enc(val)}"><span class="dot" style="${css}">${val === 'auto' ? esc(t('bar_auto_letter')) : ''}</span><span class="cap">${esc(label)}</span></button>`).join('')}</div>`;
+}
+/** Arrière-plan : Blanc (thème clair de l'ordinateur), Graphite ou Noir (thème sombre) ; la couleur en cours est cochée. */
+function backgroundSwatches() {
+  const dark = !!S.state?.dark;
+  const cur = dark ? (settings().darkBackground || 'graphite') : 'white';
+  const sw = (val, label, sub, hex, attrs) => `<button class="sw${val === cur ? ' on' : ''}" ${attrs}><span class="dot" style="background:${hex}"></span><span class="cap">${esc(label)}<br><small>${esc(sub)}</small></span></button>`;
+  return `<div class="swatches bg-swatches">${sw('white', t('bg_white'), t('bg_light_theme'), '#ffffff', 'data-set="appearance" data-v="light"')}`
+    + sw('graphite', t('bg_graphite'), t('bg_dark_theme'), '#262624', 'data-bgdark="graphite"')
+    + sw('black', t('bg_black'), t('bg_dark_theme'), '#000000', 'data-bgdark="black"') + '</div>';
 }
 function slider(key, min, max, step, value, fmt) {
   return `<div class="s-row slider-row"><input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-range="${key}" data-scale="${key === 'glassTransparency' ? 100 : 1}"><span class="s-v" data-range-label="${key}">${esc(fmt(value))}</span></div>`;
@@ -246,6 +266,7 @@ P.appearance = () => {
     body: preview(undefined, { sticky: true })
       + group([`<div class="s-row seg-row"><div class="seg">${[['modern', 'ui_style_modern', 'uiStyleModern'], ['classic', 'ui_style_classic', 'uiStyleClassic']].map(([v, k, d]) => `<button class="${(s.uiStyle || 'modern') === v ? 'on' : ''}" data-do="${d}"><span>${esc(t(k))}</span></button>`).join('')}</div></div>`], { header: t('ui_style'), footer: t('ui_style_footer') })
       + group([segmented('appearance', [['system', t('appearance_system')], ['light', t('appearance_light')], ['dark', t('appearance_dark')]])], { header: t('theme') })
+      + group([backgroundSwatches()], { header: t('background'), footer: t('background_footer') })
       + group([swatches('accent', accents)], { header: t('accent_color') })
       + group([swatches('barColorLight', bars)], { header: t('bar_color_light'), footer: t('bar_auto_light_desc') })
       + group([swatches('barColorDark', bars)], { header: t('bar_color_dark'), footer: t('bar_auto_dark_desc') })
@@ -369,6 +390,7 @@ P.reading = () => {
     body: group([toggleRow(t('darken_all'), 'darkenSites'), toggleRow(t('darken_only_dark'), 'darkenOnlyInDarkMode')])
       + group(hostList('darkenHosts', t('darken_empty', t('menu_darken_site'))), { header: s.darkenSites ? t('never_darkened') : t('always_darkened') })
       + group([slider('textZoom', 80, 150, 10, z, (v) => t('percent', v)), `<div class="s-row sample" style="font-size:${(15 * z / 100).toFixed(1)}px">${esc(t('text_size_sample'))}</div>`], { header: t('text_size') })
+      + group([toggleRow(t('auto_translate'), 'autoTranslate')], { header: t('translation'), footer: t('auto_translate_footer') })
       + group(pickRows('translateLanguage', langs.map((l) => [l, t('lang_' + l)])), { header: t('translation_language') })
       + group([toggleRow(t('desktop_by_default'), 'desktopByDefault')])
       + group(hostList('desktopHosts', t('desktop_empty', t('menu_desktop_version'))), { header: s.desktopByDefault ? t('mobile_sites') : t('desktop_sites') }),
@@ -753,6 +775,8 @@ export function installSheetEvents() {
     if ((b = g('[data-unperm]'))) { await q.permissions.reset(JSON.parse(b.dataset.unperm)); return; }
     if ((b = g('[data-unhost]'))) { const k = b.dataset.unhost; const v = JSON.parse(b.dataset.v); await q.settings.set(k, (settings()[k] || []).filter((h) => h !== v)); return; }
     if ((b = g('[data-preset]'))) { await q.settings.applyPreset(b.dataset.preset); return; }
+    // Graphite / Noir : couleur du thème sombre ; si l'ordinateur est en thème clair, Qafila passe en sombre.
+    if ((b = g('[data-bgdark]'))) { await q.settings.set('darkBackground', b.dataset.bgdark); if (!S.state.dark) await q.settings.set('appearance', 'dark'); return; }
     if ((b = g('[data-bmedit]'))) {
       e.stopPropagation();
       const v = b.dataset.bmedit;

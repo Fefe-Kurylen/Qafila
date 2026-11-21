@@ -288,5 +288,18 @@
   "ui_style": "Estilo de la interfaz",
   "ui_style_modern": "Moderno",
   "ui_style_classic": "Clásico minimalista",
-  "ui_style_footer": "Clásico minimalista: barra a todo el ancho, sin transparencia ni esquinas redondeadas, menús y ajustes en ángulo recto."
+  "ui_style_footer": "Clásico minimalista: barra a todo el ancho, sin transparencia ni esquinas redondeadas, menús y ajustes en ángulo recto.",
+  "translated_from": "Página traducida del %1$s",
+  "translated_page": "Página traducida",
+  "show_original": "Mostrar original",
+  "translation": "Traducción",
+  "auto_translate": "Traducir automáticamente",
+  "auto_translate_footer": "Las páginas en otro idioma se traducen sin salir del sitio (nunca en navegación privada). El texto se envía al servicio de traducción de Google. Botón Traducir: mostrar el original.",
+  "background": "Fondo",
+  "background_footer": "Sigue el tema del ordenador: Blanco en modo claro, Grafito o Negro en modo oscuro.",
+  "bg_white": "Blanco",
+  "bg_graphite": "Grafito",
+  "bg_black": "Negro",
+  "bg_light_theme": "Tema claro",
+  "bg_dark_theme": "Tema oscuro"
 }

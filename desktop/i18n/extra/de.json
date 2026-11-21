@@ -288,5 +288,18 @@
   "ui_style": "Oberflächenstil",
   "ui_style_modern": "Modern",
   "ui_style_classic": "Klassisch minimal",
-  "ui_style_footer": "Klassisch minimal: Leiste in voller Breite, ohne Transparenz und abgerundete Ecken, eckige Menüs und Einstellungen."
+  "ui_style_footer": "Klassisch minimal: Leiste in voller Breite, ohne Transparenz und abgerundete Ecken, eckige Menüs und Einstellungen.",
+  "translated_from": "Seite übersetzt aus: %1$s",
+  "translated_page": "Seite übersetzt",
+  "show_original": "Original anzeigen",
+  "translation": "Übersetzung",
+  "auto_translate": "Automatisch übersetzen",
+  "auto_translate_footer": "Seiten in einer anderen Sprache werden direkt übersetzt, ohne die Website zu verlassen (nie im privaten Modus). Der Seitentext wird an den Übersetzungsdienst von Google gesendet. Schaltfläche Übersetzen: Original anzeigen.",
+  "background": "Hintergrund",
+  "background_footer": "Folgt dem Design des Computers: Weiß im hellen Modus, Graphit oder Schwarz im dunklen Modus.",
+  "bg_white": "Weiß",
+  "bg_graphite": "Graphit",
+  "bg_black": "Schwarz",
+  "bg_light_theme": "Helles Design",
+  "bg_dark_theme": "Dunkles Design"
 }

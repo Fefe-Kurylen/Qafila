@@ -360,6 +360,12 @@ button.s-row:hover, .s-row.link:hover, .s-row.clickable:hover { background: rgba
 .sw .dot { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .14); }
 .sw.on .dot { box-shadow: 0 0 0 3px var(--cell), 0 0 0 5px var(--text); }
 .sw .cap { font-size: 13px; color: var(--secondary); white-space: nowrap; }
+.bg-swatches { justify-content: flex-start; gap: 10px 26px; padding-inline: 18px; }
+.bg-swatches .sw { width: 84px; }
+.bg-swatches .cap { text-align: center; line-height: 1.25; }
+.bg-swatches .cap small { font-size: 11px; opacity: .75; }
+.bg-swatches .dot { box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .4); }
+.bg-swatches .sw.on .dot { box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .4), 0 0 0 3px var(--cell), 0 0 0 5px var(--text); }
 .sw.on .cap { color: var(--text); }
 .slider-row input[type=range] { flex: 1; accent-color: var(--accent-ui); height: 28px; }
 .about-head { text-align: center; padding: 10px 0 26px; }
@@ -544,3 +550,13 @@ browser-action-list.ext-actions::part(badge) { font-size: 9px; }
 :root.ui-classic .card-glass, :root.ui-classic .menu, :root.ui-classic .suggest { background: rgb(var(--bar-rgb)) !important; }
 :root.ui-classic #dim { background: rgba(0, 0, 0, .06); }
 :root.ui-classic .menu.in, :root.ui-classic .suggest { animation: none; }
+
+/* ----- Style moderne épuré (mode normal) : capsules plates à liseré fin, sans ombre portée marquée ni reflet ;
+   l'adresse se fond dans sa capsule (pas de seconde carte), temps de lecture masqué. ----- */
+:root:not(.style-classic) .bar, :root:not(.style-classic) .bseg { box-shadow: 0 1px 2px rgba(0, 0, 0, .05); }
+:root.bar-dark:not(.style-classic) .bar, :root.bar-dark:not(.style-classic) .bseg { box-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
+:root:not(.style-classic) .bseg::after, :root:not(.style-classic) .bar .rim { background: rgba(0, 0, 0, .09); }
+:root.bar-dark:not(.style-classic) .bseg::after, :root.bar-dark:not(.style-classic) .bar .rim { background: rgba(255, 255, 255, .12); }
+:root.split:not(.style-classic) .bseg-addr .address:not(.edit-field) { background: transparent; }
+:root.split:not(.style-classic) .bseg-addr .address:not(.edit-field):hover { background: var(--bfill); }
+:root:not(.style-classic) .address .pill { display: none; }

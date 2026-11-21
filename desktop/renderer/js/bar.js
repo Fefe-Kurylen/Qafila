@@ -1,12 +1,12 @@
 // Barre de Qafila : capsule flottante en faux verre (ou barre Classique / Verre pleine largeur), carte d'adresse
 // (6 styles), rangée d'icônes du contrat, saisie d'adresse avec suggestions, recherche dans la page.
 import {
-  q, S, $, t, esc, STRIP, barSizes, bookmarkSizes, bookmarksBarOn, splitBar, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
+  q, S, $, t, esc, STRIP, backgroundHex, barSizes, bookmarkSizes, bookmarksBarOn, splitBar, actionLabel, selectedTab, settings, toolbar, palette, accentRGB, favicon, readingLabel,
   shortURL, setOverlay, renderNow, toast, onRender,
 } from './core.js';
 import { icon, actionIcon, tabsGlyph } from './icons.js';
 import { perform, actionState, isActive, isEnabled } from './actions.js';
-import { openBookmarksFolder } from './sheet.js';
+import { openBookmarksFolder, openBookmarkEdit } from './sheet.js';
 
 const SIZES = { small: 17, medium: 20, large: 23 };
 const WEIGHTS = { thin: 1.15, regular: 1.5, bold: 2 };
@@ -41,7 +41,7 @@ export function applyTheme() {
   root.style.setProperty('--bm-font', bk.font + 'px');
   root.style.setProperty('--bm-opt', bk.opt + 'px');
   // La page est toujours posée à côté de la bande : la bande a son propre fond, couleur du thème ou du site (barre « Auto »).
-  root.style.setProperty('--strip-color', p.site ? `rgb(${p.site.join(',')})` : (st.dark ? '#000000' : '#ffffff'));
+  root.style.setProperty('--strip-color', p.site ? `rgb(${p.site.join(',')})` : backgroundHex());
   // Au défilement : barre réduite à la mini-adresse (Réduire) ou masquée (Masquer), décidé par le processus principal.
   const c = st.collapse || 'none';
   root.classList.toggle('collapse-mini', c === 'mini');
@@ -50,7 +50,7 @@ export function applyTheme() {
   root.style.setProperty('--mini-fg', miniFg);
   // Barre de titre Windows : même couleur que la bande.
   const hex = (rgb) => '#' + rgb.map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
-  const tbg = p.site ? hex(p.site) : (st.dark ? '#000000' : '#ffffff');
+  const tbg = p.site ? hex(p.site) : backgroundHex();
   if (titlebarSig !== tbg + miniFg) { titlebarSig = tbg + miniFg; q.ui.titlebar(tbg, miniFg).catch(() => {}); }
   root.classList.toggle('mac', S.cfg?.app?.platform === 'darwin');
   const acc = accentRGB();
@@ -609,6 +609,26 @@ export function installBarEvents() {
     if (it) openBookmark(e, it);
   });
   bm.addEventListener('auxclick', (e) => { const it = e.target.closest('[data-bm]'); if (it && e.button === 1) openBookmark(e, it); });
+  // Clic droit sur un favori ou un dossier : ouvrir, modifier, copier, supprimer (menu natif).
+  bm.addEventListener('contextmenu', async (e) => {
+    const it = e.target.closest('[data-bm]');
+    const fo = e.target.closest('[data-bmfolder]');
+    if (!it && !fo) return;
+    e.preventDefault();
+    if (S.overlay === 'bmmenu') await setOverlay('none');
+    const id = it ? it.dataset.bm : fo.dataset.bmfolder;
+    const choice = await q.bookmarks.contextMenu(it ? 'bookmark' : 'folder', id);
+    const b = it && (S.state?.bookmarks || []).find((x) => x.id === id);
+    switch (choice) {
+      case 'newTab': if (b) q.tabs.create({ url: b.url, select: true }); break;
+      case 'privateTab': if (b) q.tabs.create({ url: b.url, isPrivate: true, select: true }); break;
+      case 'copy': toast(t('toast_address_copied')); break;
+      case 'edit': openBookmarkEdit(it ? 'b' : 'f', id); break;
+      case 'manage': openBookmarksFolder(id); break;
+      case 'delete': if (it) await q.bookmarks.remove(id); else await q.bookmarks.removeFolder(id); break;
+      default: break;
+    }
+  });
   const box = $('#suggest');
   box.addEventListener('mousedown', (e) => e.preventDefault()); // garde le focus dans le champ
   box.addEventListener('click', (e) => {

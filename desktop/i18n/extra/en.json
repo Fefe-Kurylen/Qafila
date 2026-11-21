@@ -288,5 +288,18 @@
   "ui_style": "Interface style",
   "ui_style_modern": "Modern",
   "ui_style_classic": "Classic minimal",
-  "ui_style_footer": "Classic minimal: full-width toolbar, no transparency or rounded corners, square menus and settings."
+  "ui_style_footer": "Classic minimal: full-width toolbar, no transparency or rounded corners, square menus and settings.",
+  "translated_from": "Page translated from %1$s",
+  "translated_page": "Page translated",
+  "show_original": "Show original",
+  "translation": "Translation",
+  "auto_translate": "Translate automatically",
+  "auto_translate_footer": "Pages in another language are translated in place, without leaving the site (never in private browsing). The page text is sent to Google's translation service. Translate button: show the original.",
+  "background": "Background",
+  "background_footer": "Follows your computer's theme: White in light mode, Graphite or Black in dark mode.",
+  "bg_white": "White",
+  "bg_graphite": "Graphite",
+  "bg_black": "Black",
+  "bg_light_theme": "Light theme",
+  "bg_dark_theme": "Dark theme"
 }

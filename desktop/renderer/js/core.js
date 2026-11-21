@@ -135,6 +135,10 @@ export function palette(cfgOverride) {
   return { bar, card, contentDark, alpha, transparency: tr, style, site };
 }
 
+/** Arrière-plan de la fenêtre : Blanc en thème clair, Graphite (gris chaud) ou Noir en thème sombre. */
+export const BACKGROUNDS = { white: '#ffffff', graphite: '#262624', black: '#000000' };
+export function backgroundHex() { return S.state?.dark ? (BACKGROUNDS[settings().darkBackground] || BACKGROUNDS.graphite) : BACKGROUNDS.white; }
+
 export function accentRGB() {
   const a = ACCENTS[settings().accent];
   return a || null;

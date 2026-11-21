@@ -11,14 +11,14 @@ export function actionState() {
     loading: !!tab?.loading, bookmarked: !!tab?.bookmarked, blockerActive: tab ? tab.blockerActive !== false : true,
     javascript: tab ? tab.javascript !== false : true, desktop: !!tab?.desktop, darkened: !!tab?.darkened, reader: !!tab?.reader,
     dark: !!S.state?.dark, menuIcon: settings().menuIcon, canGoBack: !!tab?.canGoBack, canGoForward: !!tab?.canGoForward,
-    isWeb: /^https?:/.test(tab?.url || ''),
+    isWeb: /^https?:/.test(tab?.url || ''), translated: !!tab?.translated,
   };
 }
 
 /** Une action « active » est dessinée dans la couleur d'accent (comme ActionGlyph sur iOS). */
 export function isActive(id, st = actionState()) {
   return (id === 'darken' && st.darkened) || (id === 'desktopSite' && st.desktop && !settings().desktopByDefault)
-    || (id === 'reader' && st.reader) || (id === 'addBookmark' && st.bookmarked);
+    || (id === 'reader' && st.reader) || (id === 'addBookmark' && st.bookmarked) || (id === 'translate' && st.translated);
 }
 
 // Actions qui n'ont de sens que sur une page web (pas sur la page de démarrage ni une page vide) : grisées ailleurs.
@@ -42,6 +42,7 @@ export function lineLabel(id, base) {
     case 'javascript': return st.javascript ? t('menu_js_off') : t('menu_js_on');
     case 'desktopSite': return st.desktop ? t('menu_mobile_version') : t('menu_desktop_version');
     case 'reader': return st.reader ? t('menu_exit_reader') : base;
+    case 'translate': return st.translated ? t('show_original') : base;
     case 'addBookmark': return st.bookmarked ? t('menu_remove_bookmark') : base;
     case 'reload': return st.loading ? t('action_stop') : base;
     case 'closeAllTabs': return n > 1 ? t('close_n_tabs', n) : base;

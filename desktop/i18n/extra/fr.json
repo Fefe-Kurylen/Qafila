@@ -289,5 +289,18 @@
   "ui_style": "Style de l'interface",
   "ui_style_modern": "Moderne",
   "ui_style_classic": "Classique minimaliste",
-  "ui_style_footer": "Classique minimaliste : barre pleine largeur, sans transparence ni arrondis, menus et réglages à angles droits."
+  "ui_style_footer": "Classique minimaliste : barre pleine largeur, sans transparence ni arrondis, menus et réglages à angles droits.",
+  "translated_from": "Page traduite depuis : %1$s",
+  "translated_page": "Page traduite",
+  "show_original": "Afficher l'original",
+  "translation": "Traduction",
+  "auto_translate": "Traduire automatiquement",
+  "auto_translate_footer": "Les pages dans une autre langue sont traduites sur place, sans quitter le site (jamais en navigation privée). Le texte de la page est envoyé au service de traduction de Google. Bouton Traduire : afficher l'original.",
+  "background": "Arrière-plan",
+  "background_footer": "Suit le thème de l'ordinateur : Blanc en thème clair, Graphite ou Noir en thème sombre.",
+  "bg_white": "Blanc",
+  "bg_graphite": "Graphite",
+  "bg_black": "Noir",
+  "bg_light_theme": "Thème clair",
+  "bg_dark_theme": "Thème sombre"
 }

@@ -2,7 +2,15 @@
 // Gestion des onglets : une WebContentsView par onglet (partition « persist:qafila », ou « qafila-private » partagée
 // par tous les onglets privés et vidée avec le dernier), navigation, comportements web portés du mobile (HTTPS forcé
 // avec repli, schémas externes, fenêtres surgissantes → onglets, lecteur, assombrissement, user agent, zoom, bloqueur).
-const { WebContentsView, session, shell, clipboard, Menu, dialog } = require('electron');
+const { WebContentsView, session, shell, clipboard, Menu, dialog, app } = require('electron');
+
+/** Langues annoncées aux sites (en-tête Accept-Language) : celle de Qafila d'abord, puis l'anglais. */
+function acceptLanguages() {
+  const lang = (app.commandLine.getSwitchValue('lang') || 'fr').trim();
+  const primary = lang.split('-')[0];
+  const list = [lang, primary !== lang ? primary : null, primary !== 'en' ? 'en' : null].filter(Boolean);
+  return list.map((l, i) => (i ? `${l};q=${(0.9 - (i - 1) * 0.1).toFixed(1)}` : l)).join(',');
+}
 const { SitePermissions } = require('./permissions');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
@@ -152,9 +160,12 @@ class TabManager extends EventEmitter {
     this.prepare(this.persistent);
   }
 
+  /** Arrière-plan choisi (Apparence › Arrière-plan) pour le thème actuel de l'ordinateur. */
+  background() { return require('./settings').backgroundColor(this.store.settings, this.isDark()); }
+
   // ----- Sessions -----
   prepare(ses) {
-    ses.setUserAgent(CHROME_UA, 'fr-FR,fr;q=0.9,en;q=0.8'); // requêtes hors page (service workers…) : même identité
+    ses.setUserAgent(CHROME_UA, acceptLanguages()); // requêtes hors page (service workers…) : même identité
     ses.setSpellCheckerEnabled(false);
     // Téléchargements : traités par le processus principal (dossier par défaut, notification dans la barre).
     ses.on('will-download', (_e, item, wc) => this.emit('download', item, wc, ses === this.private));
@@ -292,7 +303,7 @@ class TabManager extends EventEmitter {
         zoomFactor: this.zoomFactor(),
       },
     });
-    view.setBackgroundColor(this.isDark() ? '#000000' : '#ffffff');
+    view.setBackgroundColor(this.background());
     // WebRTC : jamais l'adresse IP locale ni celle cachée par un VPN ; en privé, rien hors du proxy.
     view.webContents.setWebRTCIPHandlingPolicy(tab.isPrivate ? 'disable_non_proxied_udp' : 'default_public_interface_only');
     this.views.set(tabId, view);
@@ -336,7 +347,7 @@ class TabManager extends EventEmitter {
 
   loadStartPage(wc) {
     const t = this.t();
-    const html = scripts.startPage({ dark: this.isDark(), bookmarks: this.store.bookmarks, folders: this.store.folders, title: t('new_tab'), rtl: t.rtl, lang: t.lang, privacy: t('start_privacy'), classic: this.store.settings.uiStyle === 'classic' });
+    const html = scripts.startPage({ dark: this.isDark(), bg: this.background(), bookmarks: this.store.bookmarks, folders: this.store.folders, title: t('new_tab'), rtl: t.rtl, lang: t.lang, privacy: t('start_privacy'), classic: this.store.settings.uiStyle === 'classic' });
     wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   }
 
@@ -469,6 +480,7 @@ class TabManager extends EventEmitter {
       if (tab && !this.isLocal(wc.getURL())) this.store.recordVisit(tab);
       update({ loading: false, progress: 1 });
       this.emit('glass', tabId);
+      this.emit('loaded', tabId);
     });
     wc.on('did-fail-load', (_e, code, description, validatedURL, isMainFrame) => {
       if (!isMainFrame || code === ERR_ABORTED || code === 0) return;
@@ -543,7 +555,7 @@ class TabManager extends EventEmitter {
     return {
       width: 520, height: 680, minWidth: 320, minHeight: 240,
       autoHideMenuBar: true,
-      backgroundColor: this.isDark() ? '#000000' : '#ffffff',
+      backgroundColor: this.background(),
       title: 'Qafila',
       webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, webviewTag: false, spellcheck: false, safeDialogs: true },
     };
@@ -596,7 +608,7 @@ class TabManager extends EventEmitter {
   /** Page d'erreur locale dans la langue de l'interface. */
   showError(wc, message, url) {
     const t = this.t();
-    const html = scripts.errorPage({ title: t('error_page_title'), message, url, lang: t.lang, rtl: t.rtl, dark: this.isDark() });
+    const html = scripts.errorPage({ title: t('error_page_title'), message, url, lang: t.lang, rtl: t.rtl, dark: this.isDark(), bg: this.background() });
     // Origine opaque (data: sans baseURLForDataURL) : la page d'erreur n'hérite jamais des droits du site.
     wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch(() => {});
   }
@@ -853,7 +865,7 @@ class TabManager extends EventEmitter {
     if (chrome) {
       try {
         if (!wc.debugger.isAttached()) wc.debugger.attach('1.3');
-        wc.debugger.sendCommand('Emulation.setUserAgentOverride', { userAgent: CHROME_UA, userAgentMetadata: chromeMetadata() })
+        wc.debugger.sendCommand('Emulation.setUserAgentOverride', { userAgent: CHROME_UA, acceptLanguage: acceptLanguages(), userAgentMetadata: chromeMetadata() })
           .catch(() => { if (!wc.isDestroyed()) wc.setUserAgent(CHROME_UA); });
         return;
       } catch { /* débogueur indisponible : user agent seul */ }
@@ -906,7 +918,7 @@ class TabManager extends EventEmitter {
 
   /** Thème changé : fond des vues, pages locales (démarrage) rechargées, assombrissement réévalué. */
   onThemeChanged() {
-    const bg = this.isDark() ? '#000000' : '#ffffff';
+    const bg = this.background();
     for (const [id, v] of this.views) {
       v.setBackgroundColor(bg);
       const tab = this.store.tabs.find((x) => x.id === id);
@@ -922,11 +934,11 @@ class TabManager extends EventEmitter {
     for (const [id, v] of this.views) { const tab = this.store.tabs.find((x) => x.id === id); if (tab && !tab.url) this.loadStartPage(v.webContents); }
   }
 
+  /** Traduction sur place (main/translator.js) : traduit la page, ou rend l'original. */
   translate(tabId) {
     const tab = this.store.tabs.find((x) => x.id === tabId);
-    if (!tab?.url || !/^https?:/.test(tab.url)) return;
-    const lang = this.store.settings.translateLanguage || 'fr';
-    this.load(tabId, `https://translate.google.com/translate?sl=auto&tl=${encodeURIComponent(lang)}&u=${encodeURIComponent(tab.url)}`);
+    if (!tab?.url || !/^https?:/.test(tab.url) || !this.translator) return;
+    return this.translator.toggle(tabId);
   }
 
   /** Informations vivantes d'un onglet pour le chrome. */

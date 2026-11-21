@@ -27,6 +27,8 @@ const { Updater } = require('./updater');
 // main/updater.js reste en place ; le remettre à true réactive le bouton « Mettre à jour » et la page À propos.
 const SELF_UPDATE = false;
 const { Extensions } = require('./extensions');
+const settingsSchema = require('./settings');
+const { Translator } = require('./translator');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -65,6 +67,17 @@ if (SMOKE_DIR) {
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-dev-shm-usage');
   app.commandLine.appendSwitch('force-device-scale-factor', '1');
+}
+// Langue de Chromium (fenêtres des extensions, chrome.i18n, navigator.language des pages) : celle de Qafila (réglage
+// « Langue », sinon celle du système). Sans cela, une extension peut s'ouvrir en anglais sur un Windows en français.
+{
+  let lang = '';
+  try { lang = JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'state.json'), 'utf8'))?.settings?.language || ''; } catch { /* premier lancement */ }
+  let sys = '';
+  try { sys = (app.getPreferredSystemLanguages?.() || [])[0] || Intl.DateTimeFormat().resolvedOptions().locale || ''; } catch { /* inconnue */ }
+  const chosen = i18n.resolveLanguage(lang, sys);
+  const region = /^[a-z]{2}-[A-Z]{2}/.exec(sys)?.[0];
+  app.commandLine.appendSwitch('lang', region && region.startsWith(chosen + '-') ? region : chosen);
 }
 // Instance unique : un second lancement transmet ses adresses à la première fenêtre et quitte aussitôt, avant de
 // lire state.json ou de créer quoi que ce soit (app.quit() seul laisserait whenReady() s'exécuter).
@@ -250,7 +263,7 @@ function describeTabs() {
       faviconData: tab.isPrivate ? null : Q.favicons.get(tab.faviconURL, Q.tabs.sessionFor(tab)),
       themeColor: tab.themeColorHex, host: host.replace(/^www\./, ''), selected: tab.id === Q.store.selected,
       loading: live.loading, progress: live.progress, canGoBack: live.canGoBack, canGoForward: live.canGoForward,
-      blocked: live.blocked, reader: live.reader,
+      blocked: live.blocked, reader: live.reader, translated: !!Q.translator?.isOn(tab.id),
       bookmarked: Q.store.isBookmarked(tab.url), darkened: Q.tabs.isDarkened(tab), desktop: Q.tabs.isDesktop(tab),
       blockerActive: Q.blocker.isActive(tab.url || ''), javascript: Q.tabs.isJavaScriptEnabled(tab.url || ''),
     };
@@ -473,6 +486,9 @@ function onSettingChanged(key) {
   if (key === 'textZoom') Q.tabs.applyZoom();
   if (key === 'language') { Q.t = null; translator(); Q.tabs.refreshStartPages(); }
   if (key === 'uiStyle') Q.tabs.refreshStartPages();
+  if (key === 'darkBackground') { Q.tabs.onThemeChanged(); if (Q.win && !Q.win.isDestroyed()) Q.win.setBackgroundColor(settingsSchema.backgroundColor(s, isDark())); }
+  // Langue de traduction changée : les pages traduites passent à la nouvelle langue.
+  if (key === 'translateLanguage' && Q.translator) for (const id of [...Q.translator.state.keys()]) Q.translator.restore(id).then(() => Q.translator.start(id, { manual: true }));
   // Mises à jour automatiques réactivées : recherche tout de suite (sinon au prochain passage, toutes les 6 heures).
   if (key === 'autoUpdate' && s.autoUpdate && Q.updater) Q.updater.check();
   if (key === 'titleBarSize') { updateTitlebar(); layout(); }
@@ -939,12 +955,12 @@ function createWindow() {
   const saved = loadWindowState();
   Q.win = new BrowserWindow({
     ...DEFAULT_SIZE, ...(saved?.bounds || {}), minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height, title: 'Qafila', show: false,
-    backgroundColor: dark ? '#000000' : '#ffffff', autoHideMenuBar: true, icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
+    backgroundColor: settingsSchema.backgroundColor(Q.store?.settings, dark), autoHideMenuBar: true, icon: path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     // Barre de titre native partout : sous macOS, les feux tricolores restent dans la barre de titre (jamais sur la
     // capsule) et la fenêtre se déplace par elle, quelle que soit la position de la barre (haut ou bas).
     // Windows : barre de titre Qafila de 40 px, boutons de Windows par-dessus (titleBarOverlay).
     ...(CUSTOM_TITLEBAR
-      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: dark ? '#000000' : '#ffffff', symbolColor: dark ? '#f2f2f7' : '#1c1c1e', height: titleBarHeight() } }
+      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: settingsSchema.backgroundColor(Q.store?.settings, dark), symbolColor: dark ? '#f2f2f7' : '#1c1c1e', height: titleBarHeight() } }
       : { titleBarStyle: 'default' }),
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
@@ -989,6 +1005,19 @@ function createWindow() {
   });
 
   Q.tabs.on('change', broadcast);
+  // Traduction intégrée : nouvelle page = plus de traduction ; fin de chargement = traduction automatique éventuelle.
+  Q.translator = new Translator({
+    tabs: Q.tabs, settings: () => Q.store.settings, onChange: () => broadcast(),
+    onTranslated: (id, from) => {
+      if (id !== Q.store.selected) return;
+      const t = translator();
+      const name = from ? t('lang_' + from.split('-')[0]) : '';
+      command('toast', { text: name && !name.startsWith('lang_') ? t('translated_from', name) : t('translated_page') });
+    },
+  });
+  Q.tabs.translator = Q.translator;
+  Q.tabs.on('navigated', (id) => Q.translator.reset(id));
+  Q.tabs.on('loaded', (id) => Q.translator.maybeAuto(id, Q.store.tabs.find((x) => x.id === id)));
   Q.tabs.on('shown', () => { setCollapse('none'); broadcast(); });
   Q.tabs.on('glass', (id) => { if (id === Q.store.selected) Q.glass.refresh(50); });
   Q.tabs.on('scroll', (id, d) => { if (id === Q.store.selected) { Q.glass.onScroll(!!d.final); onPageScroll(id, d); } });
@@ -1021,7 +1050,7 @@ function createWindow() {
 
   nativeTheme.on('updated', () => {
     if (!Q.win || Q.win.isDestroyed()) return;
-    Q.win.setBackgroundColor(isDark() ? '#000000' : '#ffffff');
+    Q.win.setBackgroundColor(settingsSchema.backgroundColor(Q.store.settings, isDark()));
     Q.tabs.onThemeChanged();
     Q.chrome.webContents.send('qafila:theme', { dark: isDark() });
     broadcast();
@@ -1090,7 +1119,7 @@ if (GOT_LOCK) app.whenReady().then(async () => {
   // Extensions Chrome (Chrome Web Store, boutons dans la barre, menus) : session normale seulement.
   Q.extensions = new Extensions({
     tabs: Q.tabs, win: () => Q.win, t: translator, newTab, selectTab, closeTab,
-    chromeOffset: () => (Q.chrome ? Q.chrome.getBounds().y : 0), onChange: broadcast,
+    chromeOffset: () => (Q.chrome ? Q.chrome.getBounds().y : 0), onChange: broadcast, isDark,
   });
   Q.tabs.extensionMenuItems = (wc, params) => Q.extensions.contextMenuItems(wc, params);
   Q.extensions.init({ webStore: !DEMO })

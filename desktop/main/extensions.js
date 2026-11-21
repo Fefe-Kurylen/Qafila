@@ -56,14 +56,12 @@ class Extensions {
       removeWindow: async () => {},
     });
     // Fenêtre d'une extension : placée sous son bouton, en tenant compte de la barre de titre de Qafila.
+    // La position est corrigée avant d'être appliquée (« will-move ») : la fenêtre ne saute plus d'un endroit à l'autre,
+    // et un fond assorti au thème évite l'éclair blanc à l'ouverture en mode sombre.
     this.ext.on('browser-action-popup-created', (popup) => {
-      popup.on('moved', () => {
-        const w = popup.browserWindow;
-        const dy = this.chromeOffset();
-        if (!w || w.isDestroyed() || !dy) return;
-        const b = w.getBounds();
-        w.setBounds({ ...b, y: b.y + dy });
-      });
+      const w = popup.browserWindow;
+      if (w && !w.isDestroyed() && this.isDark?.()) w.setBackgroundColor('#1c1c1e');
+      popup.on('will-move', (pos) => { pos.y += this.chromeOffset() || 0; });
     });
     // Onglets existants et futurs.
     for (const [, view] of this.tabs.views) this.track(view.webContents);
