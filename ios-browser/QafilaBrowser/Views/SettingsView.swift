@@ -306,6 +306,10 @@ struct AppearanceSettings: View {
                 Picker("Thème", selection: $store.settings.appearance) { ForEach(Appearance.allCases) { Text($0.label).tag($0) } }
                     .pickerStyle(.segmented)
             }
+            Section {
+                Picker("Taille de l'interface", selection: $store.settings.interfaceSize) { ForEach(InterfaceSize.allCases) { Text($0.label).tag($0) } }
+                    .pickerStyle(.segmented)
+            } header: { Text("Taille de l'interface") } footer: { Text("Taille de la barre, de ses textes et du menu.") }
             Section("Couleur d'accent") {
                 SwatchRow(items: AccentColor.allCases, selection: $store.settings.accent, color: { $0.color }, label: { $0.label })
             }

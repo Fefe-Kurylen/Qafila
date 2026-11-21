@@ -129,8 +129,16 @@ enum ButtonWeight: String, Codable, CaseIterable, Identifiable {
     case thin, regular, bold
     var id: String { rawValue }
     var label: String { switch self { case .thin: return L("Fine"); case .regular: return L("Normale"); case .bold: return L("Grasse") } }
-    var fontWeight: Font.Weight { switch self { case .thin: return .light; case .regular: return .regular; case .bold: return .semibold } }
-    var stroke: CGFloat { switch self { case .thin: return 1.1; case .regular: return 1.5; case .bold: return 2 } }
+    var fontWeight: Font.Weight { switch self { case .thin: return .regular; case .regular: return .medium; case .bold: return .semibold } }
+    var stroke: CGFloat { switch self { case .thin: return 1.5; case .regular: return 1.9; case .bold: return 2.3 } }
+}
+
+/// Taille de l'interface (barre, menu, onglets) : multiplie les dimensions et les polices de la barre.
+enum InterfaceSize: String, Codable, CaseIterable, Identifiable {
+    case compact, standard, large
+    var id: String { rawValue }
+    var label: String { switch self { case .compact: return L("Compacte"); case .standard: return L("Normale"); case .large: return L("Grande") } }
+    var scale: CGFloat { switch self { case .compact: return 0.9; case .standard: return 1; case .large: return 1.12 } }
 }
 
 enum MenuIconStyle: String, Codable, CaseIterable, Identifiable {
@@ -242,7 +250,8 @@ struct Settings: Codable, Equatable {
     var toolbar: ToolbarConfig = .preset(.complete)
     /// Transparence du verre (styles Verre et Flottante) : 0 = couleur de barre opaque, 1 = le plus transparent.
     var glassTransparency: Double = 0.5
-    var buttonWeight: ButtonWeight = .thin
+    var buttonWeight: ButtonWeight = .regular
+    var interfaceSize: InterfaceSize = .standard
     var menuIcon: MenuIconStyle = .dots
     var scrollBehavior: ScrollBehavior = .shrink
     var landscapeTopBar: Bool = true
@@ -254,10 +263,10 @@ struct Settings: Codable, Equatable {
     var addressTap: AddressTapAction = .edit
     var addressLongPress: AddressLongPressAction = .menu
     // Onglets
-    var tabsLayout: TabsLayout = .list
+    var tabsLayout: TabsLayout = .grid
     var thumbnailSize: ThumbnailSize = .large
     var tabsSort: TabsSort = .date
-    var groupTabsByDomain: Bool = true
+    var groupTabsByDomain: Bool = false
     var autoCloseTabs: AutoCloseTabs = .never
     var comfortMode: Bool = false
     // Confidentialité
@@ -281,7 +290,11 @@ struct Settings: Codable, Equatable {
     var customUserAgent: String = ""
     // Énergie
     var suspendTabsInLowPower: Bool = true
+    /// Version des réglages par défaut : à chaque nouvelle série de défauts, les anciens réglages sont adaptés une fois.
+    var defaultsVersion: Int = Settings.currentDefaults
+    static let currentDefaults = 2
 
+    var ui: CGFloat { interfaceSize.scale }
     var blockerEnabled: Bool { blockAds || blockTrackers || blockCookieBanners }
     func barColor(for scheme: ColorScheme) -> BarColor { scheme == .dark ? barColorDark : barColorLight }
 }
@@ -291,12 +304,12 @@ extension Settings {
     enum CodingKeys: String, CodingKey {
         case searchEngine, searchBaseURL, customSearchTemplate, suggestions, hideAIAnswers, newTabPage, newTabCustomURL
         case appearance, accent, barColorLight, barColorDark, appIcon, haptics
-        case toolbar, glassTransparency, buttonWeight, menuIcon, scrollBehavior, landscapeTopBar, edgeSwipeNavigation
+        case toolbar, glassTransparency, buttonWeight, interfaceSize, menuIcon, scrollBehavior, landscapeTopBar, edgeSwipeNavigation
         case addressStyle, addressShowsFavicon, addressShowsReadingTime, addressTap, addressLongPress
         case tabsLayout, thumbnailSize, tabsSort, groupTabsByDomain, autoCloseTabs, comfortMode
         case blockAds, blockTrackers, blockCookieBanners, blockerDisabledHosts, javascriptEnabled, javascriptDisabledHosts, upgradeToHTTPS, clearDataOnCloseAll
         case darkenSites, darkenOnlyInDarkMode, darkenHosts, textZoom, translateLanguage, desktopByDefault, desktopHosts, customUserAgent
-        case suspendTabsInLowPower
+        case suspendTabsInLowPower, defaultsVersion
     }
 
     init(from decoder: Decoder) throws {
@@ -321,5 +334,17 @@ extension Settings {
         textZoom = v(.textZoom, textZoom); translateLanguage = v(.translateLanguage, translateLanguage); desktopByDefault = v(.desktopByDefault, desktopByDefault)
         desktopHosts = v(.desktopHosts, desktopHosts); customUserAgent = v(.customUserAgent, customUserAgent)
         suspendTabsInLowPower = v(.suspendTabsInLowPower, suspendTabsInLowPower)
+        interfaceSize = v(.interfaceSize, interfaceSize)
+        // Réglages enregistrés avant la version 2 (interface trop petite et trop fine) : nouveaux défauts plus grands et plus gras,
+        // onglets en grille façon Safari. Les choix qui restent valables ne sont pas touchés.
+        let version = ((try? c.decodeIfPresent(Int.self, forKey: .defaultsVersion)) ?? nil) ?? 1
+        if version < 2 {
+            if buttonWeight == .thin { buttonWeight = .regular }
+            interfaceSize = .standard
+            tabsLayout = .grid
+            thumbnailSize = .large
+            groupTabsByDomain = false
+        }
+        defaultsVersion = Settings.currentDefaults
     }
 }

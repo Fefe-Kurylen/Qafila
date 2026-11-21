@@ -317,3 +317,10 @@
 "Aucune collecte · Tout reste sur cet appareil" = "Sin recopilación de datos · Todo se queda en este dispositivo";
 
 "Assistance" = "Soporte";
+
+/* Taille de l'interface (v2) */
+"Compacte" = "Compacta";
+"Grande" = "Grande";
+"Taille de l'interface" = "Tamaño de la interfaz";
+"Taille de la barre, de ses textes et du menu." = "Tamaño de la barra, sus textos y el menú.";
+"Page de démarrage" = "Página de inicio";

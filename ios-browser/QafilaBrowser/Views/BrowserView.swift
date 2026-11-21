@@ -92,7 +92,7 @@ struct BrowserView: View {
                     ChromeBar(editor: editor, singleRow: landscape, atTop: atTop)
                 }
             }
-            .padding(.bottom, atTop ? 6 : (floating ? 6 : 0))
+            .padding(.bottom, atTop ? 6 : (floating ? 8 : 0))
             .padding(.top, floating && atTop ? 2 : 0)
             .modifier(ChromeDressing(palette: palette, settings: s))
             .background {
@@ -104,19 +104,20 @@ struct BrowserView: View {
                 }
             }
             .padding(.horizontal, floating ? Self.floatMargin : 0)
-            .padding(atTop ? .top : .bottom, floating ? 6 : 0)
+            .padding(atTop ? .top : .bottom, floating ? 8 : 0)
             .background(GeometryReader { g in Color.clear.onAppear { chromeHeight = g.size.height }.onChange(of: g.size.height) { _, h in if !collapsed { chromeHeight = h } } })
             .offset(y: hideOffset(safe) + lift(safe))
             if store.isEditingAddress && atTop { SuggestionsPanel(editor: editor).padding(.horizontal, 10) }
         }
     }
 
-    static let floatMargin: CGFloat = 12
+    /// Marge de la barre flottante : assez large pour qu'elle ne colle ni aux bords arrondis de l'écran ni au bas.
+    static let floatMargin: CGFloat = 18
 
     /// Barre flottante en bas : même distance des bords latéraux et du bas de l'écran (comme Quiche / Liquid Glass).
     private func lift(_ safe: EdgeInsets) -> CGFloat {
         guard floating, !atTop, !store.isEditingAddress else { return 0 }
-        return max(0, safe.bottom + 6 - Self.floatMargin)
+        return max(0, safe.bottom + 8 - Self.floatMargin)
     }
 
     private func hideOffset(_ safe: EdgeInsets) -> CGFloat {
@@ -127,7 +128,8 @@ struct BrowserView: View {
     private func menuLayer(_ geo: GeometryProxy, _ palette: ChromePalette) -> some View {
         let width = geo.size.width
         let anchorX = menuAnchor == .zero ? width - 30 : menuAnchor.midX - geo.frame(in: .global).minX
-        let x = min(max(anchorX + 26 - FloatingMenu.width, 10), width - FloatingMenu.width - 10)
+        let menuWidth = FloatingMenu.width(s)
+        let x = min(max(anchorX + 28 - menuWidth, Self.floatMargin), width - menuWidth - Self.floatMargin)
         let available = geo.size.height - chromeHeight - 24
         return ZStack(alignment: atTop ? .topLeading : .bottomLeading) {
             Color.black.opacity(0.1).ignoresSafeArea()
@@ -144,8 +146,8 @@ struct BrowserView: View {
 
     private func toast(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 14, weight: .medium))
-            .padding(.horizontal, 16).padding(.vertical, 9)
+            .font(.system(size: 16, weight: .semibold))
+            .padding(.horizontal, 18).padding(.vertical, 11)
             .background(.regularMaterial, in: Capsule())
             .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
             .frame(maxHeight: .infinity, alignment: .top)

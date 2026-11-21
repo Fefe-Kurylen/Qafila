@@ -2,13 +2,20 @@ import SwiftUI
 @preconcurrency import WebKit
 import Combine
 
+/// Progression et état de chargement, à part : seules la ligne de progression et l'icône Recharger les observent,
+/// le reste de l'interface ne se redessine pas à chaque tic de chargement.
+@MainActor
+final class LoadState: ObservableObject {
+    @Published var progress: [UUID: Double] = [:]
+    @Published var loading: Set<UUID> = []
+}
+
 /// Conserve une WKWebView par onglet (l'état de navigation survit aux changements d'onglet), applique les règles de blocage,
 /// le mode sombre, le user agent, et remonte titre / URL / progression au store.
 @MainActor
 final class TabManager: NSObject, ObservableObject {
     weak var store: BrowserStore?
-    @Published var progress: [UUID: Double] = [:]
-    @Published var loading: Set<UUID> = []
+    let loadState = LoadState()
     @Published var navState: [UUID: (back: Bool, forward: Bool)] = [:]
     @Published var readerActive: Set<UUID> = []
 
@@ -95,21 +102,29 @@ final class TabManager: NSObject, ObservableObject {
         observers[id] = nil
         views[id]?.removeFromSuperview()
         views[id] = nil
-        progress[id] = nil; loading.remove(id); navState[id] = nil; readerActive.remove(id)
+        loadState.progress[id] = nil; loadState.loading.remove(id); navState[id] = nil; readerActive.remove(id)
     }
 
     private func observe(_ web: WKWebView, id: UUID) {
         observers[id] = [
-            web.observe(\.estimatedProgress) { [weak self] w, _ in Task { @MainActor in self?.progress[id] = w.estimatedProgress } },
-            web.observe(\.isLoading) { [weak self] w, _ in Task { @MainActor in if w.isLoading { self?.loading.insert(id) } else { self?.loading.remove(id) } } },
+            // Progression arrondie au vingtième : quelques mises à jour par chargement au lieu de dizaines.
+            web.observe(\.estimatedProgress) { [weak self] w, _ in Task { @MainActor in
+                guard let load = self?.loadState else { return }
+                let p = (w.estimatedProgress * 20).rounded() / 20
+                if load.progress[id] != p { load.progress[id] = p }
+            } },
+            web.observe(\.isLoading) { [weak self] w, _ in Task { @MainActor in
+                guard let load = self?.loadState else { return }
+                if w.isLoading { if !load.loading.contains(id) { load.loading.insert(id) } } else if load.loading.contains(id) { load.loading.remove(id) }
+            } },
             web.observe(\.title) { [weak self] w, _ in Task { @MainActor in self?.store?.update(id) { $0.title = w.title ?? "" } } },
             web.observe(\.url) { [weak self] w, _ in Task { @MainActor in
                 guard let u = w.url, u.scheme != "about" else { return }
                 self?.store?.update(id) { $0.url = u; $0.lastVisited = Date() }
                 self?.readerActive.remove(id)
             } },
-            web.observe(\.canGoBack) { [weak self] w, _ in Task { @MainActor in self?.navState[id] = (w.canGoBack, w.canGoForward) } },
-            web.observe(\.canGoForward) { [weak self] w, _ in Task { @MainActor in self?.navState[id] = (w.canGoBack, w.canGoForward) } },
+            web.observe(\.canGoBack) { [weak self] w, _ in Task { @MainActor in self?.setNav(id, w) } },
+            web.observe(\.canGoForward) { [weak self] w, _ in Task { @MainActor in self?.setNav(id, w) } },
             // La zone sous la barre d'état (marge haute) prend la couleur de fond de la page : aucun aplat clair ou noir.
             web.observe(\.underPageBackgroundColor) { w, _ in Task { @MainActor in
                 let c = w.underPageBackgroundColor ?? .systemBackground
@@ -117,9 +132,16 @@ final class TabManager: NSObject, ObservableObject {
             } },
             web.observe(\.themeColor) { [weak self] w, _ in Task { @MainActor in
                 guard let store = self?.store, store.selectedTabID == id else { return }
-                store.siteThemeColor = w.themeColor.map { Color(uiColor: $0) }
+                let c = w.themeColor.map { Color(uiColor: $0) }
+                if store.siteThemeColor != c { store.siteThemeColor = c }
             } },
         ]
+    }
+
+    private func setNav(_ id: UUID, _ w: WKWebView) {
+        let n = (back: w.canGoBack, forward: w.canGoForward)
+        if let old = navState[id], old.back == n.back, old.forward == n.forward { return }
+        navState[id] = n
     }
 
     // MARK: Navigation
@@ -129,7 +151,7 @@ final class TabManager: NSObject, ObservableObject {
         if let url, url.scheme != "about" { web.load(URLRequest(url: url)); return }
         // Accueil ou page vide : l'onglet repart de zéro (adresse, titre, icône et temps de lecture de l'ancien site).
         store?.update(id) { $0.url = url; $0.title = ""; $0.faviconData = nil; $0.themeColorHex = nil; $0.readingMinutes = 0 }
-        if store?.selectedTabID == id { store?.siteThemeColor = nil }
+        if store?.selectedTabID == id, store?.siteThemeColor != nil { store?.siteThemeColor = nil }
         if let url { web.load(URLRequest(url: url)) } else { loadStartPage(web) }
     }
 
@@ -293,8 +315,11 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
         let minutes = body["minutes"] as? Int ?? 0
         let color = body["color"] as? String ?? ""
         let icon = body["icon"] as? String ?? ""
+        let previous = store?.tabs.first(where: { $0.id == id })?.themeColorHex
         store?.update(id) { $0.readingMinutes = minutes; if !color.isEmpty { $0.themeColorHex = color } }
-        if let store, store.selectedTabID == id, !color.isEmpty { store.siteThemeColor = Color(hex: color) }
+        if let store, store.selectedTabID == id, !color.isEmpty, store.siteThemeColor == nil || previous != color {
+            store.siteThemeColor = Color(hex: color)
+        }
         fetchFavicon(icon, host: web.url?.host, id: id)
     }
 

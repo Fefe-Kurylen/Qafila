@@ -317,3 +317,10 @@
 "Aucune collecte · Tout reste sur cet appareil" = "Keine Datenerfassung · Alles bleibt auf diesem Gerät";
 
 "Assistance" = "Hilfe";
+
+/* Taille de l'interface (v2) */
+"Compacte" = "Kompakt";
+"Grande" = "Groß";
+"Taille de l'interface" = "Größe der Oberfläche";
+"Taille de la barre, de ses textes et du menu." = "Größe der Leiste, ihrer Texte und des Menüs.";
+"Page de démarrage" = "Startseite";

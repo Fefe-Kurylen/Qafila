@@ -19,7 +19,16 @@ struct BrowserTab: Identifiable, Codable, Equatable {
         return h.hasPrefix("www.") ? String(h.dropFirst(4)) : h
     }
     var displayTitle: String { title.isEmpty ? (url?.absoluteString ?? L("Nouvel onglet")) : title }
-    var favicon: UIImage? { faviconData.flatMap(UIImage.init(data:)) }
+    /// Icône décodée une seule fois par image (la barre et la liste des onglets la redemandent à chaque rendu).
+    var favicon: UIImage? {
+        guard let d = faviconData, !d.isEmpty else { return nil }
+        let key = d as NSData
+        if let img = Self.faviconImages.object(forKey: key) { return img }
+        guard let img = UIImage(data: d) else { return nil }
+        Self.faviconImages.setObject(img, forKey: key)
+        return img
+    }
+    private static let faviconImages: NSCache<NSData, UIImage> = { let c = NSCache<NSData, UIImage>(); c.countLimit = 200; return c }()
     var readingLabel: String? { readingMinutes > 0 ? L("%ld min", readingMinutes) : nil }
 }
 

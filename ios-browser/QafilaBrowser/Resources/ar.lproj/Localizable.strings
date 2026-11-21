@@ -317,3 +317,10 @@
 "Aucune collecte · Tout reste sur cet appareil" = "لا جمع للبيانات · كل شيء يبقى على هذا الجهاز";
 
 "Assistance" = "الدعم";
+
+/* Taille de l'interface (v2) */
+"Compacte" = "مضغوطة";
+"Grande" = "كبيرة";
+"Taille de l'interface" = "حجم الواجهة";
+"Taille de la barre, de ses textes et du menu." = "حجم الشريط ونصوصه والقائمة.";
+"Page de démarrage" = "صفحة البداية";

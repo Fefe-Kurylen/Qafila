@@ -118,9 +118,12 @@ final class BrowserStore: ObservableObject {
         WKWebsiteDataStore.default().removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) {}
     }
 
+    /// Ne publie que si l'onglet change vraiment (titre ou adresse identiques renvoyés par WebKit : aucun redessin).
     func update(_ tabID: UUID, _ change: (inout BrowserTab) -> Void) {
         guard let idx = tabs.firstIndex(where: { $0.id == tabID }) else { return }
-        change(&tabs[idx])
+        var t = tabs[idx]
+        change(&t)
+        if t != tabs[idx] { tabs[idx] = t }
     }
 
     func newTabURL() -> URL? {
@@ -156,7 +159,7 @@ final class BrowserStore: ObservableObject {
         switch action {
         case .back: web.goBack()
         case .forward: web.goForward()
-        case .reload: if tabManager.loading.contains(tab.id) { web.stopLoading() } else { web.reload() }
+        case .reload: if tabManager.loadState.loading.contains(tab.id) { web.stopLoading() } else { web.reload() }
         case .stop: web.stopLoading()
         case .tabs: showTabs = true
         case .newTab: newTab()
@@ -270,9 +273,14 @@ final class BrowserStore: ObservableObject {
         app.setAlternateIconName(settings.appIcon.iconName) { _ in }
     }
 
+    /// Générateurs gardés et préparés : la vibration part sans délai au toucher.
+    private var feedback: [UIImpactFeedbackGenerator.FeedbackStyle: UIImpactFeedbackGenerator] = [:]
     func haptic(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
         guard settings.haptics else { return }
-        UIImpactFeedbackGenerator(style: style).impactOccurred()
+        let g = feedback[style] ?? UIImpactFeedbackGenerator(style: style)
+        feedback[style] = g
+        g.impactOccurred()
+        g.prepare()
     }
 
     // MARK: Mode démo (captures d'écran des stores) : lancer avec -QafilaDemo page|start|menu|tabs|grid|editor|gallery|settings|appearance|address

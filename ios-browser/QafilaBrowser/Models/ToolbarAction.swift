@@ -99,7 +99,7 @@ enum ButtonSize: String, Codable, CaseIterable, Identifiable {
     case small, medium, large
     var id: String { rawValue }
     var label: String { switch self { case .small: return L("Petit"); case .medium: return L("Moyen"); case .large: return L("Grand") } }
-    var pointSize: CGFloat { switch self { case .small: return 17; case .medium: return 20; case .large: return 23 } }
+    var pointSize: CGFloat { switch self { case .small: return 19; case .medium: return 22; case .large: return 25 } }
 }
 
 /// Un emplacement dans la barre ou le menu.

@@ -50,26 +50,31 @@ struct AddressEditorRow: View {
     @Environment(\.chromeCardRadius) private var cardRadius
     @ObservedObject var editor: AddressEditModel
     @FocusState private var focused: Bool
+    private var ui: CGFloat { store.settings.ui }
 
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").font(.system(size: 14, weight: .medium)).foregroundStyle(.secondary)
+                Image(systemName: "magnifyingglass").font(.system(size: 16 * ui, weight: .semibold)).foregroundStyle(.secondary)
                 TextField("Rechercher ou saisir une adresse", text: $editor.text)
-                    .font(.system(size: 15))
+                    .font(.system(size: 17 * ui, weight: .medium))
                     .focused($focused)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.webSearch).submitLabel(.go)
                     .onSubmit { submit(editor.text) }
                     .onChange(of: editor.text) { _, v in editor.fetch(v, store: store) }
                 if !editor.text.isEmpty {
-                    Button { editor.text = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary) }.buttonStyle(.plain)
+                    Button { editor.text = "" } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 19 * ui)).foregroundStyle(.secondary).frame(width: 36, height: 36).contentShape(Rectangle()) }.buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
-            .frame(height: 44)
-            .background(RoundedRectangle(cornerRadius: cardRadius ?? 12, style: .continuous).fill(cardColor))
+            .padding(.leading, 14).padding(.trailing, editor.text.isEmpty ? 14 : 4)
+            .frame(height: 52 * ui)
+            .background {
+                let card = RoundedRectangle(cornerRadius: cardRadius ?? 14, style: .continuous)
+                card.fill(cardColor).overlay(card.strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.75))
+            }
 
-            Button("Annuler") { cancel() }.font(.system(size: 15)).foregroundStyle(.primary)
+            Button { cancel() } label: { Text("Annuler").font(.system(size: 17 * ui, weight: .semibold)).padding(.horizontal, 4).frame(minHeight: 44).contentShape(Rectangle()) }
+                .buttonStyle(.plain).foregroundStyle(.primary)
         }
         .onAppear {
             editor.text = store.selectedTab?.url?.absoluteString ?? ""
@@ -103,10 +108,10 @@ struct SuggestionsPanel: View {
                                 Button { go(b.url.absoluteString) } label: {
                                     VStack(spacing: 6) {
                                         Text(String(b.title.prefix(1)).uppercased())
-                                            .font(.system(size: 19, weight: .medium, design: .serif))
-                                            .frame(width: 48, height: 48)
-                                            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.06)))
-                                        Text(b.title).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1).frame(width: 58)
+                                            .font(.system(size: 22, weight: .semibold, design: .serif))
+                                            .frame(width: 56, height: 56)
+                                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.07)))
+                                        Text(b.title).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1).frame(width: 66)
                                     }
                                 }.buttonStyle(.plain)
                             }
@@ -125,29 +130,30 @@ struct SuggestionsPanel: View {
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.12), radius: 18, y: 4)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.75))
+        .shadow(color: .black.opacity(0.16), radius: 18, y: 4)
     }
 
     private func header(_ t: String) -> some View {
-        Text(t).font(.system(size: 10, weight: .bold)).tracking(0.6).foregroundStyle(.secondary)
-            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6)
+        Text(t).font(.system(size: 12.5, weight: .bold)).tracking(0.5).foregroundStyle(.secondary)
+            .padding(.horizontal, 18).padding(.top, 10).padding(.bottom, 6)
     }
 
     private func row(icon: String, text: String, detail: String?, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: icon).font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 18)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(text).font(.system(size: 15)).foregroundStyle(.primary).lineLimit(1)
-                    if let d = detail { Text(d).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1) }
+                Image(systemName: icon).font(.system(size: 16, weight: .semibold)).foregroundStyle(.secondary).frame(width: 22)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(text).font(.system(size: 17, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
+                    if let d = detail { Text(d).font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary).lineLimit(1) }
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "arrow.up.left").font(.system(size: 11)).foregroundStyle(.tertiary)
+                Image(systemName: "arrow.up.left").font(.system(size: 13, weight: .semibold)).foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 16).frame(minHeight: 40).contentShape(Rectangle())
+            .padding(.horizontal, 18).frame(minHeight: 50).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

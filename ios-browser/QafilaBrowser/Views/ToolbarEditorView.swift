@@ -13,10 +13,10 @@ struct BarPreview: View {
         // Même rayon que la vraie barre ; le style Classique et Verre gardent un cadre de carte (12).
         let shape = RoundedRectangle(cornerRadius: floating ? GlassSurface.barRadius : 12, style: .continuous)
         VStack(spacing: 0) {
-            if !config.hasInlineAddress && s.addressStyle != .hidden { AddressCard().padding(.horizontal, 10).padding(.top, 6) }
-            ToolbarRow(forceInlineAddress: false, preview: config.bar).padding(.horizontal, 6).frame(height: 42)
+            if !config.hasInlineAddress && s.addressStyle != .hidden { AddressCard().padding(.horizontal, 10).padding(.top, 8) }
+            ToolbarRow(forceInlineAddress: false, preview: config.bar).padding(.horizontal, 6).frame(height: 52 * s.ui)
         }
-        .padding(.bottom, floating ? 6 : 4)
+        .padding(.bottom, floating ? 8 : 4)
         .modifier(ChromeDressing(palette: palette, settings: s))
         .background {
             if floating { ChromeBackground(palette: palette, style: .floating, transparency: s.glassTransparency) }

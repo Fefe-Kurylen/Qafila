@@ -59,17 +59,31 @@ struct GlassSurface: View {
     var interactive = false
     var shadow = true
 
-    static let barRadius: CGFloat = 32
-    static let pillRadius: CGFloat = 22
-    static let menuRadius: CGFloat = 18
+    static let barRadius: CGFloat = 34
+    static let pillRadius: CGFloat = 24
+    static let menuRadius: CGFloat = 22
 
     private var t: Double { min(max(transparency, 0), 1) }
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: radius, style: .continuous) }
 
     var body: some View {
         surface
+            // Bords bien marqués : la barre se détache nettement de la page, quelle que soit la couleur du site.
+            .overlay { if radius > 0 { edge } }
+            .shadow(color: .black.opacity(shadow && radius > 0 ? (palette.contentScheme == .dark ? 0.32 : 0.14) : 0), radius: 16, y: 5)
             // Le verre se rend toujours dans le thème de la barre (verre sombre profond, jamais gris boueux).
             .environment(\.colorScheme, palette.contentScheme)
+    }
+
+    /// Liseré : trait sombre fin à l'extérieur + reflet clair plus marqué en haut.
+    private var edge: some View {
+        let dark = palette.contentScheme == .dark
+        return ZStack {
+            shape.strokeBorder(Color.black.opacity(dark ? 0.55 : 0.16), lineWidth: 1)
+            shape.inset(by: 1).strokeBorder(LinearGradient(colors: [Color.white.opacity(dark ? 0.34 : 0.9), Color.white.opacity(dark ? 0.10 : 0.35)],
+                                                           startPoint: .top, endPoint: .bottom), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder private var surface: some View {
@@ -85,14 +99,10 @@ struct GlassSurface: View {
         #endif
     }
 
-    /// iOS 17/18 : matériau ultra-fin teinté, liseré plus clair en haut, ombre d'autant plus douce que le verre est transparent.
+    /// iOS 17/18 : matériau ultra-fin teinté (liseré et ombre ajoutés par `body`, communs à toutes les versions).
     private var fallback: some View {
-        let dark = palette.contentScheme == .dark
-        return shape.fill(.ultraThinMaterial)
+        shape.fill(.ultraThinMaterial)
             .overlay(shape.fill(palette.bar.opacity(0.05 + (1 - t) * 0.95)))
-            .overlay(shape.strokeBorder(LinearGradient(colors: [Color.white.opacity(dark ? 0.18 : 0.8), Color.white.opacity(dark ? 0.03 : 0.2)],
-                                                       startPoint: .top, endPoint: .bottom), lineWidth: radius > 0 ? 0.8 : 0))
-            .shadow(color: .black.opacity(shadow ? (dark ? 0.35 : 0.10) * (0.4 + 0.6 * (1 - t)) : 0), radius: 18, y: 6)
     }
 }
 
@@ -138,13 +148,13 @@ struct ChromeBar: View {
     var body: some View {
         Group {
             if store.isEditingAddress {
-                AddressEditorRow(editor: editor).padding(.horizontal, 10).padding(.vertical, 8)
+                AddressEditorRow(editor: editor).padding(.horizontal, 10).padding(.vertical, 9)
             } else if singleRow {
-                ToolbarRow(forceInlineAddress: true).padding(.horizontal, 8).frame(height: 46)
+                ToolbarRow(forceInlineAddress: true).padding(.horizontal, 8).frame(height: 54 * s.ui)
             } else {
                 VStack(spacing: 0) {
-                    if showsCard { AddressCard().padding(.horizontal, 10).padding(.top, atTop ? 4 : 6) }
-                    ToolbarRow(forceInlineAddress: false).padding(.horizontal, 6).frame(height: 42)
+                    if showsCard { AddressCard().padding(.horizontal, 10).padding(.top, atTop ? 5 : 8) }
+                    ToolbarRow(forceInlineAddress: false).padding(.horizontal, 6).frame(height: 52 * s.ui)
                 }
             }
         }
@@ -155,12 +165,14 @@ struct ChromeBar: View {
 struct MiniChrome: View {
     @EnvironmentObject var store: BrowserStore
     var body: some View {
-        HStack(spacing: 4) {
-            if store.selectedTab?.url?.scheme == "https" { Image(systemName: "lock.fill").font(.system(size: 8, weight: .semibold)) }
-            Text(store.selectedTab?.host ?? L("Qafila")).font(.system(size: 12, weight: .semibold))
+        let ui = store.settings.ui
+        HStack(spacing: 5) {
+            if store.selectedTab?.url?.scheme == "https" { Image(systemName: "lock.fill").font(.system(size: 10 * ui, weight: .bold)) }
+            Text(store.selectedTab?.host ?? L("Qafila")).font(.system(size: 14.5 * ui, weight: .bold))
         }
-        .foregroundStyle(Color.primary.opacity(0.75))
-        .frame(maxWidth: .infinity).frame(height: 26)
+        .foregroundStyle(Color.primary.opacity(0.85))
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity).frame(height: 34 * ui)
         .contentShape(Rectangle())
         .onTapGesture { store.barsHidden = false }
     }
@@ -179,18 +191,20 @@ struct AddressCard: View {
     private var s: Settings { store.settings }
     private var style: AddressStyle { inline ? (s.addressStyle == .fullURL ? .fullURL : .card) : s.addressStyle }
     private var isStart: Bool { tab?.url == nil }
+    private var ui: CGFloat { s.ui }
 
     var body: some View {
         content
-            .padding(.horizontal, style == .centered ? 4 : 12)
+            .padding(.horizontal, style == .centered ? 4 : 14)
             .frame(maxWidth: .infinity)
-            .frame(height: inline ? 38 : 44)
+            .frame(height: (inline ? 44 : 52) * ui)
             .background {
                 if style != .centered {
-                    RoundedRectangle(cornerRadius: cardRadius ?? (inline ? 10 : 12), style: .continuous).fill(cardColor)
+                    let card = RoundedRectangle(cornerRadius: cardRadius ?? (inline ? 12 : 14), style: .continuous)
+                    card.fill(cardColor).overlay(card.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.75))
                 }
             }
-            .overlay(alignment: .bottom) { ProgressLine(tabManager: store.tabManager).padding(.horizontal, 10) }
+            .overlay(alignment: .bottom) { ProgressLine(load: store.tabManager.loadState).padding(.horizontal, 12) }
             .contentShape(Rectangle())
             .onTapGesture { tap() }
             .onLongPressGesture(minimumDuration: 0.45) { longPress() }
@@ -202,8 +216,8 @@ struct AddressCard: View {
     @ViewBuilder private var content: some View {
         if isStart {
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").font(.system(size: 14, weight: .medium))
-                Text("Rechercher ou saisir une adresse").font(.system(size: 14)).lineLimit(1)
+                Image(systemName: "magnifyingglass").font(.system(size: 16 * ui, weight: .semibold))
+                Text("Rechercher ou saisir une adresse").font(.system(size: 16 * ui, weight: .medium)).lineLimit(1)
             }
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: style == .card || style == .fullURL || style == .titleReading ? .leading : .center)
@@ -223,10 +237,10 @@ struct AddressCard: View {
 
     private var cardLayout: some View {
         HStack(spacing: 10) {
-            if s.addressShowsFavicon { Favicon(tab: tab, size: inline ? 18 : 20) }
+            if s.addressShowsFavicon { Favicon(tab: tab, size: (inline ? 20 : 24) * ui) }
             VStack(alignment: .leading, spacing: 1) {
-                Text(domain).font(.system(size: 9.5, weight: .bold)).tracking(0.6).foregroundStyle(.secondary).lineLimit(1)
-                Text(title).font(.system(size: 13, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
+                Text(domain).font(.system(size: 11 * ui, weight: .bold)).tracking(0.5).foregroundStyle(.secondary).lineLimit(1)
+                Text(title).font(.system(size: 15.5 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
             }
             Spacer(minLength: 4)
             if s.addressShowsReadingTime, let r = tab?.readingLabel { ReadingPill(text: r) }
@@ -235,9 +249,9 @@ struct AddressCard: View {
 
     private var fullURLLayout: some View {
         HStack(spacing: 8) {
-            if s.addressShowsFavicon { Favicon(tab: tab, size: 18) }
-            if tab?.url?.scheme == "https" { Image(systemName: "lock.fill").font(.system(size: 10)).foregroundStyle(.secondary) }
-            Text(tab?.url.map(Self.shortURL) ?? "").font(.system(size: 14)).foregroundStyle(.primary).lineLimit(1).truncationMode(.middle)
+            if s.addressShowsFavicon { Favicon(tab: tab, size: 20 * ui) }
+            if tab?.url?.scheme == "https" { Image(systemName: "lock.fill").font(.system(size: 11 * ui, weight: .semibold)).foregroundStyle(.secondary) }
+            Text(tab?.url.map(Self.shortURL) ?? "").font(.system(size: 16 * ui, weight: .medium)).foregroundStyle(.primary).lineLimit(1).truncationMode(.middle)
             Spacer(minLength: 4)
             if s.addressShowsReadingTime, let r = tab?.readingLabel { ReadingPill(text: r) }
         }
@@ -245,22 +259,22 @@ struct AddressCard: View {
 
     private var domainLayout: some View {
         HStack(spacing: 6) {
-            if s.addressShowsFavicon { Favicon(tab: tab, size: 16) }
-            Text(tab?.host ?? "").font(.system(size: 15, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
-            if s.addressShowsReadingTime, let r = tab?.readingLabel { Text("· \(r)").font(.system(size: 13)).foregroundStyle(.secondary) }
+            if s.addressShowsFavicon { Favicon(tab: tab, size: 19 * ui) }
+            Text(tab?.host ?? "").font(.system(size: 17 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+            if s.addressShowsReadingTime, let r = tab?.readingLabel { Text("· \(r)").font(.system(size: 14 * ui, weight: .medium)).foregroundStyle(.secondary) }
         }
         .frame(maxWidth: .infinity)
     }
 
     private var titleLayout: some View {
         HStack(spacing: 10) {
-            if s.addressShowsFavicon { Favicon(tab: tab, size: 20) }
+            if s.addressShowsFavicon { Favicon(tab: tab, size: 24 * ui) }
             VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.system(size: 14, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+                Text(title).font(.system(size: 16 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
                 if s.addressShowsReadingTime, let r = tab?.readingLabel {
-                    Text(L("%@ de lecture", r)).font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(L("%@ de lecture", r)).font(.system(size: 12.5 * ui, weight: .medium)).foregroundStyle(.secondary)
                 } else {
-                    Text(tab?.host ?? "").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                    Text(tab?.host ?? "").font(.system(size: 12.5 * ui, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
             Spacer(minLength: 0)
@@ -269,10 +283,10 @@ struct AddressCard: View {
 
     private var centeredLayout: some View {
         VStack(spacing: 1) {
-            Text(domain).font(.system(size: 9.5, weight: .bold)).tracking(0.6).foregroundStyle(.secondary).lineLimit(1)
+            Text(domain).font(.system(size: 11 * ui, weight: .bold)).tracking(0.5).foregroundStyle(.secondary).lineLimit(1)
             HStack(spacing: 6) {
-                Text(title).font(.system(size: 13, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
-                if s.addressShowsReadingTime, let r = tab?.readingLabel { Text(r).font(.system(size: 11)).foregroundStyle(.secondary) }
+                Text(title).font(.system(size: 15.5 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+                if s.addressShowsReadingTime, let r = tab?.readingLabel { Text(r).font(.system(size: 12.5 * ui, weight: .medium)).foregroundStyle(.secondary) }
             }
         }
         .frame(maxWidth: .infinity)
@@ -306,9 +320,9 @@ struct ReadingPill: View {
     let text: String
     var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .medium)).monospacedDigit()
+            .font(.system(size: 12.5, weight: .semibold)).monospacedDigit()
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 7).padding(.vertical, 3)
+            .padding(.horizontal, 8).padding(.vertical, 4)
             .background(Capsule().fill(Color.primary.opacity(0.07)))
     }
 }
@@ -324,8 +338,9 @@ struct Favicon: View {
     let tab: BrowserTab?
     var size: CGFloat = 20
     var body: some View {
+        let img = tab?.favicon
         Group {
-            if let img = tab?.favicon {
+            if let img {
                 Image(uiImage: img).resizable().scaledToFit()
             } else if tab?.isPrivate == true {
                 Image(systemName: "hand.raised.fill").font(.system(size: size * 0.55)).foregroundStyle(.secondary)
@@ -335,7 +350,7 @@ struct Favicon: View {
             }
         }
         .frame(width: size, height: size)
-        .background(tab?.favicon == nil ? Color.primary.opacity(0.07) : .clear)
+        .background(img == nil ? Color.primary.opacity(0.07) : .clear)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
     }
 }
@@ -343,11 +358,11 @@ struct Favicon: View {
 /// Fine ligne de progression au bas de la carte d'adresse. Observe le gestionnaire d'onglets : seule cette vue se redessine à chaque tic.
 struct ProgressLine: View {
     @EnvironmentObject var store: BrowserStore
-    @ObservedObject var tabManager: TabManager
+    @ObservedObject var load: LoadState
     var body: some View {
         let id = store.selectedTabID
-        let p = id.flatMap { tabManager.progress[$0] } ?? 0
-        let loading = id.map { tabManager.loading.contains($0) } ?? false
+        let p = id.flatMap { load.progress[$0] } ?? 0
+        let loading = id.map { load.loading.contains($0) } ?? false
         GeometryReader { g in
             Capsule().fill(Color.accentColor).frame(width: max(0, g.size.width * p)).opacity(loading && p < 1 ? 1 : 0)
         }
@@ -395,15 +410,12 @@ struct ToolbarRow: View {
                 case .separator: Spacer().frame(width: 10)
                 case .address: AddressCard(inline: true).padding(.horizontal, 4).frame(maxWidth: .infinity)
                 default:
-                    if inline { ToolbarButton(tabManager: store.tabManager, slot: slot).frame(width: 46) }
+                    if inline { ToolbarButton(tabManager: store.tabManager, slot: slot).frame(width: 50 * store.settings.ui) }
                     else { ToolbarButton(tabManager: store.tabManager, slot: slot).frame(maxWidth: .infinity) }
                 }
             }
         }
-        .contextMenu {
-            Button { store.showToolbarEditor = true } label: { Label("Personnaliser la barre", systemImage: "slider.horizontal.3") }
-            Button { store.showToolbarGallery = true } label: { Label("Galerie de barres", systemImage: "square.grid.2x2") }
-        }
+        // Pas de menu contextuel sur toute la rangée : il se superposait à celui de chaque bouton et à l'appui long sur l'adresse.
     }
 }
 
@@ -414,8 +426,6 @@ struct ToolbarButton: View {
 
     private var tab: BrowserTab? { store.selectedTab }
     private var nav: (back: Bool, forward: Bool) { tab.flatMap { tabManager.navState[$0.id] } ?? (false, false) }
-    private var weight: ButtonWeight { store.settings.buttonWeight }
-
     private var isEnabled: Bool {
         switch slot.action {
         case .back: return nav.back
@@ -432,9 +442,9 @@ struct ToolbarButton: View {
                 store.perform(slot.action)
             }
         } label: {
-            ActionGlyph(tabManager: tabManager, action: slot.action, size: slot.size.pointSize)
-                .opacity(isEnabled ? 1 : 0.28)
-                .frame(maxWidth: .infinity, minHeight: 44)
+            ActionGlyph(tabManager: tabManager, action: slot.action, size: slot.size.pointSize * store.settings.ui)
+                .opacity(isEnabled ? 1 : 0.3)
+                .frame(maxWidth: .infinity, minHeight: 48)
                 .contentShape(Rectangle())
         }
         .buttonStyle(ToolbarPressStyle())
@@ -462,6 +472,7 @@ struct ToolbarButton: View {
             Button { store.showSettings = true } label: { Label("Réglages", systemImage: "gearshape") }
         default:
             Button { store.showToolbarEditor = true } label: { Label("Personnaliser la barre", systemImage: "slider.horizontal.3") }
+            Button { store.showToolbarGallery = true } label: { Label("Galerie de barres", systemImage: "square.grid.2x2") }
         }
     }
 }
@@ -489,6 +500,8 @@ struct ActionGlyph: View {
     var body: some View {
         if action == .tabs {
             TabsGlyph(count: store.tabs.filter { !$0.isPrivate }.count, size: size, stroke: weight.stroke)
+        } else if action == .reload {
+            ReloadGlyph(load: tabManager.loadState, size: size, weight: weight.fontWeight, tint: tint)
         } else {
             Image(systemName: symbol)
                 .font(.system(size: size, weight: weight.fontWeight))
@@ -516,9 +529,23 @@ struct ActionGlyph: View {
         case .blocker: return store.isBlockerActive(for: t?.url) ? "shield.lefthalf.filled" : "shield.slash"
         case .javascript: return store.isJavaScriptEnabled(for: t?.url) ? "curlybraces" : "curlybraces.square"
         case .addBookmark: return isActive ? "bookmark.fill" : "bookmark"
-        case .reload: return t.map { tabManager.loading.contains($0.id) } == true ? "xmark" : "arrow.clockwise"
         default: return action.symbol
         }
+    }
+}
+
+/// Recharger / Arrêter : seule icône qui suit le chargement (les autres ne se redessinent pas à chaque tic).
+struct ReloadGlyph: View {
+    @EnvironmentObject var store: BrowserStore
+    @ObservedObject var load: LoadState
+    let size: CGFloat
+    let weight: Font.Weight
+    var tint: Color?
+    var body: some View {
+        let loading = store.selectedTabID.map { load.loading.contains($0) } ?? false
+        Image(systemName: loading ? "xmark" : "arrow.clockwise")
+            .font(.system(size: size, weight: weight))
+            .foregroundStyle(tint ?? Color.primary)
     }
 }
 
@@ -533,7 +560,7 @@ struct TabsGlyph: View {
             .frame(width: size + 2, height: size + 2)
             .overlay(
                 Text(count > 99 ? "∞" : "\(count)")
-                    .font(.system(size: size * (count > 9 ? 0.46 : 0.52), weight: stroke > 1.6 ? .bold : .semibold, design: .rounded))
+                    .font(.system(size: size * (count > 9 ? 0.46 : 0.52), weight: stroke > 1.7 ? .heavy : .bold, design: .rounded))
                     .foregroundStyle(Color.primary)
             )
     }
