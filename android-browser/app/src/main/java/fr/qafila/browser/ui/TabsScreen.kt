@@ -159,7 +159,7 @@ fun TabsScreen(store: BrowserStore, onDismiss: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 Row(Modifier.clip(RoundedCornerShape(50)).background(if (cardAlpha < 1f) q.card.copy(alpha = cardAlpha) else q.fill).pressFade { pillMenu = !pillMenu }.padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     val n = if (showPrivate) privateCount else count
-                    Text(pluralStringResource(if (showPrivate) R.plurals.private_count else R.plurals.tabs_count, n, n), color = q.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    Text(pluralStringResource(if (showPrivate) R.plurals.private_count else R.plurals.tabs_count, n, n), color = q.text, fontSize = 17.sp, fontWeight = FontWeight.Medium, maxLines = 1)
                     Spacer(Modifier.width(5.dp))
                     QIconView(if (pillMenu) QIcon.CHEVRON_DOWN else QIcon.CHEVRON_UP, null, q.text, 12.dp)
                 }
@@ -222,12 +222,12 @@ private fun TabListRow(store: BrowserStore, t: BrowserTab, fav: android.graphics
         },
     ) {
         Row(Modifier.fillMaxWidth().background(q.card).rowClick(onClick = onOpen).padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Favicon(fav, t.hostOrNull, 26.dp, corner = 6.dp, private = t.isPrivate)
+            Favicon(fav, t.hostOrNull, 32.dp, corner = 8.dp, private = t.isPrivate)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(t.uiTitle(), color = q.text, fontSize = 15.sp, lineHeight = 19.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(t.uiTitle(), color = q.text, fontSize = 16.5.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(2.dp))
-                Text(t.hostOrNull?.uppercase() ?: stringResource(R.string.newtab_start).uppercase(), color = q.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = if (t.hostOrNull != null) LtrText else androidx.compose.ui.text.TextStyle.Default)
+                Text(t.hostOrNull?.uppercase() ?: stringResource(R.string.newtab_start).uppercase(), color = q.secondary, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.4.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = if (t.hostOrNull != null) LtrText else androidx.compose.ui.text.TextStyle.Default)
             }
             if (current) { Spacer(Modifier.width(8.dp)); QIconView(QIcon.CHECK, stringResource(R.string.current_tab), q.secondary, 14.dp) }
             val read = readingLabel(t.readingMinutes)
@@ -241,26 +241,26 @@ private fun TabThumb(t: BrowserTab, fav: android.graphics.Bitmap?, snapshot: and
     val q = LocalQ.current
     Column(modifier.pressFade(onClick = onOpen)) {
         Box(
-            Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(14.dp)).background(q.card)
-                .border(if (current) 2.dp else 0.5.dp, if (current) q.accent else q.separator, RoundedCornerShape(14.dp)),
+            Modifier.fillMaxWidth().aspectRatio(0.72f).clip(RoundedCornerShape(22.dp)).background(q.card)
+                .border(if (current) 3.dp else 0.75.dp, if (current) q.accent else q.separator, RoundedCornerShape(22.dp)),
         ) {
             if (snapshot != null) Image(snapshot.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
             else Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                Favicon(fav, t.hostOrNull, 34.dp, private = t.isPrivate)
+                Favicon(fav, t.hostOrNull, 44.dp, private = t.isPrivate)
                 Spacer(Modifier.height(10.dp))
-                Text(t.uiTitle(), color = q.secondary, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(t.uiTitle(), color = q.secondary, fontSize = 13.sp, lineHeight = 16.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
-            Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(26.dp).pressFade(onClick = onClose), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(22.dp).clip(CircleShape).background(if (q.dark) Color(0xCC3A3A3C) else Color(0xE6F2F2F7)), contentAlignment = Alignment.Center) {
-                    QIconView(QIcon.CLOSE, stringResource(R.string.action_close_tab), q.text, 11.dp)
+            Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(40.dp).pressFade(onClick = onClose), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(28.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.55f)).border(0.75.dp, Color.White.copy(alpha = 0.25f), CircleShape), contentAlignment = Alignment.Center) {
+                    QIconView(QIcon.CLOSE, stringResource(R.string.action_close_tab), Color.White, 13.dp)
                 }
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Favicon(fav, t.hostOrNull, 14.dp, corner = 3.dp, private = t.isPrivate)
-            Spacer(Modifier.width(5.dp))
-            Text(t.uiTitle(), color = q.text, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Favicon(fav, t.hostOrNull, 18.dp, corner = 4.dp, private = t.isPrivate)
+            Spacer(Modifier.width(6.dp))
+            Text(t.uiTitle(), color = q.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

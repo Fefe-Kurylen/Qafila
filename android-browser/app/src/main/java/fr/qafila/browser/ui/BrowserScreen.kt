@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -341,7 +342,7 @@ fun BrowserScreen(store: BrowserStore) {
                     chromeColors, t, backdrop.image, RoundedCornerShape(FLOATING_RADIUS), elevation = 14.dp,
                     modifier = Modifier.fillMaxWidth().onSizeChanged { chromeHeightPx = it.height }
                         .then(if (top) Modifier.statusBarsPadding().padding(top = 6.dp) else Modifier.padding(bottom = floatGap))
-                        .padding(horizontal = 12.dp).then(placed),
+                        .padding(horizontal = 18.dp).then(placed),
                 ) { Column(Modifier.fillMaxWidth().padding(bottom = 6.dp, top = if (top) 2.dp else 0.dp)) { barContent() } }
                 glass -> GlassSurface(
                     chromeColors, t, backdrop.image, RectangleShape, rim = false,
@@ -362,8 +363,9 @@ fun BrowserScreen(store: BrowserStore) {
             showMenu,
             // Position absolue (gauche / droite à l'écran), quel que soit le sens de lecture : le menu suit le bouton.
             modifier = Modifier.align(if (top) (if (right) AbsoluteAlignment.TopRight else AbsoluteAlignment.TopLeft) else (if (right) AbsoluteAlignment.BottomRight else AbsoluteAlignment.BottomLeft))
-                .padding(start = 10.dp, end = 10.dp, top = if (top) chromeDp + 6.dp else 0.dp, bottom = if (top) 0.dp else chromeDp + 6.dp),
-            enter = scaleIn(tween(200), initialScale = 0.92f, transformOrigin = origin) + fadeIn(tween(140)),
+                .padding(start = 18.dp, end = 18.dp, top = if (top) chromeDp + 8.dp else 0.dp, bottom = if (top) 0.dp else chromeDp + 8.dp),
+            // Petite animation qui part du bouton Menu.
+            enter = scaleIn(spring(dampingRatio = 0.78f, stiffness = 520f), initialScale = 0.4f, transformOrigin = origin) + fadeIn(tween(120)),
             exit = scaleOut(tween(150), targetScale = 0.92f, transformOrigin = origin) + fadeOut(tween(120)),
         ) { MenuCard(store, maxMenu.coerceAtLeast(200.dp)) }
 

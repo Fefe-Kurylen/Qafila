@@ -59,7 +59,7 @@ enum class ToolbarAction(@StringRes override val labelRes: Int, val destructive:
 }
 
 /** Taille d'icône dans la barre : Petit 17 / Moyen 20 / Grand 23. */
-@Serializable enum class ButtonSize(@StringRes override val labelRes: Int, val dp: Int) : Labeled { SMALL(R.string.size_small, 17), MEDIUM(R.string.size_medium, 20), LARGE(R.string.size_large, 23) }
+@Serializable enum class ButtonSize(@StringRes override val labelRes: Int, val dp: Int) : Labeled { SMALL(R.string.size_small, 18), MEDIUM(R.string.size_medium, 21), LARGE(R.string.size_large, 24) }
 
 @Serializable
 data class ToolbarSlot(val id: String = UUID.randomUUID().toString(), val action: ToolbarAction, val size: ButtonSize = ButtonSize.MEDIUM, val showsLabel: Boolean = true)
@@ -216,7 +216,7 @@ enum class SearchEngine(@StringRes override val labelRes: Int, val needsBaseUrl:
 }
 @Serializable enum class AddressTapAction(@StringRes override val labelRes: Int) : Labeled { EDIT(R.string.tap_edit_address), MENU(R.string.tap_open_menu) }
 @Serializable enum class AddressLongPressAction(@StringRes override val labelRes: Int) : Labeled { MENU(R.string.tap_open_menu), COPY(R.string.long_press_copy), NONE(R.string.nothing) }
-@Serializable enum class IconWeight(@StringRes override val labelRes: Int, val stroke: Float) : Labeled { THIN(R.string.weight_thin, 1.15f), REGULAR(R.string.weight_regular, 1.5f), BOLD(R.string.weight_bold, 2.0f) }
+@Serializable enum class IconWeight(@StringRes override val labelRes: Int, val stroke: Float) : Labeled { THIN(R.string.weight_thin, 1.3f), REGULAR(R.string.weight_regular, 1.65f), BOLD(R.string.weight_bold, 2.2f) }
 @Serializable enum class MenuIconStyle(@StringRes override val labelRes: Int) : Labeled { DOTS(R.string.menu_icon_dots), DOTS_CIRCLE(R.string.menu_icon_dots_circle), LINES_CIRCLE(R.string.menu_icon_lines_circle) }
 @Serializable enum class ScrollBehavior(@StringRes override val labelRes: Int, @StringRes val descriptionRes: Int) : Labeled {
     FIXED(R.string.scroll_fixed, R.string.scroll_fixed_desc),
@@ -274,10 +274,10 @@ data class Settings(
     val addressTap: AddressTapAction = AddressTapAction.EDIT,
     val addressLongPress: AddressLongPressAction = AddressLongPressAction.MENU,
     // Onglets
-    val tabsLayout: TabsLayout = TabsLayout.LIST,
+    val tabsLayout: TabsLayout = TabsLayout.GRID,
     val tabsGridSize: GridSize = GridSize.LARGE,
     val tabsSort: TabsSort = TabsSort.DATE,
-    val groupTabsByDomain: Boolean = true,
+    val groupTabsByDomain: Boolean = false,
     val newTabPage: NewTabPage = NewTabPage.START,
     val newTabCustomUrl: String = "",
     val autoCloseTabs: AutoCloseTabs = AutoCloseTabs.NEVER,

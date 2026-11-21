@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
@@ -107,10 +108,13 @@ fun glassRim(colors: BarColors): List<Color> =
 fun Modifier.floatingGlass(colors: BarColors, t: Float, elevation: Dp = 14.dp): Modifier {
     val shape = RoundedCornerShape(FLOATING_RADIUS)
     return this
-        .shadow(elevation, shape, ambientColor = Color.Black.copy(alpha = 0.10f), spotColor = Color.Black.copy(alpha = 0.16f))
+        .shadow(elevation, shape, ambientColor = Color.Black.copy(alpha = 0.14f), spotColor = Color.Black.copy(alpha = 0.22f))
         .clip(shape)
         .background(colors.bg.copy(alpha = glassAlpha(t)))
-        .border(0.8.dp, Brush.verticalGradient(glassRim(colors)), shape)
+        // Bords bien marqués (comme sur iPhone) : trait sombre à l'extérieur, reflet clair à l'intérieur.
+        .border(1.dp, Color.Black.copy(alpha = if (colors.text.luminance() > 0.5f) 0.55f else 0.16f), shape)
+        .padding(1.dp)
+        .border(1.dp, Brush.verticalGradient(glassRim(colors)), RoundedCornerShape(FLOATING_RADIUS - 1.dp))
 }
 
 /**
@@ -136,7 +140,7 @@ fun ChromeContent(
     val colors = if (floating || glass) barColors.glassy(s.glassT, floating) else barColors
     val bgMod = when {
         !background -> Modifier
-        floating -> Modifier.padding(horizontal = 12.dp, vertical = 8.dp).floatingGlass(colors, s.glassT, elevation = 10.dp).padding(bottom = 6.dp)
+        floating -> Modifier.padding(horizontal = 18.dp, vertical = 10.dp).floatingGlass(colors, s.glassT, elevation = 12.dp).padding(bottom = 6.dp)
         else -> Modifier.background(if (glass) colors.bg.copy(alpha = glassAlpha(s.glassT)) else colors.bg)
     }
     Box(modifier.fillMaxWidth().animateContentSize(tween(180)).then(bgMod)) {
@@ -148,7 +152,7 @@ fun ChromeContent(
                 else -> {
                     val inline = toolbar.hasInlineAddress
                     if (!inline && s.addressStyle != AddressStyle.HIDDEN) {
-                        Box(Modifier.padding(start = 10.dp, end = 10.dp, top = 7.dp)) { AddressView(data, s, colors, inline = false, interactive = interactive, cb = cb) }
+                        Box(Modifier.padding(start = 10.dp, end = 10.dp, top = 9.dp)) { AddressView(data, s, colors, inline = false, interactive = interactive, cb = cb) }
                     }
                     IconRow(data, s, toolbar.bar, colors, inline, interactive, cb, topPad = if (inline || s.addressStyle == AddressStyle.HIDDEN) 6.dp else 1.dp)
                 }
@@ -163,13 +167,13 @@ fun ChromeContent(
 
 @Composable
 private fun IconRow(data: ChromeData, s: Settings, bar: List<ToolbarSlot>, colors: BarColors, inline: Boolean, interactive: Boolean, cb: ChromeCallbacks, topPad: Dp) {
-    Row(Modifier.fillMaxWidth().padding(top = topPad, start = 6.dp, end = 6.dp).height(if (inline) 50.dp else 42.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(top = topPad, start = 6.dp, end = 6.dp).height(if (inline) 56.dp else 52.dp), verticalAlignment = Alignment.CenterVertically) {
         if (bar.isEmpty()) Spacer(Modifier.weight(1f))
         bar.forEach { slot ->
             when (slot.action) {
                 ToolbarAction.SEPARATOR -> Box(Modifier.padding(horizontal = 3.dp).width(0.5.dp).height(20.dp).background(colors.secondary.copy(alpha = 0.5f)))
                 ToolbarAction.ADDRESS -> Box(Modifier.weight(1f).padding(horizontal = 4.dp)) { AddressView(data, s, colors, inline = true, interactive = interactive, cb = cb) }
-                else -> Box(if (inline) Modifier.width(46.dp) else Modifier.weight(1f), contentAlignment = Alignment.Center) { BarButton(slot, data, s, colors, interactive, cb) }
+                else -> Box(if (inline) Modifier.width(50.dp) else Modifier.weight(1f), contentAlignment = Alignment.Center) { BarButton(slot, data, s, colors, interactive, cb) }
             }
         }
     }
@@ -183,7 +187,7 @@ private fun BarButton(slot: ToolbarSlot, data: ChromeData, s: Settings, colors: 
     val active = a in data.active
     val base = if (active && s.accent != AccentColor.MONO && a !in listOf(ToolbarAction.JAVASCRIPT, ToolbarAction.BLOCKER, ToolbarAction.DARK_MODE)) q.accent else colors.text
     val tint = base.copy(alpha = if (enabled) 1f else 0.3f)
-    var mod = Modifier.size(44.dp)
+    var mod = Modifier.size(48.dp)
     if (a == ToolbarAction.MENU) mod = mod.onGloballyPositioned { cb.onMenuAnchor(it.boundsInRoot().center.x) }
     Box(
         mod.then(if (interactive) Modifier.pressFade(enabled = enabled, onLongClick = { cb.onLongAction(a) }) { cb.onAction(a) } else Modifier),
@@ -201,13 +205,13 @@ private fun BarButton(slot: ToolbarSlot, data: ChromeData, s: Settings, colors: 
 @Composable
 private fun MiniAddress(data: ChromeData, colors: BarColors, interactive: Boolean, cb: ChromeCallbacks) {
     Row(
-        Modifier.fillMaxWidth().height(30.dp).then(if (interactive) Modifier.pressFade(onClick = cb.onExpand) else Modifier),
+        Modifier.fillMaxWidth().height(34.dp).then(if (interactive) Modifier.pressFade(onClick = cb.onExpand) else Modifier),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         if (data.isPrivate) { QIconView(QIcon.PRIVATE, null, colors.secondary, 12.dp); Spacer(Modifier.width(4.dp)) }
         else if (data.url?.startsWith("https") == true) { QIconView(QIcon.LOCK, null, colors.secondary, 10.dp); Spacer(Modifier.width(4.dp)) }
-        if (data.host != null) Text(data.host, color = colors.text, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, style = LtrText)
-        else Text(stringResource(R.string.action_search), color = colors.text, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        if (data.host != null) Text(data.host, color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = LtrText)
+        else Text(stringResource(R.string.action_search), color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 
@@ -234,34 +238,34 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
     @Composable fun fav(size: Dp) = Favicon(data.favicon, data.host, size, private = data.isPrivate, bg = colors.pill, fg = colors.secondary)
     @Composable fun pill() = Pill(data.readLabel ?: "", colors.pill, colors.text)
     val cardShape = RoundedCornerShape(if (colors.glass) GLASS_INNER_RADIUS else 12.dp)
-    val card = Modifier.fillMaxWidth().clip(cardShape).background(colors.card)
+    val card = Modifier.fillMaxWidth().clip(cardShape).background(colors.card).border(0.75.dp, colors.text.copy(alpha = 0.12f), cardShape)
 
     when (style) {
-        AddressStyle.CARD -> Row(card.heightIn(min = if (inline) 40.dp else 42.dp).then(gestures).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (showFav) { fav(22.dp); Spacer(Modifier.width(9.dp)) }
+        AddressStyle.CARD -> Row(card.heightIn(min = if (inline) 46.dp else 52.dp).then(gestures).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (showFav) { fav(26.dp); Spacer(Modifier.width(10.dp)) }
             Column(Modifier.weight(1f)) {
-                if (empty) Text(placeholder, color = colors.secondary, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (empty) Text(placeholder, color = colors.secondary, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 else {
-                    Text((data.host ?: "").uppercase(), color = colors.text, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
-                    Text(data.title, color = colors.text, fontSize = 12.5.sp, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text((data.host ?: "").uppercase(), color = colors.secondary, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
+                    Text(data.title, color = colors.text, fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             if (showRead) { Spacer(Modifier.width(8.dp)); pill() }
         }
-        AddressStyle.FULL_URL -> Row(card.height(40.dp).then(gestures).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        AddressStyle.FULL_URL -> Row(card.height(48.dp).then(gestures).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showFav) { fav(18.dp); Spacer(Modifier.width(8.dp)) }
-            if (empty) Text(placeholder, Modifier.weight(1f), color = colors.secondary, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            else Text(data.shortUrl, Modifier.weight(1f), color = colors.text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText, textAlign = urlAlign)
+            if (empty) Text(placeholder, Modifier.weight(1f), color = colors.secondary, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            else Text(data.shortUrl, Modifier.weight(1f), color = colors.text, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText, textAlign = urlAlign)
             if (showRead) { Spacer(Modifier.width(8.dp)); pill() }
         }
-        AddressStyle.CENTERED_DOMAIN -> Row(Modifier.fillMaxWidth().height(40.dp).clip(cardShape).background(colors.capsule).then(gestures).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        AddressStyle.CENTERED_DOMAIN -> Row(Modifier.fillMaxWidth().height(48.dp).clip(cardShape).background(colors.capsule).then(gestures).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             if (showFav && !empty) { fav(16.dp); Spacer(Modifier.width(7.dp)) }
             if (empty) Text(placeholder, color = colors.secondary, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             else Text(data.host ?: "", color = colors.text, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
         }
-        AddressStyle.TITLE_READ -> Row(card.height(40.dp).then(gestures).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        AddressStyle.TITLE_READ -> Row(card.height(48.dp).then(gestures).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showFav) { fav(20.dp); Spacer(Modifier.width(9.dp)) }
-            Text(if (empty) placeholder else data.title, Modifier.weight(1f), color = if (empty) colors.secondary else colors.text, fontSize = 13.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (empty) placeholder else data.title, Modifier.weight(1f), color = if (empty) colors.secondary else colors.text, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (showRead) { Spacer(Modifier.width(8.dp)); pill() }
         }
         AddressStyle.CENTERED_PLAIN, AddressStyle.HIDDEN -> {
@@ -288,21 +292,21 @@ fun AddressEditor(value: TextFieldValue, colors: BarColors, onChange: (TextField
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) { focus.requestFocus(); keyboard?.show() }
     Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(if (colors.glass) GLASS_INNER_RADIUS else 12.dp)).background(colors.card).padding(start = 10.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).height(50.dp).clip(RoundedCornerShape(if (colors.glass) GLASS_INNER_RADIUS else 12.dp)).background(colors.card).padding(start = 10.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             QIconView(QIcon.SEARCH, null, colors.secondary, 16.dp)
             Spacer(Modifier.width(8.dp))
             BasicTextField(
                 value = value, onValueChange = onChange, singleLine = true, modifier = Modifier.weight(1f).focusRequester(focus),
-                textStyle = TextStyle(color = colors.text, fontSize = 15.sp), cursorBrush = SolidColor(colors.text),
+                textStyle = TextStyle(color = colors.text, fontSize = 17.sp), cursorBrush = SolidColor(colors.text),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go, autoCorrectEnabled = false),
                 keyboardActions = KeyboardActions(onGo = { onGo() }),
-                decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (value.text.isEmpty()) Text(placeholder, color = colors.secondary, fontSize = 15.sp, maxLines = 1); inner() } },
+                decorationBox = { inner -> Box(contentAlignment = Alignment.CenterStart) { if (value.text.isEmpty()) Text(placeholder, color = colors.secondary, fontSize = 17.sp, maxLines = 1); inner() } },
             )
             if (value.text.isNotEmpty()) Box(Modifier.size(32.dp).pressFade { onChange(TextFieldValue("")) }, contentAlignment = Alignment.Center) {
                 Box(Modifier.size(17.dp).clip(RoundedCornerShape(50)).background(colors.secondary.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) { QIconView(QIcon.CLOSE, stringResource(R.string.clear), if (colors.light) Color.White else Color.Black, 11.dp) }
             }
         }
-        Text(stringResource(R.string.cancel), Modifier.pressFade(onClick = onCancel).padding(horizontal = 10.dp, vertical = 10.dp), color = colors.text, fontSize = 15.sp)
+        Text(stringResource(R.string.cancel), Modifier.pressFade(onClick = onCancel).padding(horizontal = 10.dp, vertical = 12.dp), color = colors.text, fontSize = 17.sp)
     }
 }
 

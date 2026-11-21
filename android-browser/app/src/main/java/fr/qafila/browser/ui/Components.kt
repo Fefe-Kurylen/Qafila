@@ -291,7 +291,7 @@ fun TabsSquare(count: Int, size: Dp, tint: Color, stroke: Float) {
 
 /** Carte flottante (menu, menus contextuels de l'écran Onglets) : rayon 18, ombre douce, sans bordure ; [alpha] suit la transparence du verre. */
 @Composable
-fun FloatingCard(modifier: Modifier = Modifier, width: Dp = 250.dp, alpha: Float = 1f, content: @Composable ColumnScope.() -> Unit) {
+fun FloatingCard(modifier: Modifier = Modifier, width: Dp = 284.dp, alpha: Float = 1f, content: @Composable ColumnScope.() -> Unit) {
     val q = LocalQ.current
     Column(
         modifier.width(width).shadow(24.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(alpha = 0.15f), spotColor = Color.Black.copy(alpha = 0.15f))
@@ -302,10 +302,10 @@ fun FloatingCard(modifier: Modifier = Modifier, width: Dp = 250.dp, alpha: Float
 
 @Composable
 fun MenuLine(title: String, icon: QIcon?, color: Color = LocalQ.current.text, checked: Boolean = false, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 42.dp).rowClick(onClick = onClick).padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 50.dp).rowClick(onClick = onClick).padding(horizontal = 18.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         if (checked) { QIconView(QIcon.CHECK, null, color, 14.dp); Spacer(Modifier.width(8.dp)) }
-        Text(title, Modifier.weight(1f), color = color, fontSize = 15.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        if (icon != null) { Spacer(Modifier.width(10.dp)); QIconView(icon, null, color, 17.dp) }
+        Text(title, Modifier.weight(1f), color = color, fontSize = 17.sp, lineHeight = 21.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (icon != null) { Spacer(Modifier.width(10.dp)); QIconView(icon, null, color, 19.dp) }
     }
 }
 

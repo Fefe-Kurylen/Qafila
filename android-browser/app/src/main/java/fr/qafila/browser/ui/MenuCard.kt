@@ -143,7 +143,7 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
                     is MenuBlock.Tiles -> {
                         // Comme Quiche : jusqu'à 3 tuiles, un petit intitulé sous l'icône ; au-delà, icônes seules.
                         val withLabels = b.slots.size <= 3
-                        Row(Modifier.fillMaxWidth().height(if (withLabels) 60.dp else 46.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().height(if (withLabels) 72.dp else 56.dp), verticalAlignment = Alignment.CenterVertically) {
                             b.slots.forEachIndexed { i, slot ->
                                 // Trait court entre les tuiles (jamais sur toute la hauteur).
                                 if (i > 0) Box(Modifier.width(0.5.dp).height(if (withLabels) 30.dp else 22.dp).background(q.separator))
@@ -153,11 +153,11 @@ fun MenuCard(store: BrowserStore, maxHeight: Dp, modifier: Modifier = Modifier) 
                                     Modifier.weight(1f).fillMaxHeight().alpha(if (enabled(a)) 1f else 0.3f).rowClick(enabled = enabled(a)) { act(a) },
                                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
                                 ) {
-                                    if (a == ToolbarAction.TABS) TabsSquare(tabCount, if (withLabels) 21.dp else 19.dp, color, s.iconWeight.stroke)
-                                    else QIconView(icon(a), label(a), color, if (withLabels) 20.dp else 18.dp)
+                                    if (a == ToolbarAction.TABS) TabsSquare(tabCount, if (withLabels) 23.dp else 21.dp, color, s.iconWeight.stroke)
+                                    else QIconView(icon(a), label(a), color, if (withLabels) 22.dp else 21.dp)
                                     if (withLabels) {
                                         Spacer(Modifier.height(5.dp))
-                                        Text(tileLabel(a), color = color, fontSize = 11.5.sp, lineHeight = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 5.dp))
+                                        Text(tileLabel(a), color = color, fontSize = 13.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 5.dp))
                                     }
                                 }
                             }

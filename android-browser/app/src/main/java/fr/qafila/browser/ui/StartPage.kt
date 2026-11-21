@@ -43,28 +43,32 @@ fun StartPage(store: BrowserStore, tab: BrowserTab, modifier: Modifier = Modifie
     val state by store.state.collectAsState()
     val icons by store.tabManager.favicons.icons.collectAsState()
     val q = LocalQ.current
-    val bookmarks = state.bookmarks.take(12)
+    val bookmarks = state.bookmarks.take(24)
     LaunchedEffect(bookmarks.size) { bookmarks.forEach { store.tabManager.favicons.request(it.url, persist = true) } }
     BoxWithConstraints(modifier.fillMaxSize().background(q.page)) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Spacer(Modifier.height(48.dp))
             Image(painterResource(R.drawable.ic_qafila_logo), contentDescription = stringResource(R.string.app_name), modifier = Modifier.size(104.dp))
             Spacer(Modifier.height(14.dp))
-            Text("🛡 " + stringResource(R.string.start_privacy), color = q.secondary, fontSize = 12.sp, textAlign = TextAlign.Center)
+            Text("🛡 " + stringResource(R.string.start_privacy), color = q.secondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
             if (tab.isPrivate) {
                 Spacer(Modifier.height(18.dp))
-                Text(stringResource(R.string.private_browsing_note), color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.private_browsing_note), color = q.secondary, fontSize = 14.sp, textAlign = TextAlign.Center)
             }
             Spacer(Modifier.height(36.dp))
-            if (bookmarks.isEmpty()) Text(stringResource(R.string.tap_address_to_start), color = q.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
-            else FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalArrangement = Arrangement.spacedBy(18.dp), maxItemsInEachRow = 4) {
-                bookmarks.forEach { b ->
-                    Column(Modifier.width(76.dp).pressFade { store.navigate(b.url) }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(Modifier.background(q.groupedBg, androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).padding(12.dp)) {
-                            Favicon(icons[store.tabManager.favicons.keyOf(b.url)], store.hostOf(b.url), 28.dp, corner = 7.dp)
+            if (bookmarks.isEmpty()) Text(stringResource(R.string.tap_address_to_start), color = q.secondary, fontSize = 15.sp, textAlign = TextAlign.Center)
+            else Column(Modifier.width(344.dp)) {
+                // Façon Safari : titre « Favoris », grandes icônes de sites, nom dessous.
+                Text(stringResource(R.string.action_bookmarks), color = q.text, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp, bottom = 16.dp))
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(20.dp), maxItemsInEachRow = 4) {
+                    bookmarks.forEach { b ->
+                        Column(Modifier.width(80.dp).pressFade { store.navigate(b.url) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(Modifier.size(68.dp).background(q.groupedBg, androidx.compose.foundation.shape.RoundedCornerShape(17.dp)), contentAlignment = Alignment.Center) {
+                                Favicon(icons[store.tabManager.favicons.keyOf(b.url)], store.hostOf(b.url), 44.dp, corner = 10.dp)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Text(b.title, color = q.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
                         }
-                        Spacer(Modifier.height(6.dp))
-                        Text(b.title, color = q.text, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
                     }
                 }
             }
