@@ -142,45 +142,73 @@ pre { white-space: pre-wrap; font-size: 15px; }
 }
 
 /**
- * Page de démarrage locale : logo de Qafila, tuiles des favoris de la racine, puis une section par dossier (ses
- * favoris et ceux de ses sous-dossiers). Aucune requête réseau. `classic` : style classique minimaliste (angles droits).
+ * Page de démarrage locale façon Safari : logo, puis « Favoris » en grille de grandes icônes (icônes des sites
+ * gardées sur l'ordinateur, fondues dans leur tuile) ; chaque dossier est une tuile qui montre en miniature ses
+ * quatre premiers sites, et s'ouvre sur place (ancre #f-…, sans script) avec un retour vers « Favoris ».
+ * Aucune requête réseau. `classic` : style classique minimaliste (angles droits).
  */
-function startPage({ dark, bg = null, bookmarks = [], folders = [], title = 'Qafila', rtl = false, lang = 'fr', privacy = '', classic = false }) {
-  const tile = (b) => {
-    const letter = String(b.title || '').trim().slice(0, 1).toUpperCase();
-    return `<a class="tile" href="${escape(b.url)}" title="${escape(b.title)}"><span class="ic">${escape(letter)}</span><span class="t">${escape(b.title)}</span></a>`;
-  };
+function startPage({ dark, bg = null, bookmarks = [], folders = [], title = 'Qafila', rtl = false, lang = 'fr', privacy = '', classic = false, icons = () => null, labels = {} }) {
   const ids = new Set(folders.map((f) => f.id));
-  const rootMarks = bookmarks.filter((b) => !b.folder || !ids.has(b.folder)).slice(0, 12);
+  const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+  const face = (b, mini = false) => {
+    const ic = icons(hostOf(b.url));
+    const letter = escape(String(b.title || hostOf(b.url) || '?').trim().slice(0, 1).toUpperCase());
+    if (!ic) return `<span class="${mini ? 'mi' : 'ic'} letter">${letter}</span>`;
+    const style = ic.bg ? ` style="background:${escape(ic.bg)}"` : '';
+    return `<span class="${mini ? 'mi' : 'ic'}${ic.fill ? ' fill' : ''}"${style}><img src="${escape(ic.url)}" alt=""></span>`;
+  };
+  const tile = (b) => `<a class="tile" href="${escape(b.url)}" title="${escape(b.title)}">${face(b)}<span class="t">${escape(b.title)}</span></a>`;
   const inside = (fid) => { const out = new Set([fid]); let grew = true; while (grew) { grew = false; for (const f of folders) if (f.parent && out.has(f.parent) && !out.has(f.id)) { out.add(f.id); grew = true; } } return out; };
-  const sections = folders.filter((f) => !f.parent || !ids.has(f.parent)).map((f) => {
+  const folderTile = (f) => {
     const set = inside(f.id);
-    const marks = bookmarks.filter((b) => set.has(b.folder)).slice(0, 12);
-    return marks.length ? { f, marks } : null;
-  }).filter(Boolean);
-  const cols = (n) => Math.max(1, Math.min(6, n));
-  const folderIcon = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 7.2A1.8 1.8 0 0 1 5.8 5.4h3.9l2 2.2h6.5A1.8 1.8 0 0 1 20 9.4v8.4a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 17.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-  const r = classic ? 0 : 14;
+    const marks = bookmarks.filter((b) => set.has(b.folder)).slice(0, 4);
+    const minis = marks.map((b) => face(b, true)).join('') + '<span class="mi empty"></span>'.repeat(Math.max(0, 4 - marks.length));
+    return `<a class="tile" href="#f-${escape(f.id)}" title="${escape(f.name)}"><span class="ic fold">${minis}</span><span class="t">${escape(f.name)}</span></a>`;
+  };
+  const rootFolders = folders.filter((f) => !f.parent || !ids.has(f.parent));
+  const rootMarks = bookmarks.filter((b) => !b.folder || !ids.has(b.folder));
+  // Autant de colonnes que de tuiles (8 au plus) : la grille reste centrée sous le logo, titre aligné sur elle.
+  const grid = (items) => `<div class="grid" style="grid-template-columns: repeat(${Math.max(1, Math.min(8, items.length))}, 96px)">${items.join('')}</div>`;
+  const views = folders.map((f) => {
+    const subs = folders.filter((x) => x.parent === f.id);
+    const marks = bookmarks.filter((b) => b.folder === f.id);
+    const back = f.parent && ids.has(f.parent) ? `#f-${escape(f.parent)}` : '#';
+    return `<section class="folder" id="f-${escape(f.id)}"><div class="fh"><a class="back" href="${back}">‹ ${escape(labels.back || 'Retour')}</a><h2>${escape(f.name)}</h2></div>${grid([...subs.map(folderTile), ...marks.map(tile)])}</section>`;
+  });
+  const hasFav = rootFolders.length || rootMarks.length;
+  const r = classic ? 0 : 18;
+  const tileBg = dark ? (bg && bg !== '#000000' ? 'rgba(255,255,255,.09)' : '#1c1c1e') : '#f2f2f7';
   return `<!doctype html><html lang="${lang}" dir="${rtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 ${cspMeta(CSP_LOCAL)}<title>${escape(title)}</title>
 <style>
-:root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${bg || (dark ? '#000000' : '#ffffff')}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${dark ? (bg && bg !== '#000000' ? 'rgba(255,255,255,.08)' : '#1c1c1e') : '#f2f2f7'}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; --sep: ${dark ? '#2c2c2e' : '#e5e5ea'}; }
-body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); padding-bottom: 56px; }
-.head { margin-top: ${sections.length ? '12vh' : '26vh'}; text-align: center; display: flex; flex-direction: column; align-items: center; }
+:root { color-scheme: ${dark ? 'dark' : 'light'}; --bg: ${bg || (dark ? '#000000' : '#ffffff')}; --fg: ${dark ? '#f2f2f7' : '#1c1c1e'}; --tile: ${tileBg}; --tilefg: ${dark ? '#d1d1d6' : '#3a3a3c'}; --sub: ${dark ? '#98989f' : '#6e6e73'}; }
+body { margin: 0; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); padding: 0 24px 56px; }
+.head { margin-top: ${hasFav ? '9vh' : '26vh'}; text-align: center; display: flex; flex-direction: column; align-items: center; }
 .priv { margin-top: 16px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: ${classic ? 0 : 999}px; font: 500 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: ${dark ? '#9ad8a7' : '#1f7a3a'}; background: ${dark ? 'rgba(80,200,120,.12)' : 'rgba(31,122,58,.08)'}; }
-.logo { width: 112px; height: 112px; display: block; filter: drop-shadow(0 6px 18px rgba(183, 121, 31, ${dark ? '.35' : '.25'})); }
-/* Au plus 6 colonnes, autant que de favoris : chaque grille reste centrée. */
-.grid { display: grid; gap: 18px 14px; margin-top: 44px; justify-content: center; }
-.tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; }
-.ic { width: 56px; height: 56px; border-radius: ${r}px; display: flex; align-items: center; justify-content: center; font: 500 22px "New York", Georgia, serif; background: var(--tile); color: var(--tilefg); }
-.tile:hover .ic { outline: 2px solid ${dark ? '#3a3a3c' : '#d1d1d6'}; }
-.t { font-size: 11px; color: #8e8e93; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sec { margin-top: 40px; display: flex; flex-direction: column; align-items: center; }
-.sec h2 { display: flex; align-items: center; gap: 7px; margin: 0; padding-bottom: 8px; min-width: 240px; justify-content: center; border-bottom: 1px solid var(--sep); font: 600 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: ${dark ? '#d8b26a' : '#9a6a12'}; letter-spacing: .02em; }
-.sec .grid { margin-top: 18px; }
+.logo { width: 104px; height: 104px; display: block; filter: drop-shadow(0 6px 18px rgba(183, 121, 31, ${dark ? '.35' : '.25'})); }
+.fav, .folder { max-width: 100%; margin-top: 40px; }
+.fav h1, .folder h2 { font: 700 24px system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0 0 18px 6px; }
+.grid { display: grid; gap: 22px 8px; justify-content: start; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: inherit; border-radius: ${r + 4}px; padding: 4px 0; }
+.ic { width: 72px; height: 72px; border-radius: ${r}px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--tile); color: var(--tilefg); box-shadow: inset 0 0 0 1px ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)'}; transition: transform .15s ease; }
+.ic img { width: 46px; height: 46px; object-fit: contain; }
+.ic.fill img { width: 100%; height: 100%; object-fit: cover; }
+.letter { font: 600 28px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.ic.fold { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 9px; box-sizing: border-box; }
+.mi { width: 24px; height: 24px; border-radius: ${classic ? 0 : 6}px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${dark ? 'rgba(255,255,255,.12)' : '#ffffff'}; font: 700 12px system-ui, sans-serif; color: var(--tilefg); }
+.mi img { width: 18px; height: 18px; object-fit: contain; } .mi.fill img { width: 100%; height: 100%; object-fit: cover; }
+.mi.empty { background: transparent; }
+.tile:hover .ic { transform: scale(1.05); }
+.t { font: 600 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--fg); max-width: 92px; text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
+.folder { display: none; }
+.folder:target { display: block; }
+body:has(.folder:target) .fav, body:has(.folder:target) .head { display: none; }
+.fh { display: flex; flex-direction: column; gap: 6px; margin-top: 6vh; }
+.back { font: 600 15px system-ui, sans-serif; color: var(--sub); text-decoration: none; margin-left: 6px; }
+.back:hover { color: var(--fg); }
 </style></head><body><div class="head">${LOGO}${privacy ? `<div class="priv"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.4-7 10-4-1.6-7-5.5-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>${escape(privacy)}</div>` : ''}</div>
-${rootMarks.length ? `<div class="grid" style="grid-template-columns: repeat(${cols(rootMarks.length)}, 72px)">${rootMarks.map(tile).join('')}</div>` : ''}
-${sections.map(({ f, marks }) => `<section class="sec"><h2>${folderIcon}<span>${escape(f.name)}</span></h2><div class="grid" style="grid-template-columns: repeat(${cols(marks.length)}, 72px)">${marks.map(tile).join('')}</div></section>`).join('\n')}
+${hasFav ? `<div class="fav"><h1>${escape(labels.favorites || 'Favoris')}</h1>${grid([...rootFolders.map(folderTile), ...rootMarks.map(tile)])}</div>` : ''}
+${views.join('\n')}
 </body></html>`;
 }
 

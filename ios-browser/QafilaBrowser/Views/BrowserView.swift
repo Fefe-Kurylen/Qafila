@@ -41,6 +41,9 @@ struct BrowserView: View {
         .animation(.spring(response: 0.32, dampingFraction: 0.86), value: store.barsHidden)
         .animation(.spring(response: 0.3), value: store.toast)
         .animation(.spring(response: 0.34, dampingFraction: 0.78), value: store.showMenu)
+        // Favoris ou dossiers modifiés : les pages de démarrage ouvertes suivent.
+        .onChange(of: store.bookmarks) { _, _ in store.tabManager.refreshStartPagesSoon() }
+        .onChange(of: store.folders) { _, _ in store.tabManager.refreshStartPagesSoon() }
         .animation(.spring(response: 0.3, dampingFraction: 0.86), value: store.isEditingAddress)
         .fullScreenCover(isPresented: $store.showTabs) { TabsView().environmentObject(store) }
         .sheet(isPresented: $store.showSettings, onDismiss: { store.settingsRoute = nil }) { SettingsView().environmentObject(store) }

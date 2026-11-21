@@ -301,5 +301,17 @@
   "bg_graphite": "Graphite",
   "bg_black": "Black",
   "bg_light_theme": "Light theme",
-  "bg_dark_theme": "Dark theme"
+  "bg_dark_theme": "Dark theme",
+  "autofill_failed": "This field could not be filled",
+  "autofill_updated": "Password updated",
+  "autofill_saved": "Password saved",
+  "autofill_unlock": "Open the vault to fill",
+  "autofill_generate": "Generate a strong password",
+  "autofill_generate_sub": "20 characters · saved after sign-up",
+  "autofill_more": "Passwords…",
+  "autofill_update_q": "Update password?",
+  "autofill_save_q": "Save password?",
+  "autofill_never": "Never for this site",
+  "autofill_update": "Update",
+  "autofill_save": "Save"
 }

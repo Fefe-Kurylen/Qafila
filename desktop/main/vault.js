@@ -118,6 +118,16 @@ function originOf(url) {
   } catch { return null; }
 }
 
+/** Origine découpée pour la correspondance : schéma, apex (sans www.), port explicite. */
+function splitOrigin(origin) {
+  try {
+    const u = new URL(String(origin));
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    const scheme = u.protocol.slice(0, -1);
+    return { scheme, apex: u.hostname.toLowerCase().replace(/\.$/, '').replace(/^www\./, ''), port: u.port || (scheme === 'https' ? '443' : '80') };
+  } catch { return null; }
+}
+
 const hostLabel = (origin) => { try { return new URL(origin).host.replace(/^www\./, ''); } catch { return origin; } };
 
 class Vault {
@@ -314,6 +324,79 @@ class Vault {
   }
 
   reveal(id) { this.need(); this.touch(); return this.items.get(id)?.password ?? null; }
+
+  // ----- Remplissage automatique (FORMS.md §7) : correspondance exacte d'origine, www. et apex équivalents -----
+  /** Identifiants pour l'origine d'une page (sans mot de passe), les plus récemment utilisés d'abord. */
+  candidates(pageOrigin) {
+    this.need();
+    const page = splitOrigin(pageOrigin);
+    if (!page) return [];
+    const out = [];
+    for (const l of this.items.values()) {
+      if (l.neverSaveHere && !l.password) continue;
+      let rank = null;
+      for (const o of l.origins || []) {
+        const c = splitOrigin(o);
+        if (!c || c.port !== page.port || c.apex !== page.apex) continue;
+        if (c.scheme === page.scheme) { rank = 'exact'; break; }
+        if (c.scheme === 'http' && page.scheme === 'https') rank = rank || 'exact';   // mise à niveau acceptée, jamais l'inverse
+      }
+      if (rank) out.push({ id: l.id, username: l.username, title: l.title, lastUsedAt: l.lastUsedAt || 0, modifiedAt: l.modifiedAt || 0 });
+    }
+    return out.sort((a, b) => b.lastUsedAt - a.lastUsedAt || b.modifiedAt - a.modifiedAt);
+  }
+
+  /** Identifiant et mot de passe pour un remplissage (un tap de l'utilisateur) ; date d'utilisation mise à jour. */
+  credential(id) {
+    this.need();
+    const l = this.items.get(id);
+    if (!l) return null;
+    this.write({ ...l, lastUsedAt: Date.now() });
+    this.save();
+    this.touch();
+    return { username: l.username, password: l.password };
+  }
+
+  /** Après une connexion : identifiant déjà connu (même mot de passe = rien, autre = mise à jour), ou nouveau. */
+  compareSubmit(pageOrigin, username, password) {
+    this.need();
+    const page = splitOrigin(pageOrigin);
+    if (!page) return { kind: 'none' };
+    for (const l of this.items.values()) {
+      const same = (l.origins || []).some((o) => { const c = splitOrigin(o); return c && c.apex === page.apex && c.port === page.port; });
+      if (!same) continue;
+      if (l.neverSaveHere && !l.password) return { kind: 'never' };
+      if ((l.username || '') === (username || '')) return l.password === password ? { kind: 'same' } : { kind: 'update', id: l.id };
+    }
+    return { kind: 'new' };
+  }
+
+  updatePassword(id, password) {
+    this.need();
+    const l = this.items.get(id);
+    if (!l || typeof password !== 'string' || !password) throw new Error('E_INVALID');
+    const now = Date.now();
+    const history = [{ password: l.password, changedAt: l.passwordChangedAt || l.modifiedAt || now }, ...(l.passwordHistory || [])].slice(0, 5);
+    this.write({ ...l, password: password.slice(0, 4096), passwordHistory: history, passwordChangedAt: now, modifiedAt: now });
+    this.save();
+    this.onChange();
+    return true;
+  }
+
+  /** « Jamais pour ce site » : identifiant vide marqué neverSaveHere (FORMS.md §8). */
+  neverSave(url) {
+    this.need();
+    const origin = originOf(url);
+    if (!origin) return false;
+    const now = Date.now();
+    const login = { id: crypto.randomUUID(), type: 'login', title: hostLabel(origin), origins: [origin], username: '', password: '', note: '', formActionOrigin: null, httpRealm: null, totp: null,
+      folderId: null, favorite: false, tags: [], createdAt: now, modifiedAt: now, lastUsedAt: null, passwordChangedAt: null, passwordHistory: [], source: 'manual', importGuid: null, importBatch: null,
+      neverSaveHere: true, author: this.data.deviceId, deleted: false };
+    this.write(login);
+    this.save();
+    this.onChange();
+    return true;
+  }
 
   /** Copie dans le presse-papiers, vidé au bout de 60 s s'il contient toujours cette valeur. */
   copy(id, field) {

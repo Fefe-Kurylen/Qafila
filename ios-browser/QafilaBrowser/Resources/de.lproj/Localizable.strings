@@ -335,3 +335,16 @@
 "Modifier" = "Bearbeiten";
 "Ouvrir dans un nouvel onglet" = "In neuem Tab öffnen";
 "Supprimer" = "Löschen";
+
+/* Dossiers de favoris */
+"Ce fichier ne peut pas être lu." = "Diese Datei kann nicht gelesen werden.";
+"%ld favoris importés" = "%ld Lesezeichen importiert";
+"Aucun favori trouvé dans ce fichier." = "Keine Lesezeichen in dieser Datei gefunden.";
+"Nouveau dossier" = "Neuer Ordner";
+"Importer un fichier de favoris" = "Lesezeichendatei importieren";
+"Nom du dossier" = "Ordnername";
+"Renommer le dossier" = "Ordner umbenennen";
+"Ce dossier est vide." = "Dieser Ordner ist leer.";
+"Renommer" = "Umbenennen";
+"Supprimer le dossier" = "Ordner löschen";
+"Déplacer vers…" = "Verschieben nach…";

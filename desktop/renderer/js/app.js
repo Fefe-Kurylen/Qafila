@@ -58,6 +58,7 @@ q.ui.onCommand(async (c) => {
     case 'screen':
       if (c.screen === 'tabs') return S.overlay === 'tabs' ? setOverlay('none') : openTabs();
       if (['history', 'bookmarks', 'settings'].includes(c.screen)) return openSheet(c.screen, true);
+      if (c.screen === 'passwords') { await openSheet('settings', true); return openSheet('passwords'); }
       return setOverlay('none');
     case 'demo': return demo(c);
     default: return null;

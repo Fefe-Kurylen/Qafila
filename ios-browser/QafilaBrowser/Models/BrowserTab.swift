@@ -37,6 +37,15 @@ struct Bookmark: Identifiable, Codable, Equatable {
     var title: String
     var url: URL
     var addedAt: Date = Date()
+    /// Dossier qui le contient (nil = racine des favoris).
+    var folder: UUID? = nil
+}
+
+/// Dossier de favoris (comme Safari) ; `parent` nil = racine.
+struct BookmarkFolder: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var name: String
+    var parent: UUID? = nil
 }
 
 struct HistoryEntry: Identifiable, Codable, Equatable {

@@ -302,5 +302,17 @@
   "bg_graphite": "Graphite",
   "bg_black": "Noir",
   "bg_light_theme": "Thème clair",
-  "bg_dark_theme": "Thème sombre"
+  "bg_dark_theme": "Thème sombre",
+  "autofill_failed": "Impossible de remplir ce champ",
+  "autofill_updated": "Mot de passe mis à jour",
+  "autofill_saved": "Mot de passe enregistré",
+  "autofill_unlock": "Ouvrir le coffre pour remplir",
+  "autofill_generate": "Générer un mot de passe fort",
+  "autofill_generate_sub": "20 caractères · enregistré après l'inscription",
+  "autofill_more": "Mots de passe…",
+  "autofill_update_q": "Mettre à jour le mot de passe ?",
+  "autofill_save_q": "Enregistrer le mot de passe ?",
+  "autofill_never": "Jamais pour ce site",
+  "autofill_update": "Mettre à jour",
+  "autofill_save": "Enregistrer"
 }

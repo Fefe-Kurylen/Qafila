@@ -27,6 +27,12 @@ if (/(^|\.)(google\.com|youtube\.com)$/.test(location.hostname) && !/^accounts\.
   } catch { /* window.chrome déjà présent */ }
 }
 
+// Remplissage des mots de passe : passerelle vers le processus principal, visible SEULEMENT dans le monde isolé du
+// script des formulaires (main/autofill.js, monde 4712). La page elle-même ne la voit pas.
+try {
+  contextBridge.exposeInIsolatedWorld(4712, '__qafilaFormsBridge', { post: (msg) => { if (typeof msg === 'string' && msg.length < 65536) ipcRenderer.send('qafila:forms', msg); } });
+} catch { /* monde indisponible (cadre enfant) */ }
+
 function count(t) { return (t || '').split(/\s+/).filter(Boolean).length; }
 
 /** Convertit une couleur calculée « rgb(r, g, b) » / « rgba(r, g, b, a) » en « #rrggbb » ; '' si illisible ou trop transparente (alpha < 0,5). */

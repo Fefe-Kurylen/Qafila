@@ -347,7 +347,8 @@ class TabManager extends EventEmitter {
 
   loadStartPage(wc) {
     const t = this.t();
-    const html = scripts.startPage({ dark: this.isDark(), bg: this.background(), bookmarks: this.store.bookmarks, folders: this.store.folders, title: t('new_tab'), rtl: t.rtl, lang: t.lang, privacy: t('start_privacy'), classic: this.store.settings.uiStyle === 'classic' });
+    const html = scripts.startPage({ dark: this.isDark(), bg: this.background(), bookmarks: this.store.bookmarks, folders: this.store.folders, title: t('new_tab'), rtl: t.rtl, lang: t.lang, privacy: t('start_privacy'), classic: this.store.settings.uiStyle === 'classic',
+      icons: (host) => this.siteIcons?.get(host) || null, labels: { favorites: t('action_bookmarks'), back: t('back') } });
     wc.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   }
 
@@ -438,6 +439,8 @@ class TabManager extends EventEmitter {
       if (css) wc.insertCSS(css).catch(() => {});
       const tab = this.store.tabs.find((x) => x.id === tabId);
       if (tab && this.isDarkened(tab)) wc.insertCSS(scripts.darkenCSS).catch(() => {});
+      // Remplissage des mots de passe : script des formulaires injecté dans un monde isolé (main/autofill.js).
+      if (tab && !tab.isPrivate) this.emit('forms-ready', tabId, wc);
     });
     wc.on('did-navigate', (_e, url, code) => {
       // Nouveau document affiché (un téléchargement n'en affiche aucun) : de nouveau un téléchargement automatique
@@ -473,6 +476,8 @@ class TabManager extends EventEmitter {
       const tab = this.store.tabs.find((x) => x.id === tabId);
       const icon = favicons.map(safeFaviconURL).find(Boolean);
       if (tab && !tab.isPrivate && icon) this.store.updateTab(tabId, { faviconURL: icon });
+      // Icône des sites favoris pour la page de démarrage (jamais en privé).
+      if (tab && !tab.isPrivate && icon && this.siteIcons) { try { this.siteIcons.offer(new URL(wc.getURL()).hostname.replace(/^www\./, ''), icon); } catch { /* adresse illisible */ } }
       this.emit('change', tabId);
     });
     wc.on('did-finish-load', () => {
@@ -539,7 +544,9 @@ class TabManager extends EventEmitter {
     // Gestes de l'utilisateur (clic, touche) : seuls eux autorisent l'ouverture d'une application externe.
     wc.on('input-event', (_e, ev) => { if (GESTURE_EVENTS.has(ev?.type)) this.lastGesture.set(wc.id, Date.now()); });
     wc.on('context-menu', (_e, params) => this.contextMenu(tabId, params));
-    wc.on('ipc-message', (_e, channel, data) => {
+    wc.on('ipc-message', (e, channel, data) => {
+      // Formulaires de connexion : seul le cadre principal est écouté (FORMS.md §2.1), message traité comme donnée.
+      if (channel === 'qafila:forms') { if (e.senderFrame === wc.mainFrame && typeof data === 'string' && data.length < 65536) this.emit('forms', tabId, wc, data); return; }
       if (channel === 'qafila:page:info') this.onPageInfo(tabId, wc, data || {});
       else if (channel === 'qafila:page:scroll') {
         const n = (v) => (Number.isFinite(Number(v)) ? Math.max(-1e7, Math.min(1e7, Number(v))) : 0);

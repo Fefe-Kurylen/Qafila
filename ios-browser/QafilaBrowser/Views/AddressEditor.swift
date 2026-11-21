@@ -100,7 +100,7 @@ struct SuggestionsPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if showingDefaults {
-                if !store.bookmarks.isEmpty {
+                if !store.bookmarks.isEmpty || !store.folders.isEmpty {
                     if store.settings.favoritesStyle == .icons {
                         FavoritesGrid(icons: store.tabManager.siteIcons, limit: 8) { go($0.url.absoluteString) }
                             .padding(.bottom, 6)
@@ -189,7 +189,13 @@ struct FavoritesGrid: View {
                 .buttonStyle(.plain)
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 4), spacing: 16) {
-                ForEach(store.bookmarks.prefix(limit)) { b in
+                // Dossiers d'abord (tuile aux 4 miniatures, comme Safari), puis les favoris de la racine.
+                let folders = Array(store.subfolders(of: nil).prefix(limit))
+                ForEach(folders) { f in
+                    Button { store.openFolder = f.id; store.isEditingAddress = false; store.showBookmarks = true } label: { FolderTile(folder: f, icons: icons) }
+                        .buttonStyle(CardPressStyle())
+                }
+                ForEach(store.bookmarks(in: nil).prefix(max(0, limit - folders.count))) { b in
                     Button { open(b) } label: { FavoriteTile(bookmark: b, image: icons.images[b.url.host ?? ""] ?? store.tabManager.icon(for: b.url.host)) }
                         .buttonStyle(CardPressStyle())
                 }

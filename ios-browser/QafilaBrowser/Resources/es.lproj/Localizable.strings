@@ -335,3 +335,16 @@
 "Modifier" = "Editar";
 "Ouvrir dans un nouvel onglet" = "Abrir en una pestaña nueva";
 "Supprimer" = "Eliminar";
+
+/* Dossiers de favoris */
+"Ce fichier ne peut pas être lu." = "No se puede leer este archivo.";
+"%ld favoris importés" = "%ld marcadores importados";
+"Aucun favori trouvé dans ce fichier." = "No se han encontrado marcadores en este archivo.";
+"Nouveau dossier" = "Nueva carpeta";
+"Importer un fichier de favoris" = "Importar un archivo de marcadores";
+"Nom du dossier" = "Nombre de la carpeta";
+"Renommer le dossier" = "Renombrar la carpeta";
+"Ce dossier est vide." = "Esta carpeta está vacía.";
+"Renommer" = "Renombrar";
+"Supprimer le dossier" = "Eliminar la carpeta";
+"Déplacer vers…" = "Mover a…";

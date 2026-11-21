@@ -9,6 +9,9 @@ final class BrowserStore: ObservableObject {
     @Published var tabs: [BrowserTab] = []
     @Published var selectedTabID: UUID?
     @Published var bookmarks: [Bookmark] = []
+    @Published var folders: [BookmarkFolder] = []
+    /// Dossier à ouvrir dans l'écran Favoris (tuile de dossier touchée ailleurs).
+    @Published var openFolder: UUID?
     @Published var history: [HistoryEntry] = []
     @Published var settings: Settings = Settings() { didSet { scheduleSave() } }
 
@@ -55,6 +58,7 @@ final class BrowserStore: ObservableObject {
             if !tabs.contains(where: { $0.isPrivate }) { self?.tabManager.dropPrivateData() }
         }.store(in: &cancellables)
         $bookmarks.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
+        $folders.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
         $history.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
         $selectedTabID.sink { [weak self] _ in self?.scheduleSave() }.store(in: &cancellables)
         $selectedTabID.dropFirst().sink { [weak self] id in
@@ -246,6 +250,41 @@ final class BrowserStore: ObservableObject {
     }
 
     // MARK: Favoris & historique
+    // MARK: Dossiers de favoris
+
+    func subfolders(of parent: UUID?) -> [BookmarkFolder] { folders.filter { $0.parent == parent } }
+    func bookmarks(in folder: UUID?) -> [Bookmark] {
+        let ids = Set(folders.map(\.id))
+        return bookmarks.filter { folder == nil ? ($0.folder == nil || !ids.contains($0.folder!)) : $0.folder == folder }
+    }
+    /// Favoris d'un dossier et de ses sous-dossiers (miniatures de la tuile du dossier).
+    func bookmarksDeep(in folder: UUID) -> [Bookmark] {
+        var set: Set<UUID> = [folder]
+        var grew = true
+        while grew {
+            grew = false
+            for f in folders {
+                if let p = f.parent, set.contains(p), !set.contains(f.id) { set.insert(f.id); grew = true }
+            }
+        }
+        let all = set
+        return bookmarks.filter { b in b.folder.map { all.contains($0) } ?? false }
+    }
+    @discardableResult func addFolder(_ name: String, parent: UUID? = nil) -> UUID {
+        let f = BookmarkFolder(name: String(name.prefix(120)), parent: parent)
+        folders.append(f)
+        return f.id
+    }
+    func renameFolder(_ id: UUID, _ name: String) { if let i = folders.firstIndex(where: { $0.id == id }) { folders[i].name = String(name.prefix(120)) } }
+    /// Supprime un dossier : son contenu remonte dans le dossier parent (rien n'est perdu).
+    func deleteFolder(_ id: UUID) {
+        guard let f = folders.first(where: { $0.id == id }) else { return }
+        for i in bookmarks.indices where bookmarks[i].folder == id { bookmarks[i].folder = f.parent }
+        for i in folders.indices where folders[i].parent == id { folders[i].parent = f.parent }
+        folders.removeAll { $0.id == id }
+    }
+    func move(_ bookmark: UUID, to folder: UUID?) { if let i = bookmarks.firstIndex(where: { $0.id == bookmark }) { bookmarks[i].folder = folder } }
+
     func isBookmarked(_ tab: BrowserTab) -> Bool { tab.url.map { u in bookmarks.contains { $0.url == u } } ?? false }
     func toggleBookmark(_ tab: BrowserTab) {
         guard let u = tab.url else { return }
@@ -311,6 +350,12 @@ final class BrowserStore: ObservableObject {
         bookmarks = [("Wikipédia", "https://fr.wikipedia.org"), ("Le Monde", "https://www.lemonde.fr"), ("OpenStreetMap", "https://www.openstreetmap.org"),
                      ("GitHub", "https://github.com"), ("Marmiton", "https://www.marmiton.org"), ("Arte", "https://www.arte.tv")]
             .map { Bookmark(title: $0.0, url: URL(string: $0.1)!) }
+        // Démonstration : deux dossiers façon Safari (tuiles aux miniatures).
+        let video = BookmarkFolder(name: "Vidéo"), news = BookmarkFolder(name: "Actualités")
+        folders = [video, news]
+        bookmarks += [("YouTube", "https://www.youtube.com", video.id), ("Netflix", "https://www.netflix.com", video.id), ("Disney+", "https://www.disneyplus.com", video.id),
+                      ("France Info", "https://www.francetvinfo.fr", news.id), ("BBC", "https://www.bbc.com", news.id)]
+            .map { Bookmark(title: $0.0, url: URL(string: $0.1)!, folder: $0.2) }
         settings = Settings()
         if forceDark { settings.appearance = .dark }
         if screen == "grid" { settings.tabsLayout = .grid }
@@ -332,7 +377,7 @@ final class BrowserStore: ObservableObject {
     }
 
     // MARK: Persistance
-    private struct Snapshot: Codable { var tabs: [BrowserTab]; var selected: UUID?; var bookmarks: [Bookmark]; var history: [HistoryEntry]; var settings: Settings }
+    private struct Snapshot: Codable { var tabs: [BrowserTab]; var selected: UUID?; var bookmarks: [Bookmark]; var folders: [BookmarkFolder]?; var history: [HistoryEntry]; var settings: Settings }
     private var fileURL: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Qafila", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -344,6 +389,7 @@ final class BrowserStore: ObservableObject {
         // L'onglet sélectionné était privé (ou a disparu) : on reprend le dernier onglet visité.
         selectedTabID = tabs.contains { $0.id == s.selected } ? s.selected : tabs.max { $0.lastVisited < $1.lastVisited }?.id
         bookmarks = s.bookmarks
+        folders = s.folders ?? []
         history = s.history
         settings = s.settings
     }
@@ -352,7 +398,7 @@ final class BrowserStore: ObservableObject {
         saveTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 400_000_000)
             guard !Task.isCancelled, let self else { return }
-            let snap = Snapshot(tabs: self.tabs, selected: self.selectedTabID, bookmarks: self.bookmarks, history: self.history, settings: self.settings)
+            let snap = Snapshot(tabs: self.tabs, selected: self.selectedTabID, bookmarks: self.bookmarks, folders: self.folders, history: self.history, settings: self.settings)
             if let data = try? JSONEncoder().encode(snap) { try? data.write(to: self.fileURL, options: .atomic) }
         }
     }

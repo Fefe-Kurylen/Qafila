@@ -225,16 +225,17 @@ final class TabManager: NSObject, ObservableObject {
 
     private func loadStartPage(_ web: WKWebView) {
         let icons = store?.settings.favoritesStyle != .letters
-        var marks: [(title: String, url: String, icon: StartIcon?)] = []
-        for b in (store?.bookmarks ?? []).prefix(12) {
-            marks.append((title: b.title, url: b.url.absoluteString, icon: icons ? startIcon(for: b.url.host) : nil))
+        // Icônes pour les 80 premiers favoris (page légère) ; les suivants, plus rarement vus, gardent leur initiale.
+        let marks = (store?.bookmarks ?? []).prefix(300).enumerated().map { i, b in
+            StartPage.Mark(title: b.title, url: b.url.absoluteString, icon: icons && i < 80 ? startIcon(for: b.url.host) : nil, folder: b.folder)
         }
-        web.loadHTMLString(StartPage.html(dark: store?.isDarkScheme ?? false, bookmarks: Array(marks), iconGrid: icons), baseURL: nil)
+        let folders = (store?.folders ?? []).map { StartPage.Folder(id: $0.id, name: $0.name, parent: $0.parent) }
+        web.loadHTMLString(StartPage.html(dark: store?.isDarkScheme ?? false, bookmarks: Array(marks), folders: folders, iconGrid: icons), baseURL: nil)
     }
 
     /// Une icône de favori vient d'arriver : les pages de démarrage ouvertes sont redessinées (une fois, un peu plus tard).
     private var startRefresh: DispatchWorkItem?
-    private func refreshStartPagesSoon() {
+    func refreshStartPagesSoon() {
         startRefresh?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.refreshStartPages() }
         startRefresh = work

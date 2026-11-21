@@ -335,3 +335,16 @@
 "Modifier" = "Edit";
 "Ouvrir dans un nouvel onglet" = "Open in new tab";
 "Supprimer" = "Delete";
+
+/* Dossiers de favoris */
+"Ce fichier ne peut pas être lu." = "This file cannot be read.";
+"%ld favoris importés" = "%ld bookmarks imported";
+"Aucun favori trouvé dans ce fichier." = "No bookmarks found in this file.";
+"Nouveau dossier" = "New folder";
+"Importer un fichier de favoris" = "Import a bookmarks file";
+"Nom du dossier" = "Folder name";
+"Renommer le dossier" = "Rename folder";
+"Ce dossier est vide." = "This folder is empty.";
+"Renommer" = "Rename";
+"Supprimer le dossier" = "Delete folder";
+"Déplacer vers…" = "Move to…";

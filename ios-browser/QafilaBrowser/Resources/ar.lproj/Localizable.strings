@@ -335,3 +335,16 @@
 "Modifier" = "تعديل";
 "Ouvrir dans un nouvel onglet" = "فتح في علامة تبويب جديدة";
 "Supprimer" = "حذف";
+
+/* Dossiers de favoris */
+"Ce fichier ne peut pas être lu." = "تعذّرت قراءة هذا الملف.";
+"%ld favoris importés" = "تم استيراد %ld إشارة مرجعية";
+"Aucun favori trouvé dans ce fichier." = "لم يُعثر على إشارات مرجعية في هذا الملف.";
+"Nouveau dossier" = "مجلد جديد";
+"Importer un fichier de favoris" = "استيراد ملف إشارات مرجعية";
+"Nom du dossier" = "اسم المجلد";
+"Renommer le dossier" = "إعادة تسمية المجلد";
+"Ce dossier est vide." = "هذا المجلد فارغ.";
+"Renommer" = "إعادة تسمية";
+"Supprimer le dossier" = "حذف المجلد";
+"Déplacer vers…" = "نقل إلى…";

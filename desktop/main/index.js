@@ -29,6 +29,8 @@ const SELF_UPDATE = false;
 const { Extensions } = require('./extensions');
 const settingsSchema = require('./settings');
 const { Translator } = require('./translator');
+const { Autofill } = require('./autofill');
+const { SiteIcons } = require('./icons');
 
 const argv = process.argv.slice(1);
 const arg = (name) => { const a = argv.find((x) => x === `--${name}` || x.startsWith(`--${name}=`)); return a ? (a.includes('=') ? a.slice(a.indexOf('=') + 1) : true) : null; };
@@ -238,7 +240,7 @@ function setChrome(mode, height, { find = false } = {}) {
   Q.chromeMode = mode;
   if (mode === 'full' && Q.collapse !== 'none') { Q.collapse = 'none'; Q.scrollAcc = 0; broadcast(); }
   layout();
-  if (mode === 'full') focusChrome();
+  if (mode === 'full') { focusChrome(); Q.autofill?.onTabEvent('chrome'); }
   else if (was === 'full' && !find) Q.tabs.focus();
 }
 
@@ -352,7 +354,7 @@ function newTab({ url = null, isPrivate = false, select = true, focus = false } 
   return tab;
 }
 
-function selectTab(id) { Q.store.select(id); showSelected(); broadcast(); }
+function selectTab(id) { Q.store.select(id); showSelected(); broadcast(); Q.autofill?.onTabEvent('select', id); }
 
 function showSelected({ focusPage = true } = {}) {
   const tab = Q.store.selectedTab;
@@ -989,6 +991,11 @@ function createWindow() {
   Q.favicons = new FaviconCache(() => broadcast());
   Q.blocker = new Blocker(() => Q.store.settings, (wcId) => Q.tabs.pageURLFor(wcId));
   Q.tabs = new TabManager({ win: Q.win, store: Q.store, blocker: Q.blocker, t: translator, isDark, offline: OFFLINE, userAgent: app.userAgentFallback, electronUserAgent: ELECTRON_UA });
+  // Icônes des sites favoris (page de démarrage) : gardées sur l'ordinateur, jamais en mode hors ligne (captures).
+  if (!OFFLINE) {
+    Q.siteIcons = new SiteIcons({ dir: path.join(app.getPath('userData'), 'site-icons'), session: () => Q.tabs.persistent, onChange: () => Q.tabs.refreshStartPages() });
+    Q.tabs.siteIcons = Q.siteIcons;
+  }
 
   // Boutons des extensions dans la barre (<browser-action-list>) : préchargement de la session du chrome.
   try {
@@ -1027,11 +1034,18 @@ function createWindow() {
     },
   });
   Q.tabs.translator = Q.translator;
-  Q.tabs.on('navigated', (id) => Q.translator.reset(id));
+  Q.tabs.on('navigated', (id) => { Q.translator.reset(id); Q.autofill?.onTabEvent('navigate', id); });
+  // Remplissage des mots de passe (main/autofill.js) : carte sous le champ, un clic remplit ; « Enregistrer ? » après connexion.
+  Q.autofill = new Autofill({
+    win: () => Q.win, tabs: Q.tabs, vault: () => Q.vault, selected: () => Q.store.selected, t: () => translator(), isDark,
+    openPasswords: () => { command('screen', { screen: 'passwords' }); }, toast: (text) => command('toast', { text }),
+  });
+  Q.tabs.on('forms-ready', (id, wc) => Q.autofill.inject(id, wc));
+  Q.tabs.on('forms', (id, wc, raw) => Q.autofill.onMessage(id, wc, raw));
   Q.tabs.on('loaded', (id) => Q.translator.maybeAuto(id, Q.store.tabs.find((x) => x.id === id)));
   Q.tabs.on('shown', () => { setCollapse('none'); broadcast(); });
   Q.tabs.on('glass', (id) => { if (id === Q.store.selected) Q.glass.refresh(50); });
-  Q.tabs.on('scroll', (id, d) => { if (id === Q.store.selected) { Q.glass.onScroll(!!d.final); onPageScroll(id, d); } });
+  Q.tabs.on('scroll', (id, d) => { Q.autofill?.onTabEvent('scroll', id); if (id === Q.store.selected) { Q.glass.onScroll(!!d.final); onPageScroll(id, d); } });
   Q.tabs.on('open-tab', (o) => newTab(o));
   Q.tabs.on('found', (id, result) => { if (id === Q.store.selected) Q.chrome.webContents.send('qafila:found', result); });
   Q.tabs.on('status', (id, url) => { if (id === Q.store.selected) Q.chrome.webContents.send('qafila:status', url); });
