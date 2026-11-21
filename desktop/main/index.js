@@ -277,7 +277,7 @@ function describeState() {
     settings: Q.store.settings, dark: isDark(), lang: t.lang, rtl: t.rtl, closedTabs: Q.store.closedTabs.length,
     downloads: describeDownloads(), sitePermissions: Q.store.sitePermissions, extensions: describeExtensions(), vault: Q.vault ? Q.vault.status() : { state: 'none' }, transfer: Q.transfer ? Q.transfer.describe() : null, update: Q.updater ? Q.updater.state : { status: 'disabled' }, collapse: Q.chromeMode === 'strip' ? Q.collapse : 'none',
     fullscreenNotice: Q.isFullscreenPage && Q.fullscreenNotice !== null ? { host: Q.fullscreenNotice } : null,
-    window: { fullscreen: Q.win?.isFullScreen() || false, maximized: Q.win?.isMaximized() || false, focused: Q.win?.isFocused() || false },
+    window: { fullscreen: Q.win?.isFullScreen() || false, maximized: Q.win?.isMaximized() || false, focused: appFocused() },
   };
 }
 
@@ -293,13 +293,24 @@ function broadcast() {
  * Barre de titre Windows : couleur de la bande (thème, ou couleur du site en barre « Auto »), envoyée par le chrome
  * (ui:titlebar), titre de l'onglet courant (jamais celui d'un onglet privé) et état actif / inactif de la fenêtre.
  */
+/**
+ * Fenêtre « active » : la fenêtre de Qafila ou l'une de ses fenêtres filles (fenêtre d'une extension). Ouvrir une
+ * extension ne grise donc plus la barre de titre (plus de clignotement actif → inactif → actif).
+ */
+function appFocused() {
+  if (!Q.win || Q.win.isDestroyed()) return false;
+  if (Q.win.isFocused()) return true;
+  const f = BrowserWindow.getFocusedWindow();
+  return !!f && !f.isDestroyed() && f.getParentWindow?.() === Q.win;
+}
+
 function updateTitlebar(colors) {
   if (colors) Q.titlebarColors = colors;
   if (!CUSTOM_TITLEBAR || !Q.win || Q.win.isDestroyed()) return;
   const c = Q.titlebarColors || (isDark() ? { bg: '#000000', fg: '#f2f2f7' } : { bg: '#ffffff', fg: '#1c1c1e' });
   const tab = Q.store?.selectedTab;
   const title = tab && !tab.isPrivate && tab.title && tab.url ? `${tab.title} — Qafila` : 'Qafila';
-  const s = { bg: c.bg, fg: c.fg, title, focused: Q.win.isFocused(), height: titleBarHeight() };
+  const s = { bg: c.bg, fg: c.fg, title, focused: appFocused(), height: titleBarHeight() };
   const sig = JSON.stringify(s);
   if (sig === Q.titlebarSig) return;
   try { Q.win.setTitleBarOverlay({ color: c.bg, symbolColor: c.fg, height: s.height }); } catch { /* plate-forme sans overlay */ }
@@ -1041,7 +1052,10 @@ function createWindow() {
 
   Q.store.on('change', broadcast);
   Q.win.on('resize', () => { layout(); broadcast(); });
-  Q.win.on('maximize', broadcast); Q.win.on('unmaximize', broadcast); Q.win.on('focus', broadcast); Q.win.on('blur', broadcast);
+  Q.win.on('maximize', broadcast); Q.win.on('unmaximize', broadcast); Q.win.on('focus', broadcast);
+  // Perte du focus : vérifiée un instant plus tard (le focus passe peut-être à la fenêtre d'une extension, fille de Qafila).
+  Q.win.on('blur', () => setTimeout(broadcast, 60));
+  app.on('browser-window-blur', (_e, w) => { if (w !== Q.win && w.getParentWindow?.() === Q.win) setTimeout(broadcast, 60); });
   Q.win.on('enter-full-screen', () => { layout(); broadcast(); }); Q.win.on('leave-full-screen', () => { layout(); broadcast(); });
   // Boutons latéraux de la souris : Précédent / Suivant (Windows et Linux ; macOS n'émet pas « app-command »).
   Q.win.on('app-command', (_e, cmd) => { if (cmd === 'browser-backward') Q.tabs.back(Q.store.selected); if (cmd === 'browser-forward') Q.tabs.forward(Q.store.selected); });
@@ -1688,7 +1702,17 @@ async function runSmoke() {
     fs.writeFileSync(path.join(SMOKE_DIR, '40-extension-popup.png'), img.toPNG());
     const pb = popup.getBounds(); const cb = Q.chrome.getBounds(); const wb = Q.win.getContentBounds();
     if (pb.y < wb.y + cb.y) fail(`fenêtre de l'extension au-dessus de la barre (${pb.y} < ${wb.y + cb.y})`);
-    popup.destroy();
+    // Pas de clignotement : la fenêtre ne bouge plus et ne change plus de taille une fois affichée.
+    let moves = 0; const count = () => { moves++; };
+    popup.on('move', count); popup.on('resize', count);
+    await wait(1200);
+    if (moves) fail(`fenêtre de l'extension instable (${moves} déplacements / redimensionnements après affichage)`);
+    if (pb.width <= 25 || pb.height <= 25) fail(`fenêtre de l'extension trop petite (${pb.width} × ${pb.height})`);
+    // Second clic sur le bouton : la fenêtre se ferme (et ne se rouvre pas).
+    await Q.chrome.webContents.executeJavaScript(`document.querySelector('browser-action-list')?.shadowRoot?.querySelector('.action')?.click()`).catch(() => {});
+    await wait(900);
+    const still = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && w !== Q.win && w.webContents.getURL().startsWith('chrome-extension://'));
+    if (still) { fail('second clic : la fenêtre de l\'extension ne se ferme pas'); still.destroy(); }
   }
   demoScreen('extensions'); await wait(1200); await shot('41-extensions');
   demoScreen('none'); await wait(400);

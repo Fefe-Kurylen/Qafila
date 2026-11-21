@@ -55,14 +55,22 @@ class Extensions {
       },
       removeWindow: async () => {},
     });
-    // Fenêtre d'une extension : placée sous son bouton, en tenant compte de la barre de titre de Qafila.
-    // La position est corrigée avant d'être appliquée (« will-move ») : la fenêtre ne saute plus d'un endroit à l'autre,
-    // et un fond assorti au thème évite l'éclair blanc à l'ouverture en mode sombre.
-    this.ext.on('browser-action-popup-created', (popup) => {
-      const w = popup.browserWindow;
-      if (w && !w.isDestroyed() && this.isDark?.()) w.setBackgroundColor('#1c1c1e');
-      popup.on('will-move', (pos) => { pos.y += this.chromeOffset() || 0; });
-    });
+    // Fenêtre d'une extension (« popup ») sans clignotement : voir tamePopup.
+    this.ext.on('browser-action-popup-created', (popup) => this.tamePopup(popup));
+    // Cliquer sur le bouton d'une extension dont la fenêtre est ouverte doit la FERMER : le clic retire d'abord le focus
+    // à la fenêtre (elle se ferme), puis arrivait comme un nouveau clic qui la rouvrait aussitôt (fermeture + réouverture).
+    const ba = this.ext.api?.browserAction;
+    if (ba && typeof ba.activateClick === 'function') {
+      const original = ba.activateClick.bind(ba);
+      ba.activateClick = (details) => {
+        const c = this.lastPopupClose;
+        if (c && c.id === details?.extensionId && Date.now() - c.at < 450 && (!ba.popup || ba.popup.isDestroyed())) {
+          this.lastPopupClose = null;
+          return undefined;
+        }
+        return original(details);
+      };
+    }
     // Onglets existants et futurs.
     for (const [, view] of this.tabs.views) this.track(view.webContents);
     this.tabs.on('view', (_id, wc) => this.track(wc));
@@ -82,6 +90,43 @@ class Extensions {
     this.ready = true;
     this.cache = null;
     this.onChange();
+  }
+
+  /**
+   * Fenêtre d'extension : taille et position appliquées en UNE fois et seulement si elles changent (la bibliothèque
+   * redimensionnait puis déplaçait : deux sauts à chaque ajustement) ; la remise à 25 × 25 px après le chargement est
+   * ignorée une fois la fenêtre affichée (elle relançait une boucle redimensionnement → mise en page → redimensionnement) ;
+   * position sous le bouton en tenant compte de la barre de titre de Qafila ; fond blanc gardé (contenu prévu pour).
+   */
+  tamePopup(popup) {
+    const w = popup.browserWindow;
+    if (!w || w.isDestroyed()) return;
+    const B = popup.constructor?.BOUNDS || { minWidth: 25, minHeight: 25, maxWidth: 800, maxHeight: 600 };
+    const PAD = popup.constructor?.POSITION_PADDING ?? 5;
+    let size = null;
+    popup.setSize = (rect) => {
+      const width = Math.floor(Math.min(B.maxWidth, Math.max(rect?.width || 0, B.minWidth)));
+      const height = Math.floor(Math.min(B.maxHeight, Math.max(rect?.height || 0, B.minHeight)));
+      if (!popup.hidden && size && width === B.minWidth && height === B.minHeight) return;
+      size = { width, height };
+    };
+    popup.updatePosition = () => {
+      const parent = popup.parent;
+      if (!size || w.isDestroyed() || !parent || parent.isDestroyed()) return;
+      const wb = parent.getBounds();
+      const titlebar = wb.height - parent.getContentBounds().height;
+      const a = popup.anchorRect;
+      const dy = this.chromeOffset() || 0;
+      let x = wb.x + a.x + a.width - size.width;
+      let y = wb.y + titlebar + dy + a.y + a.height + PAD;
+      if (popup.alignment?.includes('right')) x = wb.x + a.x;
+      if (popup.alignment?.includes('top')) y = wb.y + titlebar + dy - size.height + a.y - PAD;
+      const next = { x: Math.floor(x), y: Math.floor(y), width: size.width, height: size.height };
+      const cur = w.getBounds();
+      if (cur.x === next.x && cur.y === next.y && cur.width === next.width && cur.height === next.height) return;
+      w.setBounds(next);
+    };
+    w.on('closed', () => { this.lastPopupClose = { id: popup.extensionId, at: Date.now() }; });
   }
 
   /** Onglet suivi par les extensions (jamais un onglet privé). */
