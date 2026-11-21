@@ -218,8 +218,8 @@ struct AddressCard: View {
     @ViewBuilder private var content: some View {
         if isStart {
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").font(.system(size: 16 * ui, weight: .semibold))
-                Text("Rechercher ou saisir une adresse").font(.system(size: 16 * ui, weight: .medium)).lineLimit(1)
+                Image(systemName: "magnifyingglass").font(.system(size: 16 * ui, weight: .medium))
+                Text("Rechercher ou saisir une adresse").font(.system(size: 17 * ui)).lineLimit(1)
             }
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: style == .card || style == .fullURL || style == .titleReading ? .leading : .center)
@@ -242,7 +242,7 @@ struct AddressCard: View {
             if s.addressShowsFavicon { Favicon(tab: tab, size: (inline ? 20 : 24) * ui) }
             VStack(alignment: .leading, spacing: 1) {
                 Text(domain).font(.system(size: 11 * ui, weight: .bold)).tracking(0.5).foregroundStyle(.secondary).lineLimit(1)
-                Text(title).font(.system(size: 15.5 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+                Text(title).font(.system(size: 16 * ui, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
             }
             Spacer(minLength: 4)
             if s.addressShowsReadingTime, let r = tab?.readingLabel { ReadingPill(text: r) }
@@ -253,7 +253,7 @@ struct AddressCard: View {
         HStack(spacing: 8) {
             if s.addressShowsFavicon { Favicon(tab: tab, size: 20 * ui) }
             if tab?.url?.scheme == "https" { Image(systemName: "lock.fill").font(.system(size: 11 * ui, weight: .semibold)).foregroundStyle(.secondary) }
-            Text(tab?.url.map(Self.shortURL) ?? "").font(.system(size: 16 * ui, weight: .medium)).foregroundStyle(.primary).lineLimit(1).truncationMode(.middle)
+            Text(tab?.url.map(Self.shortURL) ?? "").font(.system(size: 17 * ui)).foregroundStyle(.primary).lineLimit(1).truncationMode(.middle)
             Spacer(minLength: 4)
             if s.addressShowsReadingTime, let r = tab?.readingLabel { ReadingPill(text: r) }
         }
@@ -262,7 +262,7 @@ struct AddressCard: View {
     private var domainLayout: some View {
         HStack(spacing: 6) {
             if s.addressShowsFavicon { Favicon(tab: tab, size: 19 * ui) }
-            Text(tab?.host ?? "").font(.system(size: 17 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+            Text(tab?.host ?? "").font(.system(size: 17 * ui, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
             if s.addressShowsReadingTime, let r = tab?.readingLabel { Text("· \(r)").font(.system(size: 14 * ui, weight: .medium)).foregroundStyle(.secondary) }
         }
         .frame(maxWidth: .infinity)
@@ -272,7 +272,7 @@ struct AddressCard: View {
         HStack(spacing: 10) {
             if s.addressShowsFavicon { Favicon(tab: tab, size: 24 * ui) }
             VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.system(size: 16 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+                Text(title).font(.system(size: 16 * ui, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
                 if s.addressShowsReadingTime, let r = tab?.readingLabel {
                     Text(L("%@ de lecture", r)).font(.system(size: 12.5 * ui, weight: .medium)).foregroundStyle(.secondary)
                 } else {
@@ -287,7 +287,7 @@ struct AddressCard: View {
         VStack(spacing: 1) {
             Text(domain).font(.system(size: 11 * ui, weight: .bold)).tracking(0.5).foregroundStyle(.secondary).lineLimit(1)
             HStack(spacing: 6) {
-                Text(title).font(.system(size: 15.5 * ui, weight: .semibold)).foregroundStyle(.primary).lineLimit(1)
+                Text(title).font(.system(size: 16 * ui, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
                 if s.addressShowsReadingTime, let r = tab?.readingLabel { Text(r).font(.system(size: 12.5 * ui, weight: .medium)).foregroundStyle(.secondary) }
             }
         }

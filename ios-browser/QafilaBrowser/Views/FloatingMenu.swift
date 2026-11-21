@@ -80,8 +80,8 @@ struct FloatingMenu: View {
                 if i > 0 { Color.primary.opacity(0.12).frame(width: 0.5, height: (labelled ? 40 : 28) * ui) }
                 Button { act(slot.action) } label: {
                     VStack(spacing: 6) {
-                        ActionGlyph(tabManager: tabManager, action: slot.action, size: (labelled ? 22 : 21) * ui, tint: slot.action.isDestructive ? .red : nil)
-                        if labelled { Text(slot.action.tileLabel).font(.system(size: 13 * ui, weight: .medium)).foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary).lineLimit(1).minimumScaleFactor(0.8) }
+                        ActionGlyph(tabManager: tabManager, action: slot.action, size: (labelled ? 21 : 20) * ui, tint: slot.action.isDestructive ? .red : nil)
+                        if labelled { Text(slot.action.tileLabel).font(.system(size: 13 * ui)).foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary).lineLimit(1).minimumScaleFactor(0.8) }
                     }
                     .frame(maxWidth: .infinity).frame(height: (labelled ? 72 : 56) * ui)
                     .contentShape(Rectangle())
@@ -98,12 +98,12 @@ struct FloatingMenu: View {
     private func line(_ slot: ToolbarSlot) -> some View {
         Button { act(slot.action) } label: {
             HStack(spacing: 12) {
-                Text(lineLabel(slot.action)).font(.system(size: 17 * ui, weight: .medium)).lineLimit(1)
+                Text(lineLabel(slot.action)).font(.system(size: 17 * ui)).lineLimit(1)
                 Spacer(minLength: 6)
                 if slot.action.isDestructive {
-                    Image(systemName: slot.action.symbol).font(.system(size: 19 * ui, weight: store.settings.buttonWeight.fontWeight))
+                    Image(systemName: slot.action.symbol).font(.system(size: 18 * ui, weight: store.settings.buttonWeight.fontWeight))
                 } else {
-                    ActionGlyph(tabManager: tabManager, action: slot.action, size: 19 * ui)
+                    ActionGlyph(tabManager: tabManager, action: slot.action, size: 18 * ui)
                 }
             }
             .foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary)

@@ -55,9 +55,9 @@ struct AddressEditorRow: View {
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").font(.system(size: 16 * ui, weight: .semibold)).foregroundStyle(.secondary)
+                Image(systemName: "magnifyingglass").font(.system(size: 16 * ui, weight: .medium)).foregroundStyle(.secondary)
                 TextField("Rechercher ou saisir une adresse", text: $editor.text)
-                    .font(.system(size: 17 * ui, weight: .medium))
+                    .font(.system(size: 17 * ui))
                     .focused($focused)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.webSearch).submitLabel(.go)
                     .onSubmit { submit(editor.text) }
@@ -73,7 +73,7 @@ struct AddressEditorRow: View {
                 card.fill(cardColor).overlay(card.strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.75))
             }
 
-            Button { cancel() } label: { Text("Annuler").font(.system(size: 17 * ui, weight: .semibold)).padding(.horizontal, 4).frame(minHeight: 44).contentShape(Rectangle()) }
+            Button { cancel() } label: { Text("Annuler").font(.system(size: 17 * ui)).padding(.horizontal, 4).frame(minHeight: 44).contentShape(Rectangle()) }
                 .buttonStyle(.plain).foregroundStyle(.primary)
         }
         .onAppear {
@@ -152,7 +152,7 @@ struct SuggestionsPanel: View {
             HStack(spacing: 12) {
                 Image(systemName: icon).font(.system(size: 16, weight: .semibold)).foregroundStyle(.secondary).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(text).font(.system(size: 17, weight: .medium)).foregroundStyle(.primary).lineLimit(1)
+                    Text(text).font(.system(size: 17)).foregroundStyle(.primary).lineLimit(1)
                     if let d = detail { Text(d).font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary).lineLimit(1) }
                 }
                 Spacer(minLength: 0)

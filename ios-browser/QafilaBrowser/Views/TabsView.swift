@@ -97,7 +97,7 @@ struct TabsView: View {
         let weight = s.buttonWeight.fontWeight
         return HStack(spacing: 0) {
             Button { store.newTab(isPrivate: showPrivate); dismiss() } label: {
-                Image(systemName: "plus").font(.system(size: 25, weight: weight)).frame(width: 64, height: 56).contentShape(Rectangle())
+                Image(systemName: "plus").font(.system(size: 22, weight: weight)).frame(width: 64, height: 56).contentShape(Rectangle())
             }
             .buttonStyle(ToolbarPressStyle())
             .accessibilityLabel(L("Nouvel onglet"))
@@ -127,13 +127,13 @@ struct TabsView: View {
             } label: {
                 HStack(spacing: 6) {
                     if showPrivate { Image(systemName: "hand.raised.fill").font(.system(size: 14, weight: .semibold)) }
-                    Text(countLabel).font(.system(size: 17, weight: .semibold))
+                    Text(countLabel).font(.system(size: 17, weight: .medium))
                     Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .bold)).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16).frame(height: 56).contentShape(Rectangle())
             }
             Spacer(minLength: 0)
-            Button { dismiss() } label: { Text("OK").font(.system(size: 19, weight: .bold)).frame(width: 64, height: 56).contentShape(Rectangle()) }
+            Button { dismiss() } label: { Text("OK").font(.system(size: 17, weight: .semibold)).frame(width: 64, height: 56).contentShape(Rectangle()) }
                 .buttonStyle(ToolbarPressStyle())
         }
         .foregroundStyle(.primary)
