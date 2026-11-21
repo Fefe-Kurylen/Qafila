@@ -9,7 +9,9 @@ struct BrowserView: View {
     @StateObject private var editor = AddressEditModel()
     @State private var chromeHeight: CGFloat = 100
     /// Cadre réel de la barre à l'écran (décalages compris) : le menu s'ouvre juste au-dessus, collé au bouton.
-    @State private var chromeFrame: CGRect = .zero
+    /// Gardé dans une boîte (pas un état observé) : le suivre pendant les animations de la barre ne redessine rien.
+    @State private var chromeBox = FrameBox()
+    private var chromeFrame: CGRect { chromeBox.frame }
     @State private var menuAnchor: CGRect = .zero
 
     private var s: Settings { store.settings }
@@ -110,9 +112,9 @@ struct BrowserView: View {
             .padding(atTop ? .top : .bottom, floating ? 8 : 0)
             .background(GeometryReader { g in
                 Color.clear
-                    .onAppear { chromeHeight = g.size.height; chromeFrame = g.frame(in: .global) }
+                    .onAppear { chromeHeight = g.size.height; chromeBox.frame = g.frame(in: .global) }
                     .onChange(of: g.size.height) { _, h in if !collapsed { chromeHeight = h } }
-                    .onChange(of: g.frame(in: .global)) { _, f in if !collapsed { chromeFrame = f } }
+                    .onChange(of: g.frame(in: .global)) { _, f in if !collapsed { chromeBox.frame = f } }
             })
             .offset(y: hideOffset(safe) + lift(safe))
             if store.isEditingAddress && atTop { SuggestionsPanel(editor: editor).padding(.horizontal, 10) }
@@ -206,3 +208,6 @@ struct BrowserView: View {
         if old.favoritesStyle != new.favoritesStyle { tm.refreshStartPages() }
     }
 }
+
+/// Boîte mutable sans observation (mesures qui ne doivent pas provoquer de redessin).
+final class FrameBox { var frame: CGRect = .zero }

@@ -10,6 +10,43 @@ final class LoadState: ObservableObject {
     @Published var loading: Set<UUID> = []
 }
 
+/// Icône d'un favori pour la page de démarrage.
+struct StartIcon { let dataURL: String; let background: String; let fill: Bool }
+
+extension UIImage {
+    /// Réduction (côté le plus long = `side` px) pour les vignettes.
+    func resized(to side: CGFloat) -> UIImage {
+        let scale = min(1, side / max(size.width * self.scale, size.height * self.scale))
+        guard scale < 1 else { return self }
+        let target = CGSize(width: size.width * self.scale * scale, height: size.height * self.scale * scale)
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1
+        return UIGraphicsImageRenderer(size: target, format: format).image { _ in draw(in: CGRect(origin: .zero, size: target)) }
+    }
+
+    /// Couleur moyenne des bords de l'icône (fond de tuile assorti) et si elle peut remplir toute la tuile
+    /// (grande icône, bords opaques, comme les icônes d'écran d'accueil). `nil` si l'image est illisible.
+    func tileStyle() -> (color: UIColor, hex: String, fill: Bool)? {
+        guard let cg = cgImage else { return nil }
+        let n = 24
+        var px = [UInt8](repeating: 0, count: n * n * 4)
+        guard let ctx = CGContext(data: &px, width: n, height: n, bitsPerComponent: 8, bytesPerRow: n * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: n, height: n))
+        var r = 0.0, g = 0.0, b = 0.0, a = 0.0, count = 0.0
+        for y in 0..<n { for x in 0..<n where x == 0 || y == 0 || x == n - 1 || y == n - 1 {
+            let i = (y * n + x) * 4
+            r += Double(px[i]); g += Double(px[i + 1]); b += Double(px[i + 2]); a += Double(px[i + 3]); count += 1
+        } }
+        let alpha = a / count / 255
+        let big = max(cg.width, cg.height) >= 96
+        // Bords transparents : fond neutre (l'icône garde sa forme) ; sinon la couleur des bords.
+        guard alpha > 0.6 else { return (UIColor.secondarySystemFill, "", false) }
+        let c = UIColor(red: r / count / 255 / alpha, green: g / count / 255 / alpha, blue: b / count / 255 / alpha, alpha: 1)
+        let hex = String(format: "#%02x%02x%02x", Int(min(255, r / count / alpha)), Int(min(255, g / count / alpha)), Int(min(255, b / count / alpha)))
+        return (c, hex, big && alpha > 0.95)
+    }
+}
+
 /// Icônes des sites favoris (grille façon Safari, page de démarrage), à part : seules les vues des favoris l'observent.
 @MainActor
 final class SiteIcons: ObservableObject {
@@ -60,9 +97,35 @@ final class TabManager: NSObject, ObservableObject {
     func webView(for id: UUID) -> WKWebView {
         if let v = views[id] { return v }
         guard let tab = store?.tabs.first(where: { $0.id == id }) else { return WKWebView() }
+        // Page vierge préparée à l'avance (onglets normaux) : le nouvel onglet s'affiche sans attendre la création de WebKit.
+        let web: WKWebView
+        if !tab.isPrivate, let ready = spare { web = ready; spare = nil } else { web = makeWebView(isPrivate: tab.isPrivate) }
+        web.pageZoom = CGFloat(store?.settings.textZoom ?? 1)
+        web.allowsBackForwardNavigationGestures = store?.settings.edgeSwipeNavigation ?? true
+        views[id] = web
+        observe(web, id: id)
+        applyRules(to: web)
+        applyUserAgent(id)
+        if let url = tab.url { web.load(URLRequest(url: url)) } else { loadStartPage(web) }
+        // Hors du cycle de rendu de SwiftUI (cette méthode est appelée depuis le conteneur de la page).
+        Task { @MainActor [weak self] in self?.evictIfNeeded(keeping: id); self?.prepareSpareSoon() }
+        return web
+    }
+
+    private var spare: WKWebView?
+    /// Prépare la prochaine page vierge un peu après (jamais pendant une animation ou un chargement en cours d'affichage).
+    private func prepareSpareSoon() {
+        guard spare == nil else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            guard let self, self.spare == nil else { return }
+            self.spare = self.makeWebView(isPrivate: false)
+        }
+    }
+
+    private func makeWebView(isPrivate: Bool) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.processPool = processPool
-        config.websiteDataStore = tab.isPrivate ? privateStore() : .default()
+        config.websiteDataStore = isPrivate ? privateStore() : .default()
         config.allowsInlineMediaPlayback = true
         config.defaultWebpagePreferences.preferredContentMode = .mobile
         // Même signature que Safari : les sites (dont la connexion Google) traitent Qafila comme un vrai navigateur.
@@ -75,20 +138,11 @@ final class TabManager: NSObject, ObservableObject {
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self
         web.uiDelegate = self
-        web.allowsBackForwardNavigationGestures = store?.settings.edgeSwipeNavigation ?? true
         web.allowsLinkPreview = true
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.isFindInteractionEnabled = true
         web.backgroundColor = .systemBackground
         web.isOpaque = false
-        web.pageZoom = CGFloat(store?.settings.textZoom ?? 1)
-        views[id] = web
-        observe(web, id: id)
-        applyRules(to: web)
-        applyUserAgent(id)
-        if let url = tab.url { web.load(URLRequest(url: url)) } else { loadStartPage(web) }
-        // Hors du cycle de rendu de SwiftUI (cette méthode est appelée depuis le conteneur de la page).
-        Task { @MainActor [weak self] in self?.evictIfNeeded(keeping: id) }
         return web
     }
 
@@ -171,14 +225,9 @@ final class TabManager: NSObject, ObservableObject {
 
     private func loadStartPage(_ web: WKWebView) {
         let icons = store?.settings.favoritesStyle != .letters
-        var marks: [(title: String, url: String, icon: String?)] = []
+        var marks: [(title: String, url: String, icon: StartIcon?)] = []
         for b in (store?.bookmarks ?? []).prefix(12) {
-            var data: String?
-            if icons {
-                data = iconDataURL(for: b.url.host)
-                if data == nil { _ = icon(for: b.url.host) }   // téléchargée pour la prochaine fois
-            }
-            marks.append((title: b.title, url: b.url.absoluteString, icon: data))
+            marks.append((title: b.title, url: b.url.absoluteString, icon: icons ? startIcon(for: b.url.host) : nil))
         }
         web.loadHTMLString(StartPage.html(dark: store?.isDarkScheme ?? false, bookmarks: Array(marks), iconGrid: icons), baseURL: nil)
     }
@@ -284,11 +333,18 @@ final class TabManager: NSObject, ObservableObject {
         return nil
     }
 
-    /// Icône en image intégrable dans la page de démarrage (adresse data:), si elle est connue.
-    func iconDataURL(for host: String?) -> String? {
-        guard let host, let d = faviconCache[host] ?? (try? Data(contentsOf: Self.iconFile(host))), !d.isEmpty, UIImage(data: d) != nil else { return nil }
-        return "data:image/png;base64," + d.base64EncodedString()
+    /// Icône prête pour la page de démarrage : image réduite (96 px, adresse data:), couleur de fond assortie à ses bords
+    /// (l'icône se fond dans sa tuile) et « remplit » si l'icône est assez grande pour couvrir toute la tuile.
+    func startIcon(for host: String?) -> StartIcon? {
+        guard let host else { return nil }
+        if let c = startIcons[host] { return c }
+        guard let img = icon(for: host), let tile = img.tileStyle() else { return nil }
+        let data = img.resized(to: 96).pngData() ?? Data()
+        let icon = StartIcon(dataURL: "data:image/png;base64," + data.base64EncodedString(), background: tile.hex, fill: tile.fill)
+        startIcons[host] = icon
+        return icon
     }
+    private var startIcons: [String: StartIcon] = [:]
 
     func applyUserAgentToOpenTabs() { for id in views.keys { applyUserAgent(id) } }
 

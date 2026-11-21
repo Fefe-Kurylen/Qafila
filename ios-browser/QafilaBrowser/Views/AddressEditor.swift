@@ -213,25 +213,43 @@ struct FavoriteTile: View {
     }
 }
 
-/// Carré arrondi avec l'icône du site (ou sa première lettre).
+/// Carré arrondi avec l'icône du site (ou sa première lettre). L'icône se fond dans sa tuile : fond de la couleur de
+/// ses bords, et une grande icône opaque couvre toute la tuile (comme les favoris de Safari).
 struct FavoriteTileIcon: View {
     let bookmark: Bookmark
     let image: UIImage?
     var size: CGFloat = 66
+
+    private final class Style { let color: Color?; let fill: Bool; init(_ c: Color?, _ f: Bool) { color = c; fill = f } }
+    private static let styles: NSCache<UIImage, Style> = { let c = NSCache<UIImage, Style>(); c.countLimit = 300; return c }()
+    private static func style(_ img: UIImage) -> Style {
+        if let s = styles.object(forKey: img) { return s }
+        let t = img.tileStyle()
+        let s = Style(t.flatMap { $0.hex.isEmpty ? nil : Color(uiColor: $0.color) }, t?.fill ?? false)
+        styles.setObject(s, forKey: img)
+        return s
+    }
+
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
-        shape.fill(Color.primary.opacity(0.08))
+        let st = image.map(Self.style)
+        shape.fill(st?.color ?? Color.primary.opacity(0.08))
             .frame(width: size, height: size)
             .overlay {
                 if let image {
-                    Image(uiImage: image).resizable().interpolation(.high).scaledToFit()
-                        .frame(width: size * 0.6, height: size * 0.6)
-                        .clipShape(RoundedRectangle(cornerRadius: size * 0.14, style: .continuous))
+                    if st?.fill == true {
+                        Image(uiImage: image).resizable().interpolation(.high).scaledToFill()
+                            .frame(width: size, height: size)
+                    } else {
+                        Image(uiImage: image).resizable().interpolation(.high).scaledToFit()
+                            .frame(width: size * 0.64, height: size * 0.64)
+                    }
                 } else {
                     Text(String(bookmark.title.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased())
                         .font(.system(size: size * 0.4, weight: .semibold, design: .rounded)).foregroundStyle(.secondary)
                 }
             }
-            .overlay(shape.strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.75))
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5))
     }
 }
