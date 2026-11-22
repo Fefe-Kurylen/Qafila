@@ -40,7 +40,7 @@ struct BrowserView: View {
         }
         .animation(.spring(response: 0.32, dampingFraction: 0.86), value: store.barsHidden)
         .animation(.spring(response: 0.3), value: store.toast)
-        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: store.showMenu)
+        .animation(.spring(response: 0.36, dampingFraction: 0.74), value: store.showMenu)
         // Favoris ou dossiers modifiés : les pages de démarrage ouvertes suivent.
         .onChange(of: store.bookmarks) { _, _ in store.tabManager.refreshStartPagesSoon() }
         .onChange(of: store.folders) { _, _ in store.tabManager.refreshStartPagesSoon() }
@@ -146,7 +146,14 @@ struct BrowserView: View {
         let anchorX = menuAnchor == .zero ? width - 30 : menuAnchor.midX - screen.minX
         let menuWidth = FloatingMenu.width(s)
         let x = min(max(anchorX + 28 - menuWidth, Self.floatMargin), width - menuWidth - Self.floatMargin)
-        let bar = chromeFrame == .zero ? CGRect(x: 0, y: screen.maxY - chromeHeight, width: width, height: chromeHeight) : chromeFrame
+        var bar = chromeFrame == .zero ? CGRect(x: 0, y: screen.maxY - chromeHeight, width: width, height: chromeHeight) : chromeFrame
+        // Garde-fou : le haut de la barre déduit du bouton Menu lui-même (mesuré sur l'écran), si la mesure de la barre
+        // est en retard ou décalée — le menu ne flotte jamais loin au-dessus de la barre.
+        if !atTop, menuAnchor != .zero {
+            let card = s.toolbar.hasInlineAddress || s.addressStyle == .hidden ? 0 : 52 * s.ui + 8
+            let fromButton = menuAnchor.minY - card - 8
+            if fromButton > bar.minY { bar.origin.y = fromButton }
+        }
         let gap: CGFloat = 8
         // Hauteur disponible entre le haut de l'écran utile et la barre (ou entre la barre et le bas).
         let space = atTop ? (screen.maxY - (bar.maxY - screen.minY) - gap - 12) : (bar.minY - screen.minY - gap - 12)
@@ -166,7 +173,7 @@ struct BrowserView: View {
                         .frame(maxHeight: max(200, space))
                         .fixedSize(horizontal: true, vertical: false)
                         .padding(.leading, x)
-                        .transition(.scale(scale: 0.4, anchor: unit).combined(with: .opacity))
+                        .transition(.modifier(active: MenuPop(progress: 0, anchor: unit), identity: MenuPop(progress: 1, anchor: unit)))
                 }
                 if atTop { Spacer(minLength: 0) }
             }
@@ -214,3 +221,16 @@ struct BrowserView: View {
 
 /// Boîte mutable sans observation (mesures qui ne doivent pas provoquer de redessin).
 final class FrameBox { var frame: CGRect = .zero }
+
+/// Apparition du menu façon Safari (iOS 26) : la carte « sort » du bouton — petite au départ, floue et transparente,
+/// puis nette à sa taille, avec un léger rebond (ressort).
+struct MenuPop: ViewModifier {
+    var progress: CGFloat
+    var anchor: UnitPoint
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(0.18 + 0.82 * progress, anchor: anchor)
+            .blur(radius: (1 - progress) * 10)
+            .opacity(Double(min(1, progress * 1.6)))
+    }
+}

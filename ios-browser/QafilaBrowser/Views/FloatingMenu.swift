@@ -81,7 +81,7 @@ struct FloatingMenu: View {
                 Button { act(slot.action) } label: {
                     VStack(spacing: 6) {
                         ActionGlyph(tabManager: tabManager, action: slot.action, size: (labelled ? 21 : 20) * ui, tint: slot.action.isDestructive ? .red : nil)
-                        if labelled { Text(slot.action.tileLabel).font(.system(size: 13 * ui)).foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary).lineLimit(1).minimumScaleFactor(0.8) }
+                        if labelled { Text(slot.action.tileLabel).font(.system(size: 13.5 * ui, weight: .semibold)).foregroundStyle(slot.action.isDestructive ? Color.red : Color.primary).lineLimit(1).minimumScaleFactor(0.8) }
                     }
                     .frame(maxWidth: .infinity).frame(height: (labelled ? 72 : 56) * ui)
                     .contentShape(Rectangle())
@@ -98,7 +98,7 @@ struct FloatingMenu: View {
     private func line(_ slot: ToolbarSlot) -> some View {
         Button { act(slot.action) } label: {
             HStack(spacing: 12) {
-                Text(lineLabel(slot.action)).font(.system(size: 17 * ui)).lineLimit(1)
+                Text(lineLabel(slot.action)).font(.system(size: 17.5 * ui, weight: .semibold)).lineLimit(1)
                 Spacer(minLength: 6)
                 if slot.action.isDestructive {
                     Image(systemName: slot.action.symbol).font(.system(size: 18 * ui, weight: store.settings.buttonWeight.fontWeight))

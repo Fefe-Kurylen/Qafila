@@ -130,8 +130,8 @@ enum ButtonWeight: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String { switch self { case .thin: return L("Fine"); case .regular: return L("Normale"); case .bold: return L("Grasse") } }
     /// « Normale » = poids des icônes de Safari (regular) ; « Fine » plus légère, « Grasse » plus appuyée.
-    var fontWeight: Font.Weight { switch self { case .thin: return .light; case .regular: return .regular; case .bold: return .semibold } }
-    var stroke: CGFloat { switch self { case .thin: return 1.3; case .regular: return 1.65; case .bold: return 2.2 } }
+    var fontWeight: Font.Weight { switch self { case .thin: return .regular; case .regular: return .medium; case .bold: return .semibold } }
+    var stroke: CGFloat { switch self { case .thin: return 1.45; case .regular: return 1.85; case .bold: return 2.3 } }
 }
 
 /// Affichage des favoris (saisie d'adresse, page de démarrage) : grandes icônes de sites façon Safari, ou lettres en ligne.

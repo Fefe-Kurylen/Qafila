@@ -219,9 +219,9 @@ struct AddressCard: View {
         if isStart {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").font(.system(size: 16 * ui, weight: .medium))
-                Text("Rechercher ou saisir une adresse").font(.system(size: 17 * ui)).lineLimit(1)
+                Text("Rechercher ou saisir une adresse").font(.system(size: 17 * ui, weight: .medium)).lineLimit(1)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.primary.opacity(0.72))
             .frame(maxWidth: .infinity, alignment: style == .card || style == .fullURL || style == .titleReading ? .leading : .center)
         } else {
             switch style {
