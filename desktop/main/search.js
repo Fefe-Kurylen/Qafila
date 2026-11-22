@@ -9,7 +9,8 @@ const ENGINES = {
   brave: { label: 'Brave Search', url: (q, s) => `https://search.brave.com/search?q=${q}${s.hideAIAnswers ? '&summary=0' : ''}`, home: 'https://search.brave.com' },
   startpage: { label: 'Startpage', url: (q) => `https://www.startpage.com/do/search?q=${q}`, home: 'https://www.startpage.com' },
   ecosia: { label: 'Ecosia', url: (q) => `https://www.ecosia.org/search?q=${q}`, home: 'https://www.ecosia.org' },
-  google: { label: 'Google', url: (q, s) => `https://www.google.com/search?q=${q}${s.hideAIAnswers ? '&udm=14' : ''}`, home: 'https://www.google.com' },
+  // Google : page complète (cartes, fiches d'établissement, classement par pertinence) ; plus de filtre « Web » (udm=14).
+  google: { label: 'Google', url: (q) => `https://www.google.com/search?q=${q}`, home: 'https://www.google.com' },
   bing: { label: 'Bing', url: (q) => `https://www.bing.com/search?q=${q}`, home: 'https://www.bing.com' },
   searxng: { label: 'SearXNG', url: (q, s) => `${base(s) || 'https://searx.be'}/search?q=${q}`, home: (s) => base(s) || 'https://searx.be' },
   qafila: { label: 'Qafila', url: (q, s) => `${base(s) || 'https://qafila.example.com'}/?q=${q}`, home: (s) => base(s) || 'https://qafila.example.com' },

@@ -74,20 +74,57 @@ function register(a) {
   handle('bookmarks:remove', (p) => { store.removeBookmark(str(p.id)); a.tabs.refreshStartPages(); });
   handle('bookmarks:update', (p) => { store.updateBookmark(str(p.id), { title: str(p.patch?.title, 512), url: str(p.patch?.url) }); a.tabs.refreshStartPages(); });
   handle('bookmarks:toggleCurrent', () => a.toggleBookmark());
-  // Clic droit sur un favori ou un dossier de la barre : menu natif, l'action choisie est renvoyée au chrome.
+  // Clic droit sur un favori, un dossier ou une zone vide de la barre : menu natif placé sous le pointeur ;
+  // l'action choisie est renvoyée au chrome (« move:<dossier> » pour Déplacer vers).
   handle('bookmarks:contextMenu', (p) => new Promise((resolve) => {
     const t = a.t();
-    const isF = p.kind === 'folder';
+    const kindOf = p.kind === 'folder' || p.kind === 'bar' ? p.kind : 'bookmark';
+    const bid = str(p.id, 64);
     let chosen = null;
     const pick = (v) => () => { chosen = v; };
-    const items = isF
-      ? [{ label: t('bm_manage'), click: pick('manage') }, { label: t('bm_edit'), click: pick('edit') }, { type: 'separator' }, { label: t('bm_delete_folder'), click: pick('delete') }]
-      : [{ label: t('open_in_new_tab'), click: pick('newTab') }, { label: t('open_in_private_tab'), click: pick('privateTab') }, { type: 'separator' },
-        { label: t('bm_edit'), click: pick('edit') }, { label: t('action_copy_link'), click: pick('copy') }, { type: 'separator' }, { label: t('delete'), click: pick('delete') }];
-    Menu.buildFromTemplate(items).popup({ window: a.win, callback: () => setImmediate(() => {
-      if (chosen === 'copy') { const b = store.bookmarks.find((x) => x.id === str(p.id, 64)); if (b) copyText(b.url); }
+    // Dossiers en arborescence (indentés), pour « Déplacer vers ».
+    const tree = [];
+    const walk = (parent, depth) => {
+      for (const f of store.folders.filter((x) => (x.parent || null) === parent)) {
+        if (depth > 6) continue;
+        tree.push({ f, depth });
+        walk(f.id, depth + 1);
+      }
+    };
+    walk(null, 0);
+    const current = kindOf === 'bookmark' ? (store.bookmarks.find((x) => x.id === bid)?.folder || null) : null;
+    const moveMenu = [
+      { label: t('bm_root'), type: 'radio', checked: !current, click: pick('move:') },
+      ...(tree.length ? [{ type: 'separator' }] : []),
+      ...tree.map(({ f, depth }) => ({ label: '\u2003'.repeat(depth) + (f.name || t('bm_new_folder_name')), type: 'radio', checked: current === f.id, click: pick('move:' + f.id) })),
+      { type: 'separator' },
+      { label: t('bm_new_folder') + '\u2026', click: pick('moveNew') },
+    ];
+    let items;
+    if (kindOf === 'folder') {
+      items = [{ label: t('bm_manage'), click: pick('manage') }, { label: t('bm_edit'), click: pick('edit') }, { label: t('bm_new_folder') + '\u2026', click: pick('newFolder') },
+        { type: 'separator' }, { label: t('bm_delete_folder'), click: pick('delete') }];
+    } else if (kindOf === 'bar') {
+      items = [{ label: t('bm_add_page'), click: pick('addPage') }, { label: t('bm_new_folder') + '\u2026', click: pick('newFolder') },
+        { type: 'separator' }, { label: t('bm_manage_all'), click: pick('manageAll') }];
+    } else {
+      items = [{ label: t('open_in_new_tab'), click: pick('newTab') }, { label: t('open_in_private_tab'), click: pick('privateTab') }, { type: 'separator' },
+        { label: t('bm_edit'), click: pick('edit') }, { label: t('action_copy_link'), click: pick('copy') }, { label: t('bm_move_to'), submenu: moveMenu },
+        { label: t('bm_new_folder') + '\u2026', click: pick('newFolder') }, { type: 'separator' }, { label: t('delete'), click: pick('delete') }];
+    }
+    const opts = { window: a.win, callback: () => setImmediate(() => {
+      if (chosen === 'copy') { const b = store.bookmarks.find((x) => x.id === bid); if (b) copyText(b.url); }
       resolve(chosen);
-    }) });
+    }) };
+    // Position : coordonnées CSS du chrome → fenêtre (décalage de la vue et zoom de l'interface).
+    const x = Number(p.x), y = Number(p.y);
+    const view = a.chrome;
+    if (Number.isFinite(x) && Number.isFinite(y) && view) {
+      const b = view.getBounds();
+      const z = view.webContents.isDestroyed() ? 1 : view.webContents.getZoomFactor() || 1;
+      opts.x = Math.round(b.x + x * z); opts.y = Math.round(b.y + y * z);
+    }
+    Menu.buildFromTemplate(items).popup(opts);
   }));
   // Dossiers et rangement (gestionnaire de favoris).
   const kind = (v) => (v === 'folder' ? 'folder' : 'bookmark');

@@ -313,5 +313,8 @@
   "autofill_save_q": "Passwort speichern?",
   "autofill_never": "Nie für diese Website",
   "autofill_update": "Aktualisieren",
-  "autofill_save": "Speichern"
+  "autofill_save": "Speichern",
+  "bm_move_to": "Verschieben nach",
+  "bm_add_page": "Diese Seite als Lesezeichen speichern",
+  "bm_manage_all": "Lesezeichen verwalten"
 }

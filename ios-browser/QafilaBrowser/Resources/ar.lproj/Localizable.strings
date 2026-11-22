@@ -220,7 +220,7 @@
 "%s est remplacé par votre recherche." = "يُستبدل %s بعبارة البحث.";
 "Suggestions" = "الاقتراحات";
 "Masquer les réponses IA" = "إخفاء إجابات الذكاء الاصطناعي";
-"Les réponses générées par IA sont retirées des résultats Google et Brave." = "تُزال الإجابات المولّدة بالذكاء الاصطناعي من نتائج Google وBrave.";
+"Brave : sans résumé IA. Google affiche sa page complète (cartes et fiches comprises)." = "Brave: بلا ملخص بالذكاء الاصطناعي. يعرض Google صفحته كاملة (بما فيها الخرائط وبطاقات الأماكن).";
 "Publicités" = "الإعلانات";
 "Traqueurs" = "المتتبّعات";
 "Bandeaux de cookies" = "لافتات ملفات تعريف الارتباط";

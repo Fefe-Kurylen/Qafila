@@ -560,3 +560,6 @@ browser-action-list.ext-actions::part(badge) { font-size: 9px; }
 :root.split:not(.style-classic) .bseg-addr .address:not(.edit-field) { background: transparent; }
 :root.split:not(.style-classic) .bseg-addr .address:not(.edit-field):hover { background: var(--bfill); }
 :root:not(.style-classic) .address .pill { display: none; }
+/* Glisser-déposer dans la barre de favoris : cible d'un dossier, ou repère avant un favori. */
+.bmbar .bm.drop-into { background: color-mix(in srgb, var(--accent, #C8922B) 22%, transparent); outline: 1.5px solid var(--accent, #C8922B); }
+.bmbar .bm.drop-before { box-shadow: inset 2px 0 0 var(--accent, #C8922B); }

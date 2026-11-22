@@ -314,5 +314,8 @@
   "autofill_save_q": "Enregistrer le mot de passe ?",
   "autofill_never": "Jamais pour ce site",
   "autofill_update": "Mettre à jour",
-  "autofill_save": "Enregistrer"
+  "autofill_save": "Enregistrer",
+  "bm_move_to": "Déplacer vers",
+  "bm_add_page": "Ajouter cette page aux favoris",
+  "bm_manage_all": "Gérer les favoris"
 }

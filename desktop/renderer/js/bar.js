@@ -349,6 +349,73 @@ function bookmarkIcon(b) {
   return favicon(tab || { host }, bookmarkSizes().ic);
 }
 
+/** Action choisie dans le menu du clic droit de la barre de favoris. */
+async function bookmarkMenuChoice(choice, kind, id) {
+  if (!choice) return;
+  const b = kind === 'bookmark' && (S.state?.bookmarks || []).find((x) => x.id === id);
+  const newFolder = async (parent) => {
+    const f = await q.bookmarks.addFolder(t('bm_new_folder_name'), parent || null);
+    // Attendre que l'état diffusé contienne le dossier avant d'ouvrir sa fiche.
+    for (let i = 0; f?.id && i < 40 && !(S.state?.folders || []).some((x) => x.id === f.id); i++) await new Promise((r) => setTimeout(r, 25));
+    return f?.id || null;
+  };
+  if (choice.startsWith('move:')) { if (b) await q.bookmarks.move('bookmark', id, choice.slice(5) || null); return; }
+  switch (choice) {
+    case 'newTab': if (b) q.tabs.create({ url: b.url, select: true }); break;
+    case 'privateTab': if (b) q.tabs.create({ url: b.url, isPrivate: true, select: true }); break;
+    case 'copy': toast(t('toast_address_copied')); break;
+    case 'edit': openBookmarkEdit(kind === 'folder' ? 'f' : 'b', id); break;
+    case 'manage': openBookmarksFolder(id); break;
+    case 'manageAll': openBookmarksFolder(null); break;
+    case 'addPage': perform('addBookmark'); break;
+    case 'newFolder': {
+      // Nouveau dossier à la racine (visible dans la barre), ou dans le dossier cliqué ; fiche ouverte pour le nommer.
+      const fid = await newFolder(kind === 'folder' ? id : null);
+      if (fid) openBookmarkEdit('f', fid);
+      break;
+    }
+    case 'moveNew': {
+      const fid = await newFolder(b?.folder || null);
+      if (fid && b) { await q.bookmarks.move('bookmark', id, fid); openBookmarkEdit('f', fid); }
+      break;
+    }
+    case 'delete': if (kind === 'bookmark') await q.bookmarks.remove(id); else if (kind === 'folder') await q.bookmarks.removeFolder(id); break;
+    default: break;
+  }
+}
+
+/** Glisser-déposer dans la barre : un favori lâché sur un dossier y est rangé, lâché sur un autre favori il se place avant lui. */
+function installBarDrag(bm) {
+  let drag = null;
+  const clear = () => bm.querySelectorAll('.drop-into, .drop-before').forEach((x) => x.classList.remove('drop-into', 'drop-before'));
+  bm.addEventListener('dragstart', (e) => {
+    const el = e.target.closest('[data-bm], [data-bmfolder]');
+    if (!el) return;
+    drag = el.dataset.bm ? { kind: 'bookmark', id: el.dataset.bm } : { kind: 'folder', id: el.dataset.bmfolder };
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', drag.id); } catch { /* ignoré */ }
+  });
+  bm.addEventListener('dragover', (e) => {
+    if (!drag) return;
+    const el = e.target.closest('[data-bm], [data-bmfolder]');
+    clear();
+    if (!el || el.dataset.bm === drag.id || el.dataset.bmfolder === drag.id) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    el.classList.add(el.dataset.bmfolder ? 'drop-into' : 'drop-before');
+  });
+  bm.addEventListener('dragleave', (e) => { if (!bm.contains(e.relatedTarget)) clear(); });
+  bm.addEventListener('drop', async (e) => {
+    const el = e.target.closest('[data-bm], [data-bmfolder]');
+    const d = drag; drag = null; clear();
+    if (!d || !el) return;
+    e.preventDefault();
+    if (el.dataset.bmfolder && el.dataset.bmfolder !== d.id) await q.bookmarks.move(d.kind, d.id, el.dataset.bmfolder);
+    else if (el.dataset.bm && el.dataset.bm !== d.id) await q.bookmarks.placeBefore(d.kind, d.id, el.dataset.bm);
+  });
+  bm.addEventListener('dragend', () => { drag = null; clear(); });
+}
+
 function renderBookmarksBar() {
   const el = $('#bmbar');
   if (!el) return;
@@ -360,7 +427,7 @@ function renderBookmarksBar() {
   const folders = (S.state?.folders || []).filter((f) => !f.parent);
   const mac = S.cfg?.app?.platform === 'darwin';
   const items = list.length || folders.length
-    ? folders.map((f) => `<button class="bm bm-folder" data-bmfolder="${esc(f.id)}" title="${esc(f.name)}">${icon('folder', bookmarkSizes().ic)}<span><bdi>${esc(f.name)}</bdi></span></button>`).join('') + list.map((b) => `<button class="bm" data-bm="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span><bdi>${esc(b.title)}</bdi></span></button>`).join('')
+    ? folders.map((f) => `<button class="bm bm-folder" draggable="true" data-bmfolder="${esc(f.id)}" title="${esc(f.name)}">${icon('folder', bookmarkSizes().ic)}<span><bdi>${esc(f.name)}</bdi></span></button>`).join('') + list.map((b) => `<button class="bm" draggable="true" data-bm="${esc(b.id)}" title="${esc(b.title)}\n${esc(b.url)}">${bookmarkIcon(b)}<span><bdi>${esc(b.title)}</bdi></span></button>`).join('')
     : `<button class="bm bm-add" data-action="addBookmark">${icon(actionIcon('addBookmark', {}), 14)}<span>${esc(t('bookmarks_bar_add'))}</span></button><span class="bm-empty">${esc(t('bookmarks_bar_empty', mac ? '⌘D' : t('kbd_ctrl') + '+D'))}</span>`;
   // À droite : options rapides (page en favori, tous les favoris, historique, réglages).
   const st = actionState();
@@ -609,26 +676,19 @@ export function installBarEvents() {
     if (it) openBookmark(e, it);
   });
   bm.addEventListener('auxclick', (e) => { const it = e.target.closest('[data-bm]'); if (it && e.button === 1) openBookmark(e, it); });
-  // Clic droit sur un favori ou un dossier : ouvrir, modifier, copier, supprimer (menu natif).
+  // Clic droit sur un favori, un dossier ou la zone vide de la barre (pas sur les raccourcis de droite) : menu natif.
   bm.addEventListener('contextmenu', async (e) => {
     const it = e.target.closest('[data-bm]');
     const fo = e.target.closest('[data-bmfolder]');
-    if (!it && !fo) return;
+    if (!it && !fo && e.target.closest('.bm-opts')) return;
     e.preventDefault();
     if (S.overlay === 'bmmenu') await setOverlay('none');
-    const id = it ? it.dataset.bm : fo.dataset.bmfolder;
-    const choice = await q.bookmarks.contextMenu(it ? 'bookmark' : 'folder', id);
-    const b = it && (S.state?.bookmarks || []).find((x) => x.id === id);
-    switch (choice) {
-      case 'newTab': if (b) q.tabs.create({ url: b.url, select: true }); break;
-      case 'privateTab': if (b) q.tabs.create({ url: b.url, isPrivate: true, select: true }); break;
-      case 'copy': toast(t('toast_address_copied')); break;
-      case 'edit': openBookmarkEdit(it ? 'b' : 'f', id); break;
-      case 'manage': openBookmarksFolder(id); break;
-      case 'delete': if (it) await q.bookmarks.remove(id); else await q.bookmarks.removeFolder(id); break;
-      default: break;
-    }
+    const kind = it ? 'bookmark' : fo ? 'folder' : 'bar';
+    const id = it ? it.dataset.bm : fo ? fo.dataset.bmfolder : '';
+    const choice = await q.bookmarks.contextMenu(kind, id, e.clientX, e.clientY);
+    await bookmarkMenuChoice(choice, kind, id);
   });
+  installBarDrag(bm);
   const box = $('#suggest');
   box.addEventListener('mousedown', (e) => e.preventDefault()); // garde le focus dans le champ
   box.addEventListener('click', (e) => {

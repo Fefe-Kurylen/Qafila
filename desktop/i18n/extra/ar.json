@@ -313,5 +313,8 @@
   "autofill_save_q": "حفظ كلمة المرور؟",
   "autofill_never": "أبدًا لهذا الموقع",
   "autofill_update": "تحديث",
-  "autofill_save": "حفظ"
+  "autofill_save": "حفظ",
+  "bm_move_to": "نقل إلى",
+  "bm_add_page": "إضافة هذه الصفحة إلى الإشارات المرجعية",
+  "bm_manage_all": "إدارة الإشارات المرجعية"
 }

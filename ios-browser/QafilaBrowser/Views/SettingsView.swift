@@ -538,7 +538,7 @@ struct SearchSettings: View {
             Section {
                 Picker("Suggestions", selection: $store.settings.suggestions) { ForEach(SuggestionsMode.allCases) { Text($0.label).tag($0) } }
                 Toggle("Masquer les réponses IA", isOn: $store.settings.hideAIAnswers)
-            } footer: { Text("Les réponses générées par IA sont retirées des résultats Google et Brave.") }
+            } footer: { Text("Brave : sans résumé IA. Google affiche sa page complète (cartes et fiches comprises).") }
         }
         .navigationTitle("Recherche")
         .navigationBarTitleDisplayMode(.inline)

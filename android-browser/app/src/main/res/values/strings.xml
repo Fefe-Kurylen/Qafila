@@ -281,7 +281,7 @@
     <string name="suggestions_footer">Les suggestions sont demandées au moteur choisi (Kagi, Startpage et Personnalisé : historique et favoris seulement).</string>
     <string name="results">Résultats</string>
     <string name="hide_ai">Masquer les réponses IA</string>
-    <string name="hide_ai_footer">Google : résultats Web uniquement. Brave : sans résumé IA.</string>
+    <string name="hide_ai_footer">Brave : sans résumé IA. Google affiche sa page complète (cartes et fiches comprises).</string>
     <string name="block_ads">Bloquer les publicités</string>
     <string name="block_trackers">Bloquer les traqueurs</string>
     <string name="hide_cookie_banners">Masquer les bandeaux de cookies</string>

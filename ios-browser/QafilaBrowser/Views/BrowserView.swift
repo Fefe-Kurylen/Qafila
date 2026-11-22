@@ -27,12 +27,17 @@ struct BrowserView: View {
             let palette = ChromePalette.make(s, scheme: scheme, site: store.siteThemeColor)
             ZStack {
                 web(safe, palette)
+                // Voile léger sous la barre : touché à côté = menu fermé (la carte elle-même est rattachée à la barre).
+                if store.showMenu {
+                    Color.black.opacity(0.1).ignoresSafeArea()
+                        .onTapGesture { withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) { store.showMenu = false } }
+                        .transition(.opacity)
+                }
                 VStack(spacing: 0) {
                     if atTop { chrome(safe, palette) }
                     Spacer(minLength: 0)
                     if !atTop { chrome(safe, palette) }
                 }
-                menuLayer(geo, palette)
                 if let t = store.toast { toast(t) }
             }
             .coordinateSpace(name: "browser")
@@ -40,7 +45,7 @@ struct BrowserView: View {
         }
         .animation(.spring(response: 0.32, dampingFraction: 0.86), value: store.barsHidden)
         .animation(.spring(response: 0.3), value: store.toast)
-        .animation(.spring(response: 0.36, dampingFraction: 0.74), value: store.showMenu)
+        .animation(.spring(response: 0.34, dampingFraction: 0.78), value: store.showMenu)
         // Favoris ou dossiers modifiés : les pages de démarrage ouvertes suivent.
         .onChange(of: store.bookmarks) { _, _ in store.tabManager.refreshStartPagesSoon() }
         .onChange(of: store.folders) { _, _ in store.tabManager.refreshStartPagesSoon() }
@@ -119,6 +124,9 @@ struct BrowserView: View {
                     .onChange(of: g.size.height) { _, h in if !collapsed { chromeHeight = h } }
                     .onChange(of: g.frame(in: .global)) { _, f in if !collapsed { chromeBox.frame = f } }
             })
+            // Menu rattaché à la barre elle-même (comme Safari) : son bord bas est collé 8 pt au-dessus de la barre
+            // (ou son bord haut 8 pt en dessous si la barre est en haut), quel que soit le décalage de la barre à l'écran.
+            .overlay(alignment: atTop ? .bottomTrailing : .topTrailing) { menuCard(safe, palette) }
             .offset(y: hideOffset(safe) + lift(safe))
             if store.isEditingAddress && atTop { SuggestionsPanel(editor: editor).padding(.horizontal, 10) }
         }
@@ -138,49 +146,34 @@ struct BrowserView: View {
         return atTop ? -(chromeHeight + safe.top + 10) : chromeHeight + safe.bottom + 10
     }
 
-    /// Menu en carte, ouvert tout près de son bouton (8 pt au-dessus de la barre, ou en dessous si elle est en haut),
-    /// avec une petite animation qui part du bouton. Positionné d'après le cadre réel de la barre à l'écran.
-    private func menuLayer(_ geo: GeometryProxy, _ palette: ChromePalette) -> some View {
-        let screen = geo.frame(in: .global)
-        let width = geo.size.width
-        let anchorX = menuAnchor == .zero ? width - 30 : menuAnchor.midX - screen.minX
-        let menuWidth = FloatingMenu.width(s)
-        let x = min(max(anchorX + 28 - menuWidth, Self.floatMargin), width - menuWidth - Self.floatMargin)
-        var bar = chromeFrame == .zero ? CGRect(x: 0, y: screen.maxY - chromeHeight, width: width, height: chromeHeight) : chromeFrame
-        // Garde-fou : le haut de la barre déduit du bouton Menu lui-même (mesuré sur l'écran), si la mesure de la barre
-        // est en retard ou décalée — le menu ne flotte jamais loin au-dessus de la barre.
-        if !atTop, menuAnchor != .zero {
-            let card = s.toolbar.hasInlineAddress || s.addressStyle == .hidden ? 0 : 52 * s.ui + 8
-            let fromButton = menuAnchor.minY - card - 8
-            if fromButton > bar.minY { bar.origin.y = fromButton }
-        }
+    /// Menu en carte façon Safari : bord droit aligné sur la barre (ou sur le bouton Menu s'il n'est pas au bout),
+    /// collé à 8 pt de la barre, et qui sort du bouton (petit et flou → net, avec un léger rebond).
+    @ViewBuilder private func menuCard(_ safe: EdgeInsets, _ palette: ChromePalette) -> some View {
         let gap: CGFloat = 8
-        // Hauteur disponible entre le haut de l'écran utile et la barre (ou entre la barre et le bas).
-        let space = atTop ? (screen.maxY - (bar.maxY - screen.minY) - gap - 12) : (bar.minY - screen.minY - gap - 12)
-        // Point de départ de l'animation : le bouton (la transition s'applique à la carte décalée de x).
-        let unit = UnitPoint(x: min(max(anchorX / (x + menuWidth), 0), 1), y: atTop ? 0 : 1)
-        // Conteneur toujours présent : seuls le voile et la carte apparaissent, chacun avec sa transition.
-        return ZStack(alignment: .topLeading) {
+        let screenW = chromeFrame.width > 0 ? chromeFrame.width : UIScreen.main.bounds.width
+        let screenH = UIScreen.main.bounds.height
+        let w = FloatingMenu.width(s)
+        let barRight = screenW - Self.floatMargin
+        // Bouton Menu mesuré à l'écran : la carte finit 28 pt à sa droite, sans sortir des marges.
+        let wantedRight = menuAnchor == .zero ? barRight : min(barRight, menuAnchor.midX - chromeFrame.minX + 28)
+        let shift = max(Self.floatMargin + w - barRight, wantedRight - barRight)
+        let left = barRight + shift - w
+        let anchorX = menuAnchor == .zero ? w - 26 : menuAnchor.midX - chromeFrame.minX - left
+        let unit = UnitPoint(x: min(max(anchorX / w, 0), 1), y: atTop ? 0 : 1)
+        // Hauteur disponible entre la barre et le bord utile de l'écran.
+        let barTop = chromeFrame == .zero ? screenH - chromeHeight - safe.bottom : chromeFrame.minY
+        let avail = atTop ? screenH - (chromeFrame == .zero ? chromeHeight + safe.top : chromeFrame.maxY) - safe.bottom - gap - 12
+                          : barTop - safe.top - gap - 12
+        ZStack(alignment: atTop ? .top : .bottom) {
             if store.showMenu {
-                Color.black.opacity(0.12).ignoresSafeArea()
-                    .onTapGesture { withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) { store.showMenu = false } }
-                    .transition(.opacity)
+                FloatingMenu(tabManager: store.tabManager, palette: palette)
+                    .transition(.modifier(active: MenuPop(progress: 0, anchor: unit), identity: MenuPop(progress: 1, anchor: unit)))
             }
-            VStack(spacing: 0) {
-                if !atTop { Spacer(minLength: 0) }
-                if store.showMenu {
-                    FloatingMenu(tabManager: store.tabManager, palette: palette)
-                        .frame(maxHeight: max(200, space))
-                        .fixedSize(horizontal: true, vertical: false)
-                        .padding(.leading, x)
-                        .transition(.modifier(active: MenuPop(progress: 0, anchor: unit), identity: MenuPop(progress: 1, anchor: unit)))
-                }
-                if atTop { Spacer(minLength: 0) }
-            }
-            .frame(width: width, height: max(200, atTop ? screen.maxY - bar.maxY - gap : bar.minY - screen.minY - gap), alignment: .leading)
-            .offset(y: atTop ? bar.maxY - screen.minY + gap : 0)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(width: w, height: max(200, avail), alignment: atTop ? .top : .bottom)
+        .offset(x: shift)
+        .padding(.trailing, Self.floatMargin)
+        .alignmentGuide(atTop ? .bottom : .top) { d in atTop ? d[.top] - gap : d[.bottom] + gap }
         .allowsHitTesting(store.showMenu)
     }
 

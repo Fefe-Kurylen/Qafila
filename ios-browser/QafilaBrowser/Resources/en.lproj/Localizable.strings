@@ -220,7 +220,7 @@
 "%s est remplacé par votre recherche." = "%s is replaced by your search.";
 "Suggestions" = "Suggestions";
 "Masquer les réponses IA" = "Hide AI Answers";
-"Les réponses générées par IA sont retirées des résultats Google et Brave." = "AI-generated answers are removed from Google and Brave results.";
+"Brave : sans résumé IA. Google affiche sa page complète (cartes et fiches comprises)." = "Brave: no AI summary. Google shows its full page (maps and business cards included).";
 "Publicités" = "Ads";
 "Traqueurs" = "Trackers";
 "Bandeaux de cookies" = "Cookie Banners";

@@ -40,7 +40,7 @@ contextBridge.exposeInMainWorld('qafila', {
     update: (id, patch) => invoke('bookmarks:update', { id, patch }),
     toggleCurrent: () => invoke('bookmarks:toggleCurrent'),
     /** Menu du clic droit (natif) ; renvoie l'action choisie ou null. */
-    contextMenu: (kind, id) => invoke('bookmarks:contextMenu', { kind, id }),
+    contextMenu: (kind, id, x, y) => invoke('bookmarks:contextMenu', { kind, id, x, y }),
     addFolder: (name, parent) => invoke('bookmarks:addFolder', { name, parent }),
     renameFolder: (id, name) => invoke('bookmarks:renameFolder', { id, name }),
     removeFolder: (id) => invoke('bookmarks:removeFolder', { id }),

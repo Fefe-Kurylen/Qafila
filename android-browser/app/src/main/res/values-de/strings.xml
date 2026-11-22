@@ -268,7 +268,7 @@
     <string name="suggestions_footer">Vorschläge kommen von der gewählten Suchmaschine (Kagi, Startpage und Benutzerdefiniert: nur Verlauf und Lesezeichen).</string>
     <string name="results">Ergebnisse</string>
     <string name="hide_ai">KI-Antworten ausblenden</string>
-    <string name="hide_ai_footer">Google: nur Webergebnisse. Brave: ohne KI-Zusammenfassung.</string>
+    <string name="hide_ai_footer">Brave: ohne KI-Zusammenfassung. Google zeigt die vollständige Seite (inklusive Karten und Einträgen).</string>
     <string name="block_ads">Werbung blockieren</string>
     <string name="block_trackers">Tracker blockieren</string>
     <string name="hide_cookie_banners">Cookie-Banner ausblenden</string>

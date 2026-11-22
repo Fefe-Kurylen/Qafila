@@ -220,7 +220,7 @@
 "%s est remplacé par votre recherche." = "%s wird durch deine Suche ersetzt.";
 "Suggestions" = "Vorschläge";
 "Masquer les réponses IA" = "KI-Antworten ausblenden";
-"Les réponses générées par IA sont retirées des résultats Google et Brave." = "KI-generierte Antworten werden aus Google- und Brave-Ergebnissen entfernt.";
+"Brave : sans résumé IA. Google affiche sa page complète (cartes et fiches comprises)." = "Brave: ohne KI-Zusammenfassung. Google zeigt die vollständige Seite (inklusive Karten und Einträgen).";
 "Publicités" = "Werbung";
 "Traqueurs" = "Tracker";
 "Bandeaux de cookies" = "Cookie-Banner";

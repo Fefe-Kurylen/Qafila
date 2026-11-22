@@ -38,7 +38,8 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
         case .brave: return URL(string: "https://search.brave.com/search?q=\(q)\(s.hideAIAnswers ? "&summary=0" : "")")
         case .startpage: return URL(string: "https://www.startpage.com/do/search?q=\(q)")
         case .ecosia: return URL(string: "https://www.ecosia.org/search?q=\(q)")
-        case .google: return URL(string: "https://www.google.com/search?q=\(q)\(s.hideAIAnswers ? "&udm=14" : "")")
+        // Google : page complète (cartes, fiches d'établissement, résultats les plus pertinents d'abord) ; plus de filtre « Web » (udm=14).
+        case .google: return URL(string: "https://www.google.com/search?q=\(q)")
         case .bing: return URL(string: "https://www.bing.com/search?q=\(q)")
         case .searxng: return URL(string: "\(b.isEmpty ? "https://searx.be" : b)/search?q=\(q)")
         case .qafila: return URL(string: "\(b.isEmpty ? "https://qafila.example.com" : b)/?q=\(q)")

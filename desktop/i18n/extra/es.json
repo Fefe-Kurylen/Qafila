@@ -313,5 +313,8 @@
   "autofill_save_q": "¿Guardar la contraseña?",
   "autofill_never": "Nunca para este sitio",
   "autofill_update": "Actualizar",
-  "autofill_save": "Guardar"
+  "autofill_save": "Guardar",
+  "bm_move_to": "Mover a",
+  "bm_add_page": "Añadir esta página a marcadores",
+  "bm_manage_all": "Gestionar marcadores"
 }

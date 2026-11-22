@@ -158,7 +158,7 @@ enum class SearchEngine(@StringRes override val labelRes: Int, val needsBaseUrl:
             BRAVE -> "https://search.brave.com/search?q=$q" + if (hideAi) "&summary=0" else ""
             STARTPAGE -> "https://www.startpage.com/do/search?q=$q"
             ECOSIA -> "https://www.ecosia.org/search?q=$q"
-            GOOGLE -> "https://www.google.com/search?q=$q" + if (hideAi) "&udm=14" else ""
+            GOOGLE -> "https://www.google.com/search?q=$q" // page complète : cartes, fiches, pertinence (plus de filtre udm=14)
             BING -> "https://www.bing.com/search?q=$q"
             CUSTOM -> template.trim().takeIf { it.contains("%s") }?.replace("%s", q) ?: "https://www.google.com/search?q=$q"
         }
