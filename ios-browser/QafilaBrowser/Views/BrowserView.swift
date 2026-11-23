@@ -11,8 +11,13 @@ struct BrowserView: View {
     /// Cadre réel de la barre à l'écran (décalages compris) : le menu s'ouvre juste au-dessus, collé au bouton.
     /// Gardé dans une boîte (pas un état observé) : le suivre pendant les animations de la barre ne redessine rien.
     @State private var chromeBox = FrameBox()
+    /// Distance de défilement cumulée dans un même sens (sans redessin).
+    @State private var scrollRun = ValueBox()
     private var chromeFrame: CGRect { chromeBox.frame }
-    @State private var menuAnchor: CGRect = .zero
+    /// Cadre du bouton Menu, gardé sans observation : il bouge à chaque image quand la barre se réduit,
+    /// et un @State redessinerait tout le navigateur pendant l'animation.
+    @State private var menuAnchorBox = FrameBox()
+    private var menuAnchor: CGRect { menuAnchorBox.frame }
 
     private var s: Settings { store.settings }
     private var landscape: Bool { vClass == .compact }
@@ -41,9 +46,9 @@ struct BrowserView: View {
                 if let t = store.toast { toast(t) }
             }
             .coordinateSpace(name: "browser")
-            .onPreferenceChange(MenuAnchorKey.self) { if menuAnchor != $0 { menuAnchor = $0 } }
+            .onPreferenceChange(MenuAnchorKey.self) { menuAnchorBox.frame = $0 }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: store.barsHidden)
+        .animation(.spring(response: 0.4, dampingFraction: 0.86), value: store.barsHidden)
         .animation(.spring(response: 0.3), value: store.toast)
         .animation(.spring(response: 0.34, dampingFraction: 0.78), value: store.showMenu)
         // Favoris ou dossiers modifiés : les pages de démarrage ouvertes suivent.
@@ -98,13 +103,21 @@ struct BrowserView: View {
     @ViewBuilder private func chrome(_ safe: EdgeInsets, _ palette: ChromePalette) -> some View {
         VStack(spacing: 8) {
             if store.isEditingAddress && !atTop { SuggestionsPanel(editor: editor).padding(.horizontal, 10).transition(.move(edge: .bottom).combined(with: .opacity)) }
-            Group {
-                if collapsed && s.scrollBehavior == .shrink {
-                    MiniChrome()
-                } else {
-                    ChromeBar(editor: editor, singleRow: landscape, atTop: atTop)
-                }
+            // Réduction façon Safari : une seule barre qui se rétracte (hauteur animée, contenu découpé dans la capsule)
+            // pendant que ses boutons s'estompent et que le nom du site apparaît — plus de saut entre deux vues.
+            let shrunk = collapsed && s.scrollBehavior == .shrink
+            ZStack(alignment: atTop ? .top : .bottom) {
+                ChromeBar(editor: editor, singleRow: landscape, atTop: atTop)
+                    .opacity(shrunk ? 0 : 1)
+                    .scaleEffect(shrunk ? 0.94 : 1, anchor: atTop ? .top : .bottom)
+                    .allowsHitTesting(!shrunk)
+                MiniChrome()
+                    .opacity(shrunk ? 1 : 0)
+                    .scaleEffect(shrunk ? 1 : 1.12)
+                    .allowsHitTesting(shrunk)
             }
+            .frame(height: shrunk ? 34 * s.ui : nil, alignment: atTop ? .top : .bottom)
+            .clipped()
             .padding(.bottom, atTop ? 6 : (floating ? 8 : 0))
             .padding(.top, floating && atTop ? 2 : 0)
             .modifier(ChromeDressing(palette: palette, settings: s))
@@ -190,10 +203,15 @@ struct BrowserView: View {
 
     // MARK: Comportements
 
+    /// Défilement : la barre se réduit (ou se cache) après ~28 pt vers le bas et revient après ~28 pt vers le haut,
+    /// distance cumulée dans un même sens — plus d'allers-retours saccadés sur les petits mouvements du doigt.
     private func handleScroll(_ delta: CGFloat) {
-        guard s.scrollBehavior != .fixed, !store.isEditingAddress, !store.showMenu else { return }
-        if delta > 8, !store.barsHidden { store.barsHidden = true }
-        else if delta < -8, store.barsHidden { store.barsHidden = false }
+        guard s.scrollBehavior != .fixed, !store.isEditingAddress, !store.showMenu else { scrollRun.value = 0; return }
+        if delta <= -1000 { scrollRun.value = 0; if store.barsHidden { store.barsHidden = false }; return }
+        let run = scrollRun.value
+        scrollRun.value = (run >= 0) == (delta >= 0) ? run + delta : delta
+        if scrollRun.value > 28, !store.barsHidden { store.barsHidden = true; scrollRun.value = 0 }
+        else if scrollRun.value < -28, store.barsHidden { store.barsHidden = false; scrollRun.value = 0 }
     }
 
     /// Les réglages modifiés s'appliquent immédiatement aux pages ouvertes.
@@ -214,6 +232,7 @@ struct BrowserView: View {
 
 /// Boîte mutable sans observation (mesures qui ne doivent pas provoquer de redessin).
 final class FrameBox { var frame: CGRect = .zero }
+final class ValueBox { var value: CGFloat = 0 }
 
 /// Apparition du menu façon Safari (iOS 26) : la carte « sort » du bouton — petite au départ, floue et transparente,
 /// puis nette à sa taille, avec un léger rebond (ressort).
@@ -223,7 +242,7 @@ struct MenuPop: ViewModifier {
     func body(content: Content) -> some View {
         content
             .scaleEffect(0.18 + 0.82 * progress, anchor: anchor)
-            .blur(radius: (1 - progress) * 10)
+            .blur(radius: (1 - progress) * 6)
             .opacity(Double(min(1, progress * 1.6)))
     }
 }

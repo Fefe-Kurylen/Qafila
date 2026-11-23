@@ -364,6 +364,7 @@ final class BrowserStore: ObservableObject {
             guard let self else { return }
             switch screen {
             case "menu": self.showMenu = true
+            case "shrunk": self.barsHidden = true
             case "tabs", "grid": self.showTabs = true
             case "editor": self.showToolbarEditor = true
             case "settings": self.showSettings = true

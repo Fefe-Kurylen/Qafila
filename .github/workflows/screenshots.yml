@@ -1,4 +1,4 @@
-# Qafila captures stores (relance 1795390645)
+# Qafila captures stores (relance 1795419437)
 # Qafila Browser : captures d'écran pour l'App Store (iPhone 6,9") et Google Play (téléphone 9:16).
 # Lance chaque appli en « mode démo » (onglets pré-remplis, menu / onglets / éditeur / réglages ouverts)
 # et dépose les images en artefacts : store-screenshots-ios et store-screenshots-android.
@@ -74,6 +74,7 @@ jobs:
           shoot settings 7-reglages
           shoot start 8-accueil
           shoot support 9-soutenir
+          shoot shrunk 11-reduite
           xcrun simctl ui "$UDID" appearance dark
           shoot floating-dark 10-flottante-sombre
           sips -g pixelWidth -g pixelHeight "$OUT"/*.png
