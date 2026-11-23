@@ -21,6 +21,25 @@ enum Scripts {
     })();
     """
 
+    /// Bandeau de cookies masqué par le bloqueur : beaucoup de sites bloquent aussi le défilement (overflow: hidden)
+    /// tant qu'on n'a pas répondu. Si un bandeau connu est présent mais masqué, le défilement est rendu à la page.
+    static let consentUnlock = """
+    (function(){
+      var sel = '#onetrust-consent-sdk,#didomi-host,#CybotCookiebotDialog,#sp_message_container,[id^="sp_message_container_"],#qc-cmp2-container,.fc-consent-root,#usercentrics-root,#tarteaucitronRoot,#axeptio_overlay,#cookie-banner,#cookie-consent';
+      function unlock(){
+        try {
+          var hidden = Array.prototype.some.call(document.querySelectorAll(sel), function(e){ return getComputedStyle(e).display === 'none'; });
+          if (!hidden) return;
+          [document.documentElement, document.body].forEach(function(e){
+            if (e && getComputedStyle(e).overflow === 'hidden') { e.style.setProperty('overflow', 'auto', 'important'); e.style.setProperty('position', 'static', 'important'); }
+          });
+          document.documentElement.classList.remove('sp-message-open');
+        } catch (e) {}
+      }
+      unlock(); setTimeout(unlock, 1200); setTimeout(unlock, 4000);
+    })();
+    """
+
     /// Mode sombre pour tous les sites : inversion douce, images et vidéos préservées.
     static let darkenCSS = """
     html { filter: invert(0.92) hue-rotate(180deg) !important; background: #111 !important; }

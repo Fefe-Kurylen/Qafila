@@ -96,7 +96,9 @@ final class TabManager: NSObject, ObservableObject {
     // MARK: Création
     func webView(for id: UUID) -> WKWebView {
         if let v = views[id] { return v }
-        guard let tab = store?.tabs.first(where: { $0.id == id }) else { return WKWebView() }
+        // Onglet déjà fermé (appel tardif pendant une animation) : une seule vue vide réutilisée, jamais une nouvelle
+        // WKWebView (et un nouveau processus WebKit) à chaque appel — c'était la cause des blocages à la fermeture.
+        guard let tab = store?.tabs.first(where: { $0.id == id }) else { return orphan }
         // Page vierge préparée à l'avance (onglets normaux) : le nouvel onglet s'affiche sans attendre la création de WebKit.
         let web: WKWebView
         if !tab.isPrivate, let ready = spare { web = ready; spare = nil } else { web = makeWebView(isPrivate: tab.isPrivate) }
@@ -112,6 +114,7 @@ final class TabManager: NSObject, ObservableObject {
         return web
     }
 
+    private lazy var orphan: WKWebView = { let w = WKWebView(frame: .zero); w.isUserInteractionEnabled = false; return w }()
     private var spare: WKWebView?
     /// Prépare la prochaine page vierge un peu après (jamais pendant une animation ou un chargement en cours d'affichage).
     private func prepareSpareSoon() {
@@ -133,6 +136,7 @@ final class TabManager: NSObject, ObservableObject {
         let controller = WKUserContentController()
         controller.add(LeakAvoider(self), name: "qafila")
         controller.addUserScript(WKUserScript(source: Scripts.pageInfo, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        controller.addUserScript(WKUserScript(source: Scripts.consentUnlock, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         config.userContentController = controller
 
         let web = WKWebView(frame: .zero, configuration: config)
@@ -168,7 +172,13 @@ final class TabManager: NSObject, ObservableObject {
     func discard(_ id: UUID) {
         observers[id]?.forEach { $0.invalidate() }
         observers[id] = nil
-        views[id]?.removeFromSuperview()
+        if let web = views[id] {
+            // Page arrêtée et délégués coupés : plus aucun rappel de WebKit pour un onglet fermé.
+            web.stopLoading()
+            web.navigationDelegate = nil
+            web.uiDelegate = nil
+            web.removeFromSuperview()
+        }
         views[id] = nil
         loadState.progress[id] = nil; loadState.loading.remove(id); navState[id] = nil; readerActive.remove(id)
     }
@@ -408,9 +418,34 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
     }
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        // target=_blank : on ouvre un nouvel onglet dans Qafila.
-        if let u = navigationAction.request.url { store?.newTab(url: u, isPrivate: store?.selectedTab?.isPrivate ?? false) }
-        return nil
+        // target=_blank / window.open : nouvel onglet construit avec la configuration fournie par WebKit, pour que la page
+        // d'origine garde son lien avec la fenêtre (connexions Google / Apple, paiements, sites interactifs qui
+        // communiquent avec leur fenêtre). Sans cela la fenêtre s'ouvrait vide ou ne renvoyait jamais sa réponse.
+        guard let store else { return nil }
+        let isPrivate = store.tabs.first { $0.id == tabID(for: webView) }?.isPrivate ?? store.selectedTab?.isPrivate ?? false
+        let web = WKWebView(frame: .zero, configuration: configuration)
+        web.navigationDelegate = self
+        web.uiDelegate = self
+        web.allowsLinkPreview = true
+        web.scrollView.contentInsetAdjustmentBehavior = .never
+        web.isFindInteractionEnabled = true
+        web.backgroundColor = .systemBackground
+        web.isOpaque = false
+        web.pageZoom = CGFloat(store.settings.textZoom)
+        web.allowsBackForwardNavigationGestures = store.settings.edgeSwipeNavigation
+        var tab = BrowserTab(isPrivate: isPrivate)
+        tab.url = navigationAction.request.url
+        views[tab.id] = web
+        observe(web, id: tab.id)
+        store.tabs.append(tab)
+        store.selectedTabID = tab.id
+        return web
+    }
+
+    /// La page a fermé sa fenêtre (window.close) : l'onglet ouvert pour elle se ferme.
+    func webViewDidClose(_ webView: WKWebView) {
+        guard let id = tabID(for: webView) else { return }
+        store?.close(tabID: id)
     }
 
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {

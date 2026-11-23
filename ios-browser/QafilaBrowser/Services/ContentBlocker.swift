@@ -14,35 +14,35 @@ enum ContentBlocker {
         "taboola.com", "outbrain.com", "smartadserver.com", "rubiconproject.com", "pubmatic.com", "openx.net", "casalemedia.com", "indexww.com",
         "amazon-adsystem.com", "facebook.net", "connect.facebook.net", "ads.linkedin.com", "snap.licdn.com", "analytics.twitter.com", "ads-twitter.com",
         "scorecardresearch.com", "quantserve.com", "chartbeat.com", "hotjar.com", "mouseflow.com", "fullstory.com", "crazyegg.com", "mixpanel.com",
-        "segment.io", "segment.com", "amplitude.com", "newrelic.com", "nr-data.net", "sentry.io", "bugsnag.com", "optimizely.com", "yandex.ru/metrika",
+        "segment.io", "segment.com", "amplitude.com", "yandex.ru/metrika",
         "mc.yandex.ru", "bat.bing.com", "clarity.ms", "xiti.com", "ati-host.net", "at-o.net", "weborama.fr", "ligatus.com", "sddan.com", "teads.tv",
         "moatads.com", "adsafeprotected.com", "doubleverify.com", "cedexis.com", "branch.io", "appsflyer.com", "adjust.com", "onesignal.com",
         "pushwoosh.com", "tapad.com", "bluekai.com", "demdex.net", "omtrdc.net", "everesttech.net", "krxd.net", "rlcdn.com", "exelator.com",
         "eyeota.net", "agkn.com", "mathtag.com", "media.net", "zedo.com", "adroll.com", "sharethrough.com", "33across.com", "yieldmo.com",
         "triplelift.com", "sovrn.com", "lijit.com", "gumgum.com", "undertone.com", "bidswitch.net", "contextweb.com", "mgid.com", "revcontent.com",
-        "cxense.com", "permutive.com", "piano.io", "tinypass.com", "didomi.io", "quantcast.mgr.consensu.org", "cookielaw.org", "onetrust.com",
+        "cxense.com", "permutive.com",
     ]
 
     /// Sélecteurs de bandeaux de cookies et d'éléments publicitaires courants, masqués par CSS.
     static let hiddenSelectors: [String] = [
         "#onetrust-consent-sdk", "#onetrust-banner-sdk", ".onetrust-pc-dark-filter", "#didomi-host", "#didomi-popup", ".didomi-popup-backdrop",
-        "#CybotCookiebotDialog", "#cookie-banner", "#cookieBanner", "#cookie-consent", ".cookie-consent", ".cookie-banner", ".cookiebanner",
+        "#CybotCookiebotDialog", "#cookie-banner", "#cookieBanner", "#cookie-consent", ".cookie-banner", ".cookiebanner",
         "#cookie-notice", ".cookie-notice", "#cookieNotice", ".cc-window", ".cc-banner", "#cc-main", ".cmp-container", "#cmp-container", ".qc-cmp2-container",
-        "#qc-cmp2-container", ".fc-consent-root", "#sp_message_container", "[id^='sp_message_container_']", ".sp-message-open", "#axeptio_overlay",
-        ".tarteaucitronAlert", "#tarteaucitronRoot", "#tarteaucitronAlertBig", ".gdpr-banner", "#gdpr-banner", ".gdpr-modal", "#gdpr", ".consent-banner",
-        "#consent-banner", ".consent-modal", "#usercentrics-root", ".cookie-wall", "#cookie-wall", ".cookiewall", ".privacy-banner", "#privacy-banner",
-        ".adsbygoogle", "ins.adsbygoogle", "[id^='google_ads_iframe']", ".ad-slot", ".ad-container", ".ad-banner", ".advertisement", "[class*='sponsored-']",
-        "#taboola-below-article-thumbnails", ".OUTBRAIN", ".trc_related_container", ".ad-wrapper", "[aria-label='Publicité']", "[aria-label='Advertisement']",
+        "#qc-cmp2-container", ".fc-consent-root", "#sp_message_container", "[id^='sp_message_container_']", "#axeptio_overlay",
+        ".tarteaucitronAlert", "#tarteaucitronRoot", "#tarteaucitronAlertBig", ".gdpr-banner", "#gdpr-banner", "#gdpr", ".consent-banner",
+        "#consent-banner", "#usercentrics-root", ".cookie-wall", "#cookie-wall", ".cookiewall", ".privacy-banner", "#privacy-banner",
+        ".adsbygoogle", "ins.adsbygoogle", "[id^='google_ads_iframe']", ".ad-slot", ".ad-banner",
+        "#taboola-below-article-thumbnails", ".OUTBRAIN", ".trc_related_container", "[aria-label='Publicité']", "[aria-label='Advertisement']",
     ]
 
     /// Domaines de mesure d'audience et de traçage (le reste de la liste est publicitaire).
     static let trackerDomains: Set<String> = [
         "google-analytics.com", "googletagmanager.com", "facebook.net", "connect.facebook.net", "snap.licdn.com", "analytics.twitter.com",
         "scorecardresearch.com", "quantserve.com", "chartbeat.com", "hotjar.com", "mouseflow.com", "fullstory.com", "crazyegg.com", "mixpanel.com",
-        "segment.io", "segment.com", "amplitude.com", "newrelic.com", "nr-data.net", "sentry.io", "bugsnag.com", "optimizely.com", "yandex.ru/metrika",
+        "segment.io", "segment.com", "amplitude.com", "yandex.ru/metrika",
         "mc.yandex.ru", "bat.bing.com", "clarity.ms", "xiti.com", "ati-host.net", "at-o.net", "cedexis.com", "branch.io", "appsflyer.com", "adjust.com",
         "onesignal.com", "pushwoosh.com", "tapad.com", "bluekai.com", "demdex.net", "omtrdc.net", "everesttech.net", "krxd.net", "rlcdn.com",
-        "exelator.com", "eyeota.net", "agkn.com", "mathtag.com", "cxense.com", "permutive.com", "piano.io", "tinypass.com",
+        "exelator.com", "eyeota.net", "agkn.com", "mathtag.com", "cxense.com", "permutive.com",
     ]
 
     static func adsRules() -> String { domainRules(blockedDomains.filter { !trackerDomains.contains($0) }) }
