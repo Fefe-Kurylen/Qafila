@@ -121,6 +121,8 @@
     <string name="icon_ink">Ink</string>
     <string name="icon_desert">Desert</string>
     <string name="icon_gold">Gold</string>
+    <string name="address_safari">Like Safari</string>
+    <string name="address_safari_desc">One line: site name in bold, menu and reload, like Safari</string>
     <string name="address_card">Card</string>
     <string name="address_card_desc">Domain in capitals and page title.</string>
     <string name="address_full">Full address</string>

@@ -421,6 +421,14 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         if (!file.exists()) return PersistedState()
         return runCatching { json.decodeFromString<PersistedState>(file.readText()) }
             .map { it.copy(tabs = it.tabs.filterNot { t -> t.isPrivate }) }   // les onglets privés ne survivent pas au redémarrage
+            .map { st ->
+                // Défauts version 3 : barre d'adresse façon Safari (une ligne, nom du site en gras) à la place de la carte.
+                if (st.settings.defaultsVersion >= 3) st
+                else st.copy(settings = st.settings.copy(
+                    addressStyle = if (st.settings.addressStyle == AddressStyle.CARD) AddressStyle.SAFARI else st.settings.addressStyle,
+                    defaultsVersion = 3,
+                ))
+            }
             .getOrElse {
                 // Fichier illisible : il est mis de côté (jamais écrasé par un état vide) et l'on repart d'un état neuf.
                 runCatching { file.copyTo(File(file.path + ".bak"), overwrite = true) }

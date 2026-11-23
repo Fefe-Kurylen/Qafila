@@ -302,6 +302,7 @@ class TabManager(private val context: Context, private val store: BrowserStore, 
         }
 
         override fun onPageFinished(view: WebView, url: String?) {
+            (view.parent as? androidx.swiperefreshlayout.widget.SwipeRefreshLayout)?.isRefreshing = false
             if (url != null && url.startsWith("https://") && url == upgradedFrom?.replaceFirst("http://", "https://")) upgradedFrom = null
             navState.update { it + (id to (it[id] ?: NavState()).copy(loading = false, progress = 1f, canBack = view.canGoBack(), canForward = view.canGoForward())) }
             store.updateTab(id) { it.copy(title = view.title?.takeUnless { t -> t.startsWith("http") || t.startsWith("about:") } ?: it.title) }
@@ -323,6 +324,7 @@ class TabManager(private val context: Context, private val store: BrowserStore, 
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
             if (!request.isForMainFrame) return
+            (view.parent as? androidx.swiperefreshlayout.widget.SwipeRefreshLayout)?.isRefreshing = false
             val original = upgradedFrom
             if (original != null && request.url.toString() == original.replaceFirst("http://", "https://")) {
                 // Le site n'existe pas en https : retour à l'adresse http d'origine.

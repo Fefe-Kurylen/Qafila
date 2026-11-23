@@ -121,6 +121,8 @@
     <string name="icon_ink">Tinte</string>
     <string name="icon_desert">Wüste</string>
     <string name="icon_gold">Gold</string>
+    <string name="address_safari">Wie Safari</string>
+    <string name="address_safari_desc">Eine Zeile: Seitenname fett, Menü und Neu laden, wie Safari</string>
     <string name="address_card">Karte</string>
     <string name="address_card_desc">Domain in Großbuchstaben und Seitentitel.</string>
     <string name="address_full">Vollständige Adresse</string>

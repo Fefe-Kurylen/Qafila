@@ -207,6 +207,8 @@ enum class SearchEngine(@StringRes override val labelRes: Int, val needsBaseUrl:
 
 /** Styles de barre d'adresse (DESIGN.md §2). */
 @Serializable enum class AddressStyle(@StringRes override val labelRes: Int, @StringRes val descriptionRes: Int) : Labeled {
+    /** Comme Safari : une ligne, menu à gauche, nom du site en gras, recharger à droite. */
+    SAFARI(R.string.address_safari, R.string.address_safari_desc),
     CARD(R.string.address_card, R.string.address_card_desc),
     FULL_URL(R.string.address_full, R.string.address_full_desc),
     CENTERED_DOMAIN(R.string.address_centered, R.string.address_centered_desc),
@@ -268,7 +270,7 @@ data class Settings(
     val scrollBehavior: ScrollBehavior = ScrollBehavior.SHRINK,
     val swipeBarNavigation: Boolean = true,
     // Barre d'adresse
-    val addressStyle: AddressStyle = AddressStyle.CARD,
+    val addressStyle: AddressStyle = AddressStyle.SAFARI,
     val addressShowsFavicon: Boolean = true,
     val addressShowsReadingTime: Boolean = true,
     val addressTap: AddressTapAction = AddressTapAction.EDIT,
@@ -302,6 +304,8 @@ data class Settings(
     val desktopHosts: Set<String> = emptySet(),
     // Énergie
     val suspendTabsInPowerSave: Boolean = true,
+    /** Version des défauts appliqués (migration interne) : 0 = réglages enregistrés avant le 23/11/2026. */
+    val defaultsVersion: Int = 0,
 )
 
 @Serializable

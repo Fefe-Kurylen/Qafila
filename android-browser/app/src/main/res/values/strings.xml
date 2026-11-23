@@ -134,6 +134,8 @@
     <string name="icon_ink">Encre</string>
     <string name="icon_desert">Désert</string>
     <string name="icon_gold">Or</string>
+    <string name="address_safari">Comme Safari</string>
+    <string name="address_safari_desc">Une ligne : nom du site en gras, menu et recharger, comme Safari</string>
     <string name="address_card">Carte</string>
     <string name="address_card_desc">Domaine en capitales et titre de la page.</string>
     <string name="address_full">Adresse complète</string>

@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -241,6 +242,24 @@ fun AddressView(data: ChromeData, s: Settings, colors: BarColors, inline: Boolea
     val card = Modifier.fillMaxWidth().clip(cardShape).background(colors.card).border(0.75.dp, colors.text.copy(alpha = 0.12f), cardShape)
 
     when (style) {
+        AddressStyle.SAFARI -> {
+            // Capsule plus sombre que la barre en mode sombre, blanche en mode clair (comme Safari).
+            val capsule = if (colors.light) Color.White.copy(alpha = 0.92f) else Color(0xFF161616).copy(alpha = 0.8f)
+            val pill = RoundedCornerShape(50)
+            Row(Modifier.fillMaxWidth().height(if (inline) 46.dp else 52.dp).clip(pill).background(capsule).border(0.75.dp, colors.text.copy(alpha = 0.07f), pill).padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(44.dp).then(if (interactive) Modifier.pressFade(onClick = { cb.onAction(ToolbarAction.MENU) }) else Modifier), contentAlignment = Alignment.Center) {
+                    QIconView(if (empty) QIcon.SEARCH else QIcon.ALIGN_LEFT, null, colors.text, 21.dp)
+                }
+                Box(Modifier.weight(1f).fillMaxHeight().then(gestures), contentAlignment = Alignment.Center) {
+                    if (empty) Text(placeholder, color = colors.secondary, fontSize = 17.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    else Text((data.host ?: "").removePrefix("www."), color = colors.text, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LtrText)
+                }
+                Box(Modifier.size(44.dp).then(if (interactive && !empty) Modifier.pressFade(onClick = { cb.onAction(ToolbarAction.RELOAD) }) else Modifier), contentAlignment = Alignment.Center) {
+                    if (!empty) QIconView(if (data.loading) QIcon.CLOSE else QIcon.RELOAD, null, colors.text, 21.dp)
+                }
+            }
+        }
         AddressStyle.CARD -> Row(card.heightIn(min = if (inline) 46.dp else 52.dp).then(gestures).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showFav) { fav(26.dp); Spacer(Modifier.width(10.dp)) }
             Column(Modifier.weight(1f)) {

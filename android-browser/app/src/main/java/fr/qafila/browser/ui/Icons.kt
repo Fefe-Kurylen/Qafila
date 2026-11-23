@@ -28,7 +28,7 @@ enum class QIcon {
     BACK, FORWARD, SHARE, PLUS, CLOSE, RELOAD, SEARCH, DOTS, DOTS_CIRCLE, LINES_CIRCLE, TABS, PRIVATE, TRASH, STAR, STAR_FILLED, BOOK, CLOCK, COPY,
     FIND, SHIELD, SHIELD_SLASH, MOON, SUN, READER, JS, JS_SLASH, DESKTOP, TRANSLATE, TOP, BOTTOM, HOME, GEAR, SLIDERS, UNDO, ADDRESS, SEPARATOR,
     CHEVRON_RIGHT, CHEVRON_UP, CHEVRON_DOWN, CHEVRON_UPDOWN, CHECK, CONTRAST, BAR, GLOBE, LOCK, INFO, BATTERY, GRID, LIST, TEXT, MINUS, PHONE,
-    HEART, HEART_FILLED,
+    HEART, HEART_FILLED, ALIGN_LEFT,
 }
 
 private val cache = HashMap<Pair<QIcon, IconWeight>, ImageVector>()
@@ -80,6 +80,7 @@ private fun build(icon: QIcon, w: Float): ImageVector {
         QIcon.SEARCH -> stroke { circle(10.6f, 10.6f, 6.1f); poly(15.1f, 15.1f, 20f, 20f) }
         QIcon.DOTS -> fill { circle(5.4f, 12f, 1.5f); circle(12f, 12f, 1.5f); circle(18.6f, 12f, 1.5f) }
         QIcon.DOTS_CIRCLE -> { stroke { circle(12f, 12f, 9f) }; fill { circle(8f, 12f, 1.15f); circle(12f, 12f, 1.15f); circle(16f, 12f, 1.15f) } }
+        QIcon.ALIGN_LEFT -> stroke { poly(4.5f, 7f, 19.5f, 7f); poly(4.5f, 12f, 15f, 12f); poly(4.5f, 17f, 17.5f, 17f) }
         QIcon.LINES_CIRCLE -> stroke { circle(12f, 12f, 9f); poly(8f, 9f, 16f, 9f); poly(8f, 12f, 16f, 12f); poly(8f, 15f, 16f, 15f) }
         QIcon.TABS -> stroke {
             rrect(3.8f, 8.2f, 15.8f, 20.2f, 2.6f)

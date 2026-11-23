@@ -121,6 +121,8 @@
     <string name="icon_ink">Tinta</string>
     <string name="icon_desert">Desierto</string>
     <string name="icon_gold">Oro</string>
+    <string name="address_safari">Como Safari</string>
+    <string name="address_safari_desc">Una línea: nombre del sitio en negrita, menú y recargar, como Safari</string>
     <string name="address_card">Tarjeta</string>
     <string name="address_card_desc">Dominio en mayúsculas y título de la página.</string>
     <string name="address_full">Dirección completa</string>

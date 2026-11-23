@@ -121,6 +121,8 @@
     <string name="icon_ink">حبر</string>
     <string name="icon_desert">صحراء</string>
     <string name="icon_gold">ذهبية</string>
+    <string name="address_safari">مثل Safari</string>
+    <string name="address_safari_desc">سطر واحد: اسم الموقع بخط عريض، القائمة وإعادة التحميل، مثل Safari</string>
     <string name="address_card">بطاقة</string>
     <string name="address_card_desc">النطاق بخط بارز وعنوان الصفحة.</string>
     <string name="address_full">العنوان الكامل</string>

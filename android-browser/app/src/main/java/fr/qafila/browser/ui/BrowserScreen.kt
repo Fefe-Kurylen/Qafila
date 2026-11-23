@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import fr.qafila.browser.R
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -276,13 +277,21 @@ fun BrowserScreen(store: BrowserStore) {
                 if (tab.url == null) StartPage(store, tab)
                 else AndroidView(
                     modifier = Modifier.fillMaxSize(),
-                    factory = { ctx -> FrameLayout(ctx) },
+                    // Tirer la page vers le bas depuis le haut = recharger (comme Safari).
+                    factory = { ctx -> SwipeRefreshLayout(ctx).apply {
+                        setOnRefreshListener {
+                            val w = (0 until childCount).map { getChildAt(it) }.firstOrNull { it is android.webkit.WebView } as? android.webkit.WebView
+                            if (w?.url?.startsWith("http") == true) w.reload() else isRefreshing = false
+                            postDelayed({ isRefreshing = false }, 8000)
+                        }
+                    } },
                     update = { container ->
                         val web = store.tabManager.webView(tab.id)
                         backdrop.web = web
                         if (web.parent !== container) {
                             (web.parent as? ViewGroup)?.removeView(web)
-                            container.removeAllViews()
+                            // Ne retirer que la page : la roue de rafraîchissement est elle aussi un enfant du conteneur.
+                            for (i in container.childCount - 1 downTo 0) if (container.getChildAt(i) is android.webkit.WebView) container.removeViewAt(i)
                             store.tabManager.attach(tab.id, container.context)
                             container.addView(web)
                             web.setOnScrollChangeListener { _, _, y, _, oldY -> store.onWebScroll(y, oldY); backdrop.onScroll() }
