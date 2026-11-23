@@ -45,6 +45,8 @@ PALETTES = {
     'desert':  {'bg': '#E9D7B7', 'fg': '#7A4E25'},
     'gold':    {'bg': '#0E0E10', 'fg': ('#F8DC8C', '#B8862E')},
 }
+# Couleur du symbole en apparence sombre iOS (le fond est celui du système)
+DARK_FG = {'classic': ('#F8DC8C', '#C9983C'), 'dark': '#F2F4F7', 'ink': '#F3EEE3', 'desert': '#E9D7B7', 'gold': ('#F8DC8C', '#B8862E')}
 ANDROID_SUFFIX = {'classic': '', 'dark': '_dark', 'ink': '_ink', 'desert': '_desert', 'gold': '_gold'}
 
 
@@ -249,9 +251,21 @@ def pngs():
         render(txt, out, 1024, opaque='#000000'); _mode(out, 'RGB')
         prev = os.path.join(XC, f'PreviewIcon-{name.capitalize()}.imageset/icon.png')
         render(txt, prev, 180, opaque='#000000'); _mode(prev, 'RGB')
-    # iOS, apparence sombre de l'icône classique : symbole doré sur fond sombre
-    out = os.path.join(XC, 'AppIcon.appiconset/icon-1024-dark.png')
-    render(svg({'bg': '#17191C', 'fg': ('#F8DC8C', '#C9983C')}, shape='full'), out, 1024, opaque='#17191C'); _mode(out, 'RGB')
+    # iOS, apparences Sombre et Teintée de CHAQUE icône (principale et alternatives) : symbole seul sur fond
+    # transparent — le système pose lui-même son fond sombre (le même dégradé que les autres applis en mode sombre)
+    # ou la teinte choisie sur l'écran d'accueil.
+    import json
+    for name, rel in ios.items():
+        folder = os.path.join(XC, os.path.dirname(rel))
+        dark = os.path.join(folder, 'icon-1024-dark.png')
+        render(svg({'bg': None, 'fg': DARK_FG[name]}, shape='full', background=False), dark, 1024); _mode(dark, 'RGBA')
+        tinted = os.path.join(folder, 'icon-1024-tinted.png')
+        render(svg({'bg': None, 'fg': '#FFFFFF'}, shape='full', background=False), tinted, 1024); _mode(tinted, 'LA')
+        img = lambda f, app=None: dict(**({'appearances': [{'appearance': 'luminosity', 'value': app}]} if app else {}),
+                                       filename=f, idiom='universal', platform='ios', size='1024x1024')
+        contents = {'images': [img('icon-1024.png'), img('icon-1024-dark.png', 'dark'), img('icon-1024-tinted.png', 'tinted')],
+                    'info': {'author': 'xcode', 'version': 1}}
+        write(os.path.join(folder, 'Contents.json'), json.dumps(contents, indent=2) + '\n')
     # Android ancien format : carré arrondi / rond, transparents
     for dpi, size in (('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), ('xxxhdpi', 192)):
         for f, shape in (('ic_launcher.png', 'tile'), ('ic_launcher_round.png', 'circle')):
@@ -260,9 +274,6 @@ def pngs():
     # Google Play : carré plein 512 (Play arrondit lui-même)
     out = os.path.join(REPO, 'android-browser/play/icon-512.png')
     render(svg(classic, shape='full'), out, 512, opaque='#000000'); _mode(out, 'RGB')
-    # site
-    out = os.path.join(REPO, 'site/icon.png')
-    render(svg(classic, inset=12, radius=112), out, 256); _mode(out, 'RGBA')
     # PC : Windows / Linux (tuile ~91 %, comme Pyramid PDF et Merifa) et macOS (tuile ~80 %, centrée)
     out = os.path.join(REPO, 'desktop/build/icon.png')
     render(svg(classic), out, 1024); _mode(out, 'RGBA')
