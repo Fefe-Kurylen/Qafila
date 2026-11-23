@@ -158,12 +158,23 @@ final class TabManager: NSObject, ObservableObject {
         web.scrollView.refreshControl = rc
     }
 
+    /// Fin du rafraîchissement : la roue se range et la page revient exactement en haut (sous la barre d'état),
+    /// sans le décalage que laisse UIRefreshControl avec nos marges de contenu.
+    func finishRefresh(_ web: WKWebView) {
+        guard let rc = web.scrollView.refreshControl, rc.isRefreshing else { return }
+        rc.endRefreshing()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            let sv = web.scrollView
+            sv.setContentOffset(CGPoint(x: sv.contentOffset.x, y: -sv.adjustedContentInset.top), animated: true)
+        }
+    }
+
     @objc private func pulledToRefresh(_ rc: UIRefreshControl) {
         guard let web = views.values.first(where: { $0.scrollView.refreshControl === rc }) else { rc.endRefreshing(); return }
         store?.haptic(.light)
         if web.url?.scheme?.hasPrefix("http") == true { web.reload() } else { rc.endRefreshing() }
         // Filet de sécurité : la roue disparaît même si la page ne répond pas.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { rc.endRefreshing() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self, weak web] in if let web { self?.finishRefresh(web) } }
     }
 
     private func privateStore() -> WKWebsiteDataStore {
@@ -409,8 +420,13 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
         decisionHandler(.allow, preferences)
     }
 
+    /// La nouvelle page commence à s'afficher : la roue de « tirer pour recharger » se range dès maintenant.
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        finishRefresh(webView)
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        webView.scrollView.refreshControl?.endRefreshing()
+        finishRefresh(webView)
         guard let id = tabID(for: webView), let store else { return }
         if let tab = store.tabs.first(where: { $0.id == id }) {
             store.recordVisit(tab)
@@ -429,7 +445,7 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { showError(webView, error) }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { showError(webView, error) }
     private func showError(_ web: WKWebView, _ error: Error) {
-        web.scrollView.refreshControl?.endRefreshing()
+        finishRefresh(web)
         let e = error as NSError
         guard e.code != NSURLErrorCancelled, e.code != 102 else { return }
         web.loadHTMLString(StartPage.error(message: e.localizedDescription, url: e.userInfo[NSURLErrorFailingURLStringErrorKey] as? String ?? ""), baseURL: nil)
