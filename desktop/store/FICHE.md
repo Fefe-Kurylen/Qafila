@@ -269,3 +269,11 @@ Qafila متصفح سريع وخاص وقابل للتخصيص بالكامل ل�
 **الكلمات المفتاحية**: متصفح، خاص، مانع الإعلانات، علامات التبويب، المفضلة، كلمات المرور، الخصوصية
 
 **الجديد**: الإصدار الأول من Qafila على Microsoft Store.
+
+## 📝 Notes de version 0.9.3 (à coller dans chaque langue)
+
+- 🇫🇷 Traduction automatique intégrée des pages, clic droit sur les favoris et dossiers de la barre (déplacer, nouveau dossier, supprimer), glisser-déposer dans la barre, remplissage des mots de passe, page d'accueil avec grandes icônes et dossiers, arrière-plan Graphite / Noir / Blanc, barre plus épurée, résultats Google complets (cartes et fiches).
+- 🇬🇧 Built-in automatic page translation, right-click on bookmarks and folders in the bar (move, new folder, delete), drag and drop in the bar, password autofill, start page with large icons and folders, Graphite / Black / White background, cleaner toolbar, full Google results (maps and business cards).
+- 🇪🇸 Traducción automática integrada de las páginas, clic derecho en los marcadores y carpetas de la barra (mover, nueva carpeta, eliminar), arrastrar y soltar en la barra, autocompletado de contraseñas, página de inicio con iconos grandes y carpetas, fondo Grafito / Negro / Blanco, barra más limpia, resultados completos de Google (mapas y fichas).
+- 🇩🇪 Integrierte automatische Übersetzung von Seiten, Rechtsklick auf Lesezeichen und Ordner in der Leiste (verschieben, neuer Ordner, löschen), Ziehen und Ablegen in der Leiste, automatisches Ausfüllen von Passwörtern, Startseite mit großen Symbolen und Ordnern, Hintergrund Graphit / Schwarz / Weiß, aufgeräumtere Leiste, vollständige Google-Ergebnisse (Karten und Einträge).
+- 🇸🇦 ترجمة تلقائية مدمجة للصفحات، نقر بزر الفأرة الأيمن على الإشارات المرجعية والمجلدات في الشريط (نقل، مجلد جديد، حذف)، سحب وإفلات في الشريط، ملء كلمات المرور تلقائيًا، صفحة بداية بأيقونات كبيرة ومجلدات، خلفية غرافيت / أسود / أبيض، شريط أبسط، نتائج Google كاملة (خرائط وبطاقات الأماكن).
