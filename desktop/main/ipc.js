@@ -124,7 +124,12 @@ function register(a) {
       const z = view.webContents.isDestroyed() ? 1 : view.webContents.getZoomFactor() || 1;
       opts.x = Math.round(b.x + x * z); opts.y = Math.round(b.y + y * z);
     }
-    Menu.buildFromTemplate(items).popup(opts);
+    const menu = Menu.buildFromTemplate(items);
+    if (process.env.QAFILA_E2E) {
+      console.log(`[e2e] bookmarks:contextMenu ${kindOf} x=${opts.x} y=${opts.y} items=${items.length}`);
+      menu.on('menu-will-show', () => console.log('[e2e] menu affiché'));
+    }
+    menu.popup(opts);
   }));
   // Dossiers et rangement (gestionnaire de favoris).
   const kind = (v) => (v === 'folder' ? 'folder' : 'bookmark');
