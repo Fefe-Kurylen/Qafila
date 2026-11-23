@@ -177,10 +177,10 @@ enum AppIconChoice: String, Codable, CaseIterable, Identifiable {
 // MARK: - Barre d'adresse
 
 enum AddressStyle: String, Codable, CaseIterable, Identifiable {
-    case card, fullURL, domainPill, titleReading, centered, hidden
+    case safari, card, fullURL, domainPill, titleReading, centered, hidden
     var id: String { rawValue }
     var label: String {
-        switch self { case .card: return L("Carte"); case .fullURL: return L("Adresse complète"); case .domainPill: return L("Domaine centré"); case .titleReading: return L("Titre et lecture"); case .centered: return L("Centré sans carte"); case .hidden: return L("Masquée") }
+        switch self { case .safari: return L("Comme Safari"); case .card: return L("Carte"); case .fullURL: return L("Adresse complète"); case .domainPill: return L("Domaine centré"); case .titleReading: return L("Titre et lecture"); case .centered: return L("Centré sans carte"); case .hidden: return L("Masquée") }
     }
 }
 
@@ -267,7 +267,7 @@ struct Settings: Codable, Equatable {
     var landscapeTopBar: Bool = true
     var edgeSwipeNavigation: Bool = true
     // Barre d'adresse
-    var addressStyle: AddressStyle = .card
+    var addressStyle: AddressStyle = .safari
     var addressShowsFavicon: Bool = true
     var addressShowsReadingTime: Bool = true
     var addressTap: AddressTapAction = .edit
@@ -302,7 +302,7 @@ struct Settings: Codable, Equatable {
     var suspendTabsInLowPower: Bool = true
     /// Version des réglages par défaut : à chaque nouvelle série de défauts, les anciens réglages sont adaptés une fois.
     var defaultsVersion: Int = Settings.currentDefaults
-    static let currentDefaults = 2
+    static let currentDefaults = 3
 
     var ui: CGFloat { interfaceSize.scale }
     var blockerEnabled: Bool { blockAds || blockTrackers || blockCookieBanners }
@@ -356,6 +356,8 @@ extension Settings {
             thumbnailSize = .large
             groupTabsByDomain = false
         }
+        // Version 3 : barre d'adresse façon Safari (une ligne, nom du site en gras, capsule sombre) par défaut.
+        if version < 3, addressStyle == .card { addressStyle = .safari }
         defaultsVersion = Settings.currentDefaults
     }
 }

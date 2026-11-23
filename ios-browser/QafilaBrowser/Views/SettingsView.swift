@@ -456,6 +456,7 @@ struct AddressSettings: View {
             Section {
                 CheckList(items: AddressStyle.allCases, selection: $store.settings.addressStyle, label: { $0.label }, detail: { style in
                     switch style {
+                    case .safari: return L("Une ligne : nom du site en gras, menu et recharger, comme Safari")
                     case .card: return L("Domaine en capitales au-dessus du titre")
                     case .fullURL: return L("L'adresse complète, sur une ligne")
                     case .domainPill: return L("Juste le nom du site, centré")

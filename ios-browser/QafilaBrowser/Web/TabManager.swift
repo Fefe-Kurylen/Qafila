@@ -147,7 +147,23 @@ final class TabManager: NSObject, ObservableObject {
         web.isFindInteractionEnabled = true
         web.backgroundColor = .systemBackground
         web.isOpaque = false
+        addPullToRefresh(web)
         return web
+    }
+
+    /// Comme Safari : tirer la page vers le bas depuis le haut la recharge.
+    private func addPullToRefresh(_ web: WKWebView) {
+        let rc = UIRefreshControl()
+        rc.addTarget(self, action: #selector(pulledToRefresh(_:)), for: .valueChanged)
+        web.scrollView.refreshControl = rc
+    }
+
+    @objc private func pulledToRefresh(_ rc: UIRefreshControl) {
+        guard let web = views.values.first(where: { $0.scrollView.refreshControl === rc }) else { rc.endRefreshing(); return }
+        store?.haptic(.light)
+        if web.url?.scheme?.hasPrefix("http") == true { web.reload() } else { rc.endRefreshing() }
+        // Filet de sécurité : la roue disparaît même si la page ne répond pas.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { rc.endRefreshing() }
     }
 
     private func privateStore() -> WKWebsiteDataStore {
@@ -394,6 +410,7 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        webView.scrollView.refreshControl?.endRefreshing()
         guard let id = tabID(for: webView), let store else { return }
         if let tab = store.tabs.first(where: { $0.id == id }) {
             store.recordVisit(tab)
@@ -412,6 +429,7 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { showError(webView, error) }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { showError(webView, error) }
     private func showError(_ web: WKWebView, _ error: Error) {
+        web.scrollView.refreshControl?.endRefreshing()
         let e = error as NSError
         guard e.code != NSURLErrorCancelled, e.code != 102 else { return }
         web.loadHTMLString(StartPage.error(message: e.localizedDescription, url: e.userInfo[NSURLErrorFailingURLStringErrorKey] as? String ?? ""), baseURL: nil)
@@ -433,6 +451,7 @@ extension TabManager: WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler
         web.isOpaque = false
         web.pageZoom = CGFloat(store.settings.textZoom)
         web.allowsBackForwardNavigationGestures = store.settings.edgeSwipeNavigation
+        addPullToRefresh(web)
         var tab = BrowserTab(isPrivate: isPrivate)
         tab.url = navigationAction.request.url
         views[tab.id] = web

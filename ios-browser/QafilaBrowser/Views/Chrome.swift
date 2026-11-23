@@ -191,17 +191,23 @@ struct AddressCard: View {
 
     private var tab: BrowserTab? { store.selectedTab }
     private var s: Settings { store.settings }
-    private var style: AddressStyle { inline ? (s.addressStyle == .fullURL ? .fullURL : .card) : s.addressStyle }
+    private var style: AddressStyle { inline ? (s.addressStyle == .fullURL ? .fullURL : (s.addressStyle == .safari ? .safari : .card)) : s.addressStyle }
+    @Environment(\.colorScheme) private var scheme
+    /// Capsule façon Safari : plus sombre que la barre en mode sombre, blanche en mode clair.
+    private var safariCapsule: Color { scheme == .dark ? Color(white: 0.09, opacity: 0.78) : Color.white.opacity(0.92) }
     private var isStart: Bool { tab?.url == nil }
     private var ui: CGFloat { s.ui }
 
     var body: some View {
         content
-            .padding(.horizontal, style == .centered ? 4 : 14)
+            .padding(.horizontal, style == .centered ? 4 : (style == .safari ? 6 : 14))
             .frame(maxWidth: .infinity)
             .frame(height: (inline ? 44 : 52) * ui)
             .background {
-                if style != .centered {
+                if style == .safari {
+                    Capsule(style: .continuous).fill(safariCapsule)
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(scheme == .dark ? 0.06 : 0.08), lineWidth: 0.75))
+                } else if style != .centered {
                     let card = RoundedRectangle(cornerRadius: cardRadius ?? (inline ? 12 : 14), style: .continuous)
                     card.fill(cardColor).overlay(card.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.75))
                 }
@@ -223,8 +229,10 @@ struct AddressCard: View {
             }
             .foregroundStyle(Color.primary.opacity(0.72))
             .frame(maxWidth: .infinity, alignment: style == .card || style == .fullURL || style == .titleReading ? .leading : .center)
+            .padding(.horizontal, style == .safari ? 10 : 0)
         } else {
             switch style {
+            case .safari: safariLayout
             case .card, .hidden: cardLayout
             case .fullURL: fullURLLayout
             case .domainPill: domainLayout
@@ -247,6 +255,26 @@ struct AddressCard: View {
             Spacer(minLength: 4)
             if s.addressShowsReadingTime, let r = tab?.readingLabel { ReadingPill(text: r) }
         }
+    }
+
+    /// Comme Safari : bouton menu (lignes) à gauche, nom du site en gras au centre, recharger à droite.
+    private var safariLayout: some View {
+        HStack(spacing: 0) {
+            Button { store.haptic(.light); withAnimation(.spring(response: 0.34, dampingFraction: 0.78)) { store.showMenu.toggle() } } label: {
+                Image(systemName: "text.alignleft").font(.system(size: 19 * ui, weight: .medium))
+                    .frame(width: 44 * ui, height: 44 * ui).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).accessibilityLabel(Text("Menu"))
+            Text((tab?.host ?? "").replacingOccurrences(of: "^www\\.", with: "", options: .regularExpression))
+                .font(.system(size: 19 * ui, weight: .semibold)).foregroundStyle(.primary)
+                .lineLimit(1).truncationMode(.middle).frame(maxWidth: .infinity)
+            Button { store.perform(.reload) } label: {
+                ReloadGlyph(load: store.tabManager.loadState, size: 19 * ui, weight: .medium, tint: nil)
+                    .frame(width: 44 * ui, height: 44 * ui).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).accessibilityLabel(Text("Recharger"))
+        }
+        .foregroundStyle(.primary)
     }
 
     private var fullURLLayout: some View {
