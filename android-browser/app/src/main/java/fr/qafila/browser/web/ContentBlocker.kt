@@ -17,25 +17,23 @@ object ContentBlocker {
     val trackerDomains: List<String> = listOf(
         "google-analytics.com", "googletagmanager.com", "facebook.net", "snap.licdn.com", "analytics.twitter.com", "scorecardresearch.com", "quantserve.com",
         "chartbeat.com", "hotjar.com", "mouseflow.com", "fullstory.com", "crazyegg.com", "mixpanel.com", "segment.io", "segment.com", "amplitude.com",
-        "newrelic.com", "nr-data.net", "sentry.io", "bugsnag.com", "optimizely.com", "mc.yandex.ru", "bat.bing.com", "clarity.ms", "xiti.com", "ati-host.net",
+        "mc.yandex.ru", "bat.bing.com", "clarity.ms", "xiti.com", "ati-host.net",
         "at-o.net", "branch.io", "appsflyer.com", "adjust.com", "onesignal.com", "pushwoosh.com", "tapad.com", "bluekai.com", "demdex.net", "omtrdc.net",
-        "everesttech.net", "krxd.net", "rlcdn.com", "exelator.com", "eyeota.net", "agkn.com", "mathtag.com", "cxense.com", "permutive.com", "piano.io", "tinypass.com",
-    )
+        "everesttech.net", "krxd.net", "rlcdn.com", "exelator.com", "eyeota.net", "agkn.com", "mathtag.com", "cxense.com", "permutive.com",     )
 
-    val cookieDomains: List<String> = listOf("didomi.io", "cookielaw.org", "onetrust.com")
+    // Scripts des gestionnaires de consentement plus bloqués : beaucoup de sites attendent leur réponse pour s'afficher (seul le bandeau est masqué).
+    val cookieDomains: List<String> = emptyList()
 
     val cookieSelectors: List<String> = listOf(
         "#onetrust-consent-sdk", "#onetrust-banner-sdk", ".onetrust-pc-dark-filter", "#didomi-host", "#didomi-popup", ".didomi-popup-backdrop",
-        "#CybotCookiebotDialog", "#cookie-banner", "#cookieBanner", "#cookie-consent", ".cookie-consent", ".cookie-banner", ".cookiebanner",
+        "#CybotCookiebotDialog", "#cookie-banner", "#cookieBanner", "#cookie-consent", ".cookie-banner", ".cookiebanner",
         "#cookie-notice", ".cookie-notice", "#cookieNotice", ".cc-window", ".cc-banner", "#cc-main", ".cmp-container", "#cmp-container", ".qc-cmp2-container",
         "#qc-cmp2-container", ".fc-consent-root", "#sp_message_container", "[id^='sp_message_container_']", "#axeptio_overlay", ".tarteaucitronAlert",
-        "#tarteaucitronRoot", "#tarteaucitronAlertBig", ".gdpr-banner", "#gdpr-banner", ".gdpr-modal", ".consent-banner", "#consent-banner", ".consent-modal",
-        "#usercentrics-root", ".cookie-wall", "#cookie-wall", ".cookiewall", ".privacy-banner", "#privacy-banner",
+        "#tarteaucitronRoot", "#tarteaucitronAlertBig", ".gdpr-banner", "#gdpr-banner", ".consent-banner", "#consent-banner",         "#usercentrics-root", ".cookie-wall", "#cookie-wall", ".cookiewall", ".privacy-banner", "#privacy-banner",
     )
 
     val adSelectors: List<String> = listOf(
-        ".adsbygoogle", "ins.adsbygoogle", "[id^='google_ads_iframe']", ".ad-slot", ".ad-container", ".ad-banner", ".advertisement", "[class*='sponsored-']",
-        "#taboola-below-article-thumbnails", ".OUTBRAIN", ".trc_related_container", ".ad-wrapper", "[aria-label='Publicité']", "[aria-label='Advertisement']",
+        ".adsbygoogle", "ins.adsbygoogle", "[id^='google_ads_iframe']", ".ad-slot", ".ad-banner",         "#taboola-below-article-thumbnails", ".OUTBRAIN", ".trc_related_container", "[aria-label='Publicité']", "[aria-label='Advertisement']",
     )
 
     private val adSet = adDomains.toHashSet()
