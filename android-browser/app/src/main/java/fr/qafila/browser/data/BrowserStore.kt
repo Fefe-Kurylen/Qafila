@@ -397,7 +397,7 @@ class BrowserStore(app: Application) : AndroidViewModel(app) {
         )
         mutate {
             it.copy(tabs = list, selectedTabId = list.first().id, bookmarks = it.bookmarks.ifEmpty { bookmarks }, settings = it.settings.copy(
-                toolbar = ToolbarConfig.preset(ToolbarConfig.Preset.COMPLETE).let { t -> if (screen == "floating") t.copy(style = ToolbarStyle.FLOATING) else t }, addressStyle = AddressStyle.CARD, addressShowsFavicon = true, addressShowsReadingTime = true,
+                toolbar = ToolbarConfig.preset(ToolbarConfig.Preset.COMPLETE).let { t -> if (screen == "floating") t.copy(style = ToolbarStyle.FLOATING) else t }, addressStyle = AddressStyle.SAFARI, addressShowsFavicon = true, addressShowsReadingTime = true,
                 menuIcon = MenuIconStyle.DOTS, iconWeight = IconWeight.REGULAR, scrollBehavior = ScrollBehavior.SHRINK,
                 tabsLayout = TabsLayout.LIST, tabsSort = TabsSort.DATE, groupTabsByDomain = true, comfortMode = false, appearance = Appearance.SYSTEM,
             ))
