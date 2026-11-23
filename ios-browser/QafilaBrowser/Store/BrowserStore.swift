@@ -308,8 +308,23 @@ final class BrowserStore: ObservableObject {
     /// L'icône de l'écran d'accueil suit le réglage (y compris au lancement : retour à l'icône classique si le soutien a pris fin).
     func syncAppIcon() {
         let app = UIApplication.shared
-        guard app.supportsAlternateIcons, app.alternateIconName != settings.appIcon.iconName else { return }
-        app.setAlternateIconName(settings.appIcon.iconName) { _ in }
+        guard app.supportsAlternateIcons else { return }
+        let wanted = settings.appIcon.iconName
+        // iOS garde en cache l'image d'une icône alternative choisie avant une mise à jour : quand les icônes changent
+        // (révision 2 = versions Sombre et Teintée), l'icône alternative est réappliquée une fois pour que l'écran
+        // d'accueil prenne les nouvelles apparences.
+        let revision = 2, key = "qafila.appIconRevision"
+        let defaults = UserDefaults.standard
+        if let current = app.alternateIconName, current == wanted, defaults.integer(forKey: key) < revision {
+            defaults.set(revision, forKey: key)
+            app.setAlternateIconName(nil) { _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { app.setAlternateIconName(current) { _ in } }
+            }
+            return
+        }
+        defaults.set(revision, forKey: key)
+        guard app.alternateIconName != wanted else { return }
+        app.setAlternateIconName(wanted) { _ in }
     }
 
     /// Générateurs gardés et préparés : la vibration part sans délai au toucher.

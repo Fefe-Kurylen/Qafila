@@ -203,6 +203,11 @@ const iosStateSymbols = new Map();
 for (const m of stripComments(read(PATHS.iosChrome)).matchAll(/case\s+\.(\w+):\s*return\s+[^"\n]*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/g)) {
   iosStateSymbols.set(m[1], { active: m[2], inactive: m[3] });
 }
+// Recharger / Arrêter : symbole d'état rendu par la vue ReloadGlyph (observe la progression à part).
+{
+  const m = stripComments(read(PATHS.iosChrome)).match(/struct\s+ReloadGlyph\b[\s\S]*?Image\(systemName:\s*\w+\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/);
+  if (m && !iosStateSymbols.has('reload')) iosStateSymbols.set('reload', { active: m[1], inactive: m[2] });
+}
 
 // ---------------------------------------------------------------------------------------------------------------
 // Android — Models.kt, Icons.kt, strings.xml
@@ -488,6 +493,7 @@ function swiftDefault(raw, setting) {
   if (raw === '[]') return [];
   if (/^\.preset\(\.(\w+)\)$/.test(raw)) return { preset: raw.match(/\.preset\(\.(\w+)\)/)[1] };
   if (raw.includes('Locale.current')) return 'deviceLanguage';
+  if (raw === 'Settings.currentDefaults') return Number(read(PATHS.iosSettings).match(/static let currentDefaults\s*=\s*(\d+)/)?.[1]);
   if (/^\.(\w+)$/.test(raw)) return raw.slice(1);
   return `<non reconnu : ${raw}>`;
 }
@@ -566,6 +572,8 @@ for (const [name, def] of Object.entries(settingsJson.enums)) {
     const expected = [...def.values, ...(def.platformOnlyValues?.ios ?? [])].sort();
     if (!same([...sw].sort(), expected)) error(S_ENUM, `${name} : cas Swift ${fmt([...sw].sort())} ≠ contrat ${fmt(expected)}`);
   }
+  // Enum propre à l'iPhone (android: null) : rien à vérifier côté Kotlin.
+  if (def.android === null) continue;
   const kt = kotlinEnums.get(def.android);
   if (!kt) error(S_ENUM, `${name} : enum Kotlin « ${def.android} » introuvable`);
   else {

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// État de la saisie d'adresse, partagé entre le champ (dans la barre) et le panneau de suggestions (au-dessus).
 @MainActor
@@ -78,7 +79,14 @@ struct AddressEditorRow: View {
         }
         .onAppear {
             editor.text = store.selectedTab?.url?.absoluteString ?? ""
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { focused = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                focused = true
+                // Comme Safari : l'adresse entière est sélectionnée, la saisie la remplace au lieu de s'ajouter à la suite.
+                guard !editor.text.isEmpty else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    UIApplication.shared.sendAction(#selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil)
+                }
+            }
         }
     }
 
