@@ -29,11 +29,13 @@ object ContentBlocker {
         "#CybotCookiebotDialog", "#cookie-banner", "#cookieBanner", "#cookie-consent", ".cookie-banner", ".cookiebanner",
         "#cookie-notice", ".cookie-notice", "#cookieNotice", ".cc-window", ".cc-banner", "#cc-main", ".cmp-container", "#cmp-container", ".qc-cmp2-container",
         "#qc-cmp2-container", ".fc-consent-root", "#sp_message_container", "[id^='sp_message_container_']", "#axeptio_overlay", ".tarteaucitronAlert",
-        "#tarteaucitronRoot", "#tarteaucitronAlertBig", ".gdpr-banner", "#gdpr-banner", ".consent-banner", "#consent-banner",         "#usercentrics-root", ".cookie-wall", "#cookie-wall", ".cookiewall", ".privacy-banner", "#privacy-banner",
+        "#tarteaucitronRoot", "#tarteaucitronAlertBig", ".gdpr-banner", "#gdpr-banner", ".consent-banner", "#consent-banner",
+        "#usercentrics-root", ".cookie-wall", "#cookie-wall", ".cookiewall", ".privacy-banner", "#privacy-banner",
     )
 
     val adSelectors: List<String> = listOf(
-        ".adsbygoogle", "ins.adsbygoogle", "[id^='google_ads_iframe']", ".ad-slot", ".ad-banner",         "#taboola-below-article-thumbnails", ".OUTBRAIN", ".trc_related_container", "[aria-label='Publicité']", "[aria-label='Advertisement']",
+        ".adsbygoogle", "ins.adsbygoogle", "[id^='google_ads_iframe']", ".ad-slot", ".ad-banner",
+        "#taboola-below-article-thumbnails", ".OUTBRAIN", ".trc_related_container", "[aria-label='Publicité']", "[aria-label='Advertisement']",
     )
 
     private val adSet = adDomains.toHashSet()
