@@ -384,14 +384,32 @@ async function bookmarkMenuChoice(choice, kind, id) {
   }
 }
 
-/** Glisser-déposer dans la barre : un favori lâché sur un dossier y est rangé, lâché sur un autre favori il se place avant lui. */
+/**
+ * Glisser-déposer dans la barre, comme les icônes d'un téléphone :
+ *  - lâché sur le bord gauche / droit d'un élément du même type → déplacé avant / après lui ;
+ *  - lâché au centre d'un dossier → rangé dedans ;
+ *  - lâché au centre d'un autre favori → les deux sont réunis dans un nouveau dossier (fiche ouverte pour le nommer).
+ * Les dossiers restent devant les favoris dans la barre : un dossier ne se range qu'entre dossiers.
+ */
 function installBarDrag(bm) {
   let drag = null;
-  const clear = () => bm.querySelectorAll('.drop-into, .drop-before').forEach((x) => x.classList.remove('drop-into', 'drop-before'));
+  const clear = () => bm.querySelectorAll('.drop-into, .drop-before, .drop-after, .drop-merge').forEach((x) => x.classList.remove('drop-into', 'drop-before', 'drop-after', 'drop-merge'));
+  const zone = (e, el) => {
+    const r = el.getBoundingClientRect();
+    const f = (e.clientX - r.left) / Math.max(1, r.width);
+    const isFolder = !!el.dataset.bmfolder;
+    const sameKind = isFolder === (drag.kind === 'folder');
+    if (f < 0.28 && sameKind) return 'before';
+    if (f > 0.72 && sameKind) return 'after';
+    if (isFolder) return 'into';
+    if (drag.kind === 'bookmark') return 'merge';
+    return null;   // un dossier lâché sur un favori : rien
+  };
   bm.addEventListener('dragstart', (e) => {
     const el = e.target.closest('[data-bm], [data-bmfolder]');
     if (!el) return;
     drag = el.dataset.bm ? { kind: 'bookmark', id: el.dataset.bm } : { kind: 'folder', id: el.dataset.bmfolder };
+    el.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     try { e.dataTransfer.setData('text/plain', drag.id); } catch { /* ignoré */ }
   });
@@ -400,20 +418,36 @@ function installBarDrag(bm) {
     const el = e.target.closest('[data-bm], [data-bmfolder]');
     clear();
     if (!el || el.dataset.bm === drag.id || el.dataset.bmfolder === drag.id) return;
+    const z = zone(e, el);
+    if (!z) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    el.classList.add(el.dataset.bmfolder ? 'drop-into' : 'drop-before');
+    el.classList.add(z === 'into' ? 'drop-into' : z === 'merge' ? 'drop-merge' : z === 'before' ? 'drop-before' : 'drop-after');
   });
   bm.addEventListener('dragleave', (e) => { if (!bm.contains(e.relatedTarget)) clear(); });
   bm.addEventListener('drop', async (e) => {
     const el = e.target.closest('[data-bm], [data-bmfolder]');
-    const d = drag; drag = null; clear();
-    if (!d || !el) return;
+    const d = drag;
+    const z = d && el ? zone(e, el) : null;
+    drag = null; clear();
+    bm.querySelectorAll('.dragging').forEach((x) => x.classList.remove('dragging'));
+    if (!d || !el || !z) return;
     e.preventDefault();
-    if (el.dataset.bmfolder && el.dataset.bmfolder !== d.id) await q.bookmarks.move(d.kind, d.id, el.dataset.bmfolder);
-    else if (el.dataset.bm && el.dataset.bm !== d.id) await q.bookmarks.placeBefore(d.kind, d.id, el.dataset.bm);
+    const target = el.dataset.bmfolder || el.dataset.bm;
+    if (target === d.id) return;
+    if (z === 'before' || z === 'after') await q.bookmarks.placeBefore(d.kind, d.id, target, z === 'after');
+    else if (z === 'into') await q.bookmarks.move(d.kind, d.id, target);
+    else if (z === 'merge') {
+      // Deux favoris réunis : nouveau dossier à la place, les deux dedans, fiche ouverte pour le nommer.
+      const f = await q.bookmarks.addFolder(t('bm_new_folder_name'), null);
+      if (!f?.id) return;
+      await q.bookmarks.move('bookmark', target, f.id);
+      await q.bookmarks.move('bookmark', d.id, f.id);
+      for (let i = 0; i < 40 && !(S.state?.folders || []).some((x) => x.id === f.id); i++) await new Promise((r) => setTimeout(r, 25));
+      openBookmarkEdit('f', f.id);
+    }
   });
-  bm.addEventListener('dragend', () => { drag = null; clear(); });
+  bm.addEventListener('dragend', () => { drag = null; clear(); bm.querySelectorAll('.dragging').forEach((x) => x.classList.remove('dragging')); });
 }
 
 function renderBookmarksBar() {

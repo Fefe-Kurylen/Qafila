@@ -277,3 +277,11 @@ Qafila متصفح سريع وخاص وقابل للتخصيص بالكامل ل�
 - 🇪🇸 Traducción automática integrada de las páginas, clic derecho en los marcadores y carpetas de la barra (mover, nueva carpeta, eliminar), arrastrar y soltar en la barra, autocompletado de contraseñas, página de inicio con iconos grandes y carpetas, fondo Grafito / Negro / Blanco, barra más limpia, resultados completos de Google (mapas y fichas).
 - 🇩🇪 Integrierte automatische Übersetzung von Seiten, Rechtsklick auf Lesezeichen und Ordner in der Leiste (verschieben, neuer Ordner, löschen), Ziehen und Ablegen in der Leiste, automatisches Ausfüllen von Passwörtern, Startseite mit großen Symbolen und Ordnern, Hintergrund Graphit / Schwarz / Weiß, aufgeräumtere Leiste, vollständige Google-Ergebnisse (Karten und Einträge).
 - 🇸🇦 ترجمة تلقائية مدمجة للصفحات، نقر بزر الفأرة الأيمن على الإشارات المرجعية والمجلدات في الشريط (نقل، مجلد جديد، حذف)، سحب وإفلات في الشريط، ملء كلمات المرور تلقائيًا، صفحة بداية بأيقونات كبيرة ومجلدات، خلفية غرافيت / أسود / أبيض، شريط أبسط، نتائج Google كاملة (خرائط وبطاقات الأماكن).
+
+## 📝 Notes de version 0.9.4
+
+- 🇫🇷 Barre de favoris : glisser un favori pour le déplacer, sur un autre favori pour créer un dossier avec les deux, ou sur un dossier pour l'y ranger.
+- 🇬🇧 Bookmarks bar: drag a bookmark to move it, onto another bookmark to create a folder with both, or onto a folder to put it inside.
+- 🇪🇸 Barra de marcadores: arrastra un marcador para moverlo, sobre otro para crear una carpeta con ambos, o sobre una carpeta para guardarlo dentro.
+- 🇩🇪 Lesezeichenleiste: Lesezeichen ziehen, um es zu verschieben, auf ein anderes, um einen Ordner mit beiden zu erstellen, oder auf einen Ordner, um es dort abzulegen.
+- 🇸🇦 شريط الإشارات المرجعية: اسحب إشارة لنقلها، أو أفلتها على أخرى لإنشاء مجلد يضمهما، أو على مجلد لوضعها داخله.

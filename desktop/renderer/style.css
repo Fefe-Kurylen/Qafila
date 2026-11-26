@@ -563,3 +563,6 @@ browser-action-list.ext-actions::part(badge) { font-size: 9px; }
 /* Glisser-déposer dans la barre de favoris : cible d'un dossier, ou repère avant un favori. */
 .bmbar .bm.drop-into { background: color-mix(in srgb, var(--accent, #C8922B) 22%, transparent); outline: 1.5px solid var(--accent, #C8922B); }
 .bmbar .bm.drop-before { box-shadow: inset 2px 0 0 var(--accent, #C8922B); }
+.bmbar .bm.drop-after { box-shadow: inset -2px 0 0 var(--accent, #C8922B); }
+.bmbar .bm.drop-merge { background: color-mix(in srgb, var(--accent, #C8922B) 16%, transparent); outline: 1.5px dashed var(--accent, #C8922B); }
+.bmbar .bm.dragging { opacity: .45; }

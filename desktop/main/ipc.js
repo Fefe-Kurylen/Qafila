@@ -139,7 +139,7 @@ function register(a) {
   handle('bookmarks:removeFolder', (p) => done(store.removeFolder(str(p.id, 64))));
   handle('bookmarks:move', (p) => done(store.moveItem(kind(p.kind), str(p.id, 64), str(p.target, 64) || null)));
   handle('bookmarks:reorder', (p) => done(store.reorderItem(kind(p.kind), str(p.id, 64), Number(p.delta) < 0 ? -1 : 1)));
-  handle('bookmarks:placeBefore', (p) => done(store.placeBefore(kind(p.kind), str(p.id, 64), str(p.before, 64))));
+  handle('bookmarks:placeBefore', (p) => done(store.placeBefore(kind(p.kind), str(p.id, 64), str(p.before, 64), p.after === true)));
   handle('history:list', (p) => {
     const q = str(p.query, 256).toLowerCase();
     const limit = Math.min(2000, Math.max(1, Number(p.limit) || 500));

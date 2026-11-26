@@ -366,7 +366,7 @@ class Store extends EventEmitter {
   }
 
   /** Place un élément juste avant `beforeId` (même type), dans le dossier de celui-ci : glisser-déposer. */
-  placeBefore(kind, id, beforeId) {
+  placeBefore(kind, id, beforeId, after = false) {
     const key = kind === 'folder' ? 'folders' : 'bookmarks';
     const arr = this[key];
     const item = arr.find((x) => x.id === id);
@@ -376,7 +376,7 @@ class Store extends EventEmitter {
     if (kind === 'folder' && parent && this.isInside(parent, id)) return false;
     const moved = kind === 'folder' ? { ...item, parent } : { ...item, folder: parent };
     const rest = arr.filter((x) => x.id !== id);
-    rest.splice(rest.indexOf(ref), 0, moved);
+    rest.splice(rest.indexOf(ref) + (after ? 1 : 0), 0, moved);
     this[key] = rest;
     this.scheduleSave();
     return true;
